@@ -78,9 +78,10 @@ Para cada fase del roadmap (`11`):
    aceptación (CA) del documento.
 4. **No avanzar** a la siguiente fase hasta que los CA se cumplan y los tests estén verdes.
 
-### Fase actual: **Fase 0 — Andamiaje** (ver `11`)
-Objetivo: proyecto Vite+React+TS(strict)+Vitest, estructura de carpetas, PRNG con semilla + tests,
-tick vacío que avanza la semana, store Zustand con `GameState` mínimo, save/load básico.
+### Fase actual: **Fase 1 — Bucle núcleo (el corazón jugable)** (ver `11`)
+Objetivo: fundar un estudio en el garaje, hacer un juego de principio a fin y recibir su reseña.
+Sistemas: `02` (bucle + garaje), `03` (calidad), economía mínima de `06`. Antes de codificar, leer
+`02`, `03`, `06` (economía mínima), `09` (esquemas) y `08` (arquitectura).
 
 ## 6. Comandos
 
