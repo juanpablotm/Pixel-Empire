@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Icono de app Pixel Empire">
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#12151C"/>
+  <g transform="translate(106,143) scale(6.25)">
+    <path d="M0,8 L12,8 L12,16 L18,16 L18,0 L30,0 L30,16 L36,16 L36,8 L48,8 L48,36 L0,36 Z" fill="#E8B44A"/>
+  </g>
+</svg>

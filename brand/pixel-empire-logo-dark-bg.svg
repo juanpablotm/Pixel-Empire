@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 104" role="img" aria-label="Pixel Empire: Game Studio Tycoon">
+  <g transform="translate(6,28) scale(1.6)">
+    <path d="M0,8 L12,8 L12,16 L18,16 L18,0 L30,0 L30,16 L36,16 L36,8 L48,8 L48,36 L0,36 Z" fill="#E8B44A"/>
+  </g>
+  <text x="100" y="64" font-family="'DejaVu Sans Mono','Courier New',monospace" font-size="34" font-weight="500" letter-spacing="2" fill="#F2EFE6">pixel<tspan fill="#E8B44A"> empire</tspan></text>
+  <rect x="102" y="77" width="9" height="9" rx="2" fill="#3FA66A"/>
+  <text x="120" y="86" font-family="'DejaVu Sans','Segoe UI',Arial,sans-serif" font-size="13" letter-spacing="4" fill="#93A0B5">game studio tycoon</text>
+</svg>

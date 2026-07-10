@@ -1,0 +1,18 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+coverage/
+
+# Editor / SO
+.DS_Store
+*.local
+.claude/settings.local.json
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
