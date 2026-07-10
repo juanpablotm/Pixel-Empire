@@ -24,10 +24,11 @@ describe('tick — avance puro de 1 semana (docs/08 §4)', () => {
     expect(tick(state)).toEqual(tick(state));
   });
 
-  it('en Fase 0 no cambia nada más que la semana', () => {
+  it('sin proyecto ni juegos lanzados: solo avanza la semana y paga el coste fijo', () => {
     const state = createInitialState(SEED);
     const next = tick(state);
-    expect({ ...next, week: state.week }).toEqual(state);
+    expect(next.studio.capital).toBe(state.studio.capital - balance.economy.weeklyUpkeep);
+    expect({ ...next, week: state.week, studio: state.studio }).toEqual(state);
   });
 
   it('el estado inicial sale de data/balance.ts', () => {
@@ -36,5 +37,9 @@ describe('tick — avance puro de 1 semana (docs/08 §4)', () => {
     expect(state.week).toBe(balance.time.startWeek);
     expect(state.era).toBe(balance.time.startEra);
     expect(state.studio.capital).toBe(balance.economy.initialCapital);
+    expect(state.projects).toEqual([]);
+    expect(state.releasedGames).toEqual([]);
+    expect(state.gameOver).toBeNull();
+    expect(state.log).toEqual([]);
   });
 });

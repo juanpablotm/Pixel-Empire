@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createInitialState, tick } from '../core';
+import { createInitialState, startProject, tick } from '../core';
 import {
   deserializeSave,
   loadFromLocalStorage,
@@ -20,6 +20,36 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     let state = createInitialState(SEED);
     state = tick(tick(state)); // avanza un par de semanas para no probar solo el estado inicial
     expect(deserializeSave(serializeSave(state))).toEqual(state);
+  });
+
+  it('round-trip de una partida a mitad de juego (proyecto + lanzamiento)', () => {
+    let state = startProject(createInitialState(SEED), {
+      name: 'Mazmorras del Alba',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+    });
+    for (let i = 0; i < 10; i++) state = tick(state); // lanza y vende unas semanas
+    expect(state.releasedGames).toHaveLength(1);
+    expect(deserializeSave(serializeSave(state))).toEqual(state);
+  });
+
+  it('migra un guardado v1 (Fase 0) al esquema actual', () => {
+    const v1 = JSON.stringify({
+      saveVersion: 1,
+      state: { seed: SEED, week: 12, era: 'E1', studio: { capital: 8_500 } },
+    });
+    const state = deserializeSave(v1);
+    expect(state.week).toBe(12);
+    expect(state.studio.capital).toBe(8_500);
+    expect(state.projects).toEqual([]);
+    expect(state.releasedGames).toEqual([]);
+    expect(state.projectCounter).toBe(0);
+    expect(state.negativeWeeks).toBe(0);
+    expect(state.gameOver).toBeNull();
+    expect(state.log).toEqual([]);
   });
 
   it('el JSON incluye saveVersion', () => {

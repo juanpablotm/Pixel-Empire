@@ -10,5 +10,11 @@ export function createInitialState(seed: number): GameState {
     studio: {
       capital: balance.economy.initialCapital,
     },
+    projects: [],
+    releasedGames: [],
+    projectCounter: 0,
+    negativeWeeks: 0,
+    gameOver: null,
+    log: [],
   };
 }

@@ -5,7 +5,7 @@ import type { GameState } from '../core';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -19,7 +19,21 @@ export interface SaveFile {
  * Al cambiar el esquema de GameState: subir SAVE_VERSION y añadir aquí la
  * migración desde la versión anterior.
  */
-const migrations: Record<number, (file: SaveFile) => SaveFile> = {};
+const migrations: Record<number, (file: SaveFile) => SaveFile> = {
+  // v1 (Fase 0) → v2 (Fase 1): aparecen proyectos, juegos lanzados, historial y game over.
+  1: (file) => ({
+    saveVersion: 2,
+    state: {
+      ...file.state,
+      projects: [],
+      releasedGames: [],
+      projectCounter: 0,
+      negativeWeeks: 0,
+      gameOver: null,
+      log: [],
+    },
+  }),
+};
 
 function isSaveFile(value: unknown): value is SaveFile {
   if (typeof value !== 'object' || value === null) return false;
