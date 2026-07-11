@@ -2,10 +2,12 @@ import { balance } from '../../data/balance';
 import { getDevPhase } from '../../data/devPhases';
 import { getFeature } from '../../data/features';
 import { getGenre } from '../../data/genres';
+import { defaultMonetization, getMonetizationModel } from '../../data/monetization';
 import { getPlatform } from '../../data/platforms';
 import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
+import type { MonetizationConfig } from '../model/moral';
 import type {
   Audience,
   DevPhaseNumber,
@@ -20,6 +22,7 @@ import {
   platformAvailable,
   registerReleaseSaturation,
 } from './market';
+import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeQuality } from './quality';
 import { buildReviewLines, reviewVerdict } from './review';
 import {
@@ -44,6 +47,34 @@ export interface ProjectConcept {
   platformId: string;
   audience: Audience;
   size: ProjectSize;
+  /**
+   * Precio elegido (docs/06 §2: palanca moral). Si se omite, el recomendado
+   * por tamaño. Debe caer dentro del rango de balance.economy.pricing.
+   */
+  price?: number;
+  /** Modelo de negocio (docs/09 §9). Si se omite, premium honesto. */
+  monetization?: MonetizationConfig;
+}
+
+/**
+ * Valida una configuración de monetización (docs/09 §9): las MTX exigen un
+ * modelo con tienda, el DLC day-one exige un modelo con DLC, y la regulación
+ * puede haber prohibido las loot boxes (docs/06 §5).
+ */
+function validateMonetization(state: GameState, config: MonetizationConfig): void {
+  const model = getMonetizationModel(config.model);
+  if (config.aggressiveness < 0 || config.aggressiveness > 1) {
+    throw new Error('La agresividad de monetización debe estar entre 0 y 1');
+  }
+  if ((config.hasLootBoxes || config.hasBattlePass || config.aggressiveness > 0) && !model.supportsMtx) {
+    throw new Error(`El modelo ${model.name} no admite microtransacciones`);
+  }
+  if (config.dayOneDLC && !model.supportsDayOneDlc) {
+    throw new Error(`El modelo ${model.name} no admite DLC day-one`);
+  }
+  if (config.hasLootBoxes && lootBoxesBanned(state)) {
+    throw new Error('Las loot boxes están prohibidas por ley (docs/06 §5)');
+  }
 }
 
 /** Reparto uniforme entre los aspectos de una fase (valor por defecto). */
@@ -94,7 +125,8 @@ export function estimateProject(size: ProjectSize, platformId: string): {
 
 /**
  * Acción: empezar un proyecto nuevo (docs/02 paso 1). En el garaje solo puede
- * haber un proyecto a la vez. El precio lo fija el tamaño (Fase 4: decisión moral).
+ * haber un proyecto a la vez. Precio y monetización son palancas morales
+ * (docs/06 §2) y quedan fijados en la concepción.
  */
 export function startProject(state: GameState, concept: ProjectConcept): GameState {
   if (state.gameOver) throw new Error('La partida ha terminado');
@@ -109,6 +141,19 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     throw new Error(`${platform.name} no está a la venta (docs/04 §7)`);
   }
 
+  const monetization = concept.monetization ?? defaultMonetization();
+  validateMonetization(state, monetization);
+
+  const recommended = balance.economy.priceBySize[concept.size];
+  const { minMultiplier, maxMultiplier } = balance.economy.pricing;
+  // En F2P el precio es el valor de referencia por jugador: siempre el recomendado.
+  const price = monetization.model === 'f2p' ? recommended : (concept.price ?? recommended);
+  if (price < recommended * minMultiplier || price > recommended * maxMultiplier) {
+    throw new Error(
+      `El precio debe estar entre ${recommended * minMultiplier} y ${recommended * maxMultiplier} 💰`,
+    );
+  }
+
   const project: Project = {
     id: `proyecto-${state.projectCounter + 1}`,
     name,
@@ -117,7 +162,9 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     platformId: concept.platformId,
     audience: concept.audience,
     size: concept.size,
-    price: balance.economy.priceBySize[concept.size],
+    price,
+    monetization,
+    marketingUsed: [],
     phase: 1,
     focus: [evenAllocation(1), evenAllocation(2), evenAllocation(3)],
     chosenFeatureIds: [],
@@ -205,13 +252,14 @@ function releaseProject(state: GameState, project: Project): GameState {
     },
   };
   // El mercado transforma Q en reseñas por segmento (docs/04 §5): moda,
-  // expectativas del hype y sesgo de cada público.
+  // expectativas del hype y sesgo de cada público (incluida la monetización).
   const reviews = computeSegmentReviews({
     quality: q,
     genreId: project.genreId,
     themeId: project.themeId,
     audience: project.audience,
     hype: project.hype,
+    monetization: project.monetization,
     era: state.era,
     market: state.market,
   });
@@ -225,6 +273,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     audience: project.audience,
     size: project.size,
     price: project.price,
+    monetization: project.monetization,
     quality: q,
     review,
     reviewsBySegment: reviews.bySegment,
@@ -238,6 +287,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     weeklySales: [],
     totalUnits: 0,
     totalRevenue: 0,
+    mtxRevenue: 0,
     salesActive: true,
   };
   let next: GameState = {
@@ -252,6 +302,9 @@ function releaseProject(state: GameState, project: Project): GameState {
     'lanzamiento',
     `«${released.name}» sale a la venta: reseña media ${review}/100.`,
   );
+  // El dilema moral pasa factura (docs/06): reputación por segmento, deuda
+  // por las palancas de codicia y contadores de legado.
+  next = applyReleaseMoralEffects(next, released);
   // La moral del equipo reacciona al resultado (docs/05 §4).
   return applyReleaseMorale(next, review);
 }

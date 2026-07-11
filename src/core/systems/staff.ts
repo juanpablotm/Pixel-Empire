@@ -6,6 +6,8 @@ import { appendLog } from '../engine/log';
 import { makeRng, type Rng } from '../engine/rng';
 import type { GameState } from '../model/gameState';
 import type { Employee, SalaryTier, Specialty, TeamFactorResult } from '../model/staff';
+import { nudgeMoralDrift } from './morale';
+import { employerPoolModifiers, withReputationDeltas } from './reputation';
 
 /**
  * Sistema de personal (docs/05): anatomía del empleado, teamFactor
@@ -209,11 +211,20 @@ export function computeTeamFactor(team: readonly Employee[], genreId: string): T
 // Pool de contratación (docs/05 §6)
 // ---------------------------------------------------------------------------
 
-function rollTier(rng: Rng): SalaryTier {
+/**
+ * Tramo del candidato, sesgado por la reputación de empleador (docs/05 §7):
+ * un estudio querido atrae más seniors/estrellas; uno quemado, más juniors.
+ * Mismo nº de llamadas al PRNG sea cual sea la reputación (determinismo).
+ */
+function rollTier(rng: Rng, tierFactor: number): SalaryTier {
   const w = balance.staff.candidates.tierWeights;
-  const roll = rng.next();
-  if (roll < w.junior) return 'junior';
-  if (roll < w.junior + w.senior) return 'senior';
+  const senior = w.senior * tierFactor;
+  const estrella = w.estrella * tierFactor;
+  const junior = Math.max(0, 1 - senior - estrella);
+  const total = junior + senior + estrella;
+  const roll = rng.next() * total;
+  if (roll < junior) return 'junior';
+  if (roll < junior + senior) return 'senior';
   return 'estrella';
 }
 
@@ -230,9 +241,16 @@ function rollTraits(rng: Rng): string[] {
   return picked;
 }
 
-function generateCandidate(rng: Rng, seed: number, week: number, index: number): Employee {
+function generateCandidate(
+  rng: Rng,
+  seed: number,
+  week: number,
+  index: number,
+  employerRep: number,
+): Employee {
   const c = balance.staff.candidates;
-  const tier = rollTier(rng);
+  const pool = employerPoolModifiers(employerRep);
+  const tier = rollTier(rng, pool.tierFactor);
   const specialty = rng.pick(c.specialties);
   const traits = rollTraits(rng);
 
@@ -261,7 +279,9 @@ function generateCandidate(rng: Rng, seed: number, week: number, index: number):
     morale: rng.int(c.moraleRange[0], c.moraleRange[1]),
     energy: rng.int(c.energyRange[0], c.energyRange[1]),
     loyalty: rng.int(c.loyaltyRange[0], c.loyaltyRange[1]),
-    salary: balance.staff.salaries[tier],
+    // Un estudio con mala fama de empleador paga prima; uno querido, descuento
+    // (docs/05 §7: "atraen peor talento y más caro").
+    salary: Math.round(balance.staff.salaries[tier] * pool.salaryPremium),
     level: rng.int(c.levelByTier[tier][0], c.levelByTier[tier][1]),
     xp: 0,
     founder: false,
@@ -272,14 +292,15 @@ function generateCandidate(rng: Rng, seed: number, week: number, index: number):
 
 /**
  * Genera el pool de candidatos de una semana: determinista por (semilla,
- * semana), con su propio stream del PRNG. La calidad/coste dependerá además
- * de era y reputación de empleador en Fases 3–4 (docs/05 §7).
+ * semana), con su propio stream del PRNG. La reputación de empleador sesga
+ * calidad y coste (docs/05 §7); con rep 50 el pool es el neutro de siempre.
+ * La dependencia de la era llega en Fase 6.
  */
-export function generateCandidates(seed: number, week: number): Employee[] {
+export function generateCandidates(seed: number, week: number, employerRep = 50): Employee[] {
   const rng = makeRng(seed, CANDIDATE_STREAM + week);
   const pool: Employee[] = [];
   for (let i = 0; i < balance.staff.candidates.poolSize; i++) {
-    pool.push(generateCandidate(rng, seed, week, i));
+    pool.push(generateCandidate(rng, seed, week, i, employerRep));
   }
   return pool;
 }
@@ -344,10 +365,15 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
     }));
   const project = state.projects[0];
 
+  // Despedir golpea la reputación como empleador (docs/05 §7 y docs/06 §2).
+  let studio: GameState['studio'] = { ...state.studio, capital: state.studio.capital - severance };
+  studio = withReputationDeltas(studio, { empleador: -balance.reputation.employer.firedHit });
+
   const next: GameState = {
     ...state,
-    studio: { ...state.studio, capital: state.studio.capital - severance },
+    studio,
     staff: remaining,
+    stats: { ...state.stats, firedCount: state.stats.firedCount + 1 },
     projects: project
       ? [{ ...project, assignedStaff: project.assignedStaff.filter((id) => id !== employeeId) }]
       : state.projects,
@@ -369,9 +395,14 @@ export function trainEmployee(
   const employee = requireEmployee(state, employeeId);
   const t = balance.staff.training;
 
+  // Formar es cuidar al equipo: inclina la balanza hacia la integridad (docs/06 §2).
+  const studio = nudgeMoralDrift(
+    { ...state.studio, capital: state.studio.capital - t.cost },
+    balance.moral.drift.careAction,
+  );
   const next: GameState = {
     ...state,
-    studio: { ...state.studio, capital: state.studio.capital - t.cost },
+    studio,
     staff: state.staff.map((e) =>
       e.id === employeeId
         ? {
@@ -406,9 +437,14 @@ export function motivateEmployee(
   }
 
   const cost = kind === 'bonus' ? Math.max(m.bonusMinCost, m.bonusWeeks * employee.salary) : 0;
+  // Motivar es cuidar al equipo: inclina la balanza hacia la integridad (docs/06 §2).
+  const studio = nudgeMoralDrift(
+    { ...state.studio, capital: state.studio.capital - cost },
+    balance.moral.drift.careAction,
+  );
   const next: GameState = {
     ...state,
-    studio: { ...state.studio, capital: state.studio.capital - cost },
+    studio,
     staff: state.staff.map((e) =>
       e.id === employeeId
         ? kind === 'bonus'
@@ -599,6 +635,7 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
   const quitters = worked.filter((e) => rng.chance(quitChance(e)));
   let staff = worked;
   let projects = state.projects;
+  let studio = state.studio;
   if (quitters.length > 0) {
     const quitIds = new Set(quitters.map((e) => e.id));
     staff = worked
@@ -612,12 +649,16 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
         },
       ];
     }
+    // Cada renuncia sonada araña la reputación de empleador (docs/05 §7).
+    studio = withReputationDeltas(studio, {
+      empleador: -balance.reputation.employer.quitHit * quitters.length,
+    });
     for (const quitter of quitters) {
       events.push(`${quitter.name} renuncia, harto del trato recibido.`);
     }
   }
 
-  let next: GameState = { ...state, staff, projects };
+  let next: GameState = { ...state, staff, projects, studio };
   for (const text of events) {
     next = appendLog(next, 'staff', text);
   }
@@ -653,12 +694,14 @@ function levelUpSkills(
 export function advanceScale(state: GameState): GameState {
   const { scale, candidates } = balance.staff;
 
+  const employerRep = state.studio.reputation.empleador;
+
   if (state.studio.scaleStage === 1) {
     if (state.studio.capital < scale.stage2CapitalThreshold) return state;
     const next: GameState = {
       ...state,
       studio: { ...state.studio, scaleStage: 2 },
-      candidates: generateCandidates(state.seed, state.week),
+      candidates: generateCandidates(state.seed, state.week, employerRep),
     };
     return appendLog(
       next,
@@ -670,7 +713,7 @@ export function advanceScale(state: GameState): GameState {
   if (state.week % candidates.refreshWeeks === 0) {
     return {
       ...state,
-      candidates: generateCandidates(state.seed, state.week),
+      candidates: generateCandidates(state.seed, state.week, employerRep),
     };
   }
   return state;

@@ -2,7 +2,7 @@ import { balance } from '../../data/balance';
 import { genres, getGenre } from '../../data/genres';
 import { getPlatform, platforms } from '../../data/platforms';
 import { getTheme, themes } from '../../data/themes';
-import { reviewSegments } from '../../data/segments';
+import { monetizationReviewBias, reviewSegments } from '../../data/segments';
 import { appendLog } from '../engine/log';
 import type { Rng } from '../engine/rng';
 import type { EraId } from '../model/era';
@@ -19,6 +19,7 @@ import type {
   TrendStage,
   TrendState,
 } from '../model/market';
+import type { MonetizationConfig } from '../model/moral';
 import type { Audience } from '../model/project';
 import type { ReleasedGame } from '../model/release';
 
@@ -184,6 +185,8 @@ export interface SegmentReviewsInput {
   audience: Audience;
   /** Hype acumulado al lanzar, 0..1. */
   hype: number;
+  /** Modelo de negocio: cada público lo juzga distinto (docs/04 §5 y docs/06). */
+  monetization: MonetizationConfig;
   era: EraId;
   market: MarketState;
 }
@@ -215,7 +218,11 @@ export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReview
   let totalWeight = 0;
   for (const segment of reviewSegments) {
     const bias =
-      (segment.genreBias[input.genreId] ?? 0) + (segment.audienceBias[input.audience] ?? 0);
+      (segment.genreBias[input.genreId] ?? 0) +
+      (segment.audienceBias[input.audience] ?? 0) +
+      // sesgoSegmento(segmento, monetización): las MTX enfurecen al hardcore,
+      // los casual apenas lo notan (docs/04 §5 y docs/06 §1).
+      monetizationReviewBias(segment, input.monetization);
     const score = Math.round(clamp(base + modaBonus - hypePenalty + bias, 0, 100));
     bySegment[segment.id] = score;
     weighted += segment.weight * score;
@@ -234,18 +241,40 @@ export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReview
 // ---------------------------------------------------------------------------
 
 /**
+ * modificadorPrecio(precio, público) (docs/04 §6 y docs/06 §2): precio caro →
+ * menos volumen, sobre todo en públicos sensibles (casual/infantil); precio
+ * generoso → más volumen. Un F2P no tiene barrera de entrada: bono plano.
+ */
+export function priceModifier(game: Pick<ReleasedGame, 'price' | 'size' | 'audience' | 'monetization'>): number {
+  if (game.monetization.model === 'f2p') return balance.monetization.f2pDemandBoost;
+  const recommended = balance.economy.priceBySize[game.size];
+  const elasticity = balance.economy.pricing.elasticityByAudience[game.audience];
+  return (recommended / game.price) ** elasticity;
+}
+
+/** Modificadores de ventas que dependen del estudio, no del mercado (docs/06). */
+export interface SalesContext {
+  /** Colchón de comunidad (docs/06 §3); 1 = neutro. */
+  communityFactor?: number;
+  /** Penalización por escándalos activos (docs/06 §5); 1 = sin escándalo. */
+  scandalFactor?: number;
+}
+
+/**
  * Unidades esperadas (sin ruido) de un juego en su semana t desde el
  * lanzamiento, con el mercado ACTUAL: si la moda muere, la plataforma declina
  * o el género se satura después de lanzar, la curva viva lo refleja.
  *
  *   demanda = tamañoMercado(plataforma, público) × factorTamaño × pop(género) × pop(tema)
  *   curva(t) = pico(hype)·spikeDecay^t + cola·tailDecay(reseña)^t
- *   unidades = demanda × factorReseña × modificadorSaturación × curva(t)
+ *   unidades = demanda × factorReseña × modificadorSaturación × modificadorPrecio
+ *            × colchónComunidad × factorEscándalo × curva(t)
  */
 export function expectedWeeklyUnits(
   game: ReleasedGame,
   weeksSinceRelease: number,
   market: MarketState,
+  context: SalesContext = {},
 ): number {
   const s = balance.sales;
   const platform = getPlatform(game.platformId);
@@ -267,7 +296,15 @@ export function expectedWeeklyUnits(
     s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * (game.review / 100);
   const tail = s.launch.tailAmp * tailDecay ** weeksSinceRelease;
 
-  return demand * reviewFactor * satMod * (spike + tail);
+  return (
+    demand *
+    reviewFactor *
+    satMod *
+    priceModifier(game) *
+    (context.communityFactor ?? 1) *
+    (context.scandalFactor ?? 1) *
+    (spike + tail)
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -47,6 +47,13 @@ function makeGame(overrides: Partial<ReleasedGame> = {}): ReleasedGame {
     audience: 'hardcore',
     size: 'pequeno',
     price: 20,
+    monetization: {
+      model: 'premium',
+      aggressiveness: 0,
+      hasLootBoxes: false,
+      hasBattlePass: false,
+      dayOneDLC: false,
+    },
     quality: 80,
     review: 80,
     reviewsBySegment: { critica: 80, prensa: 80, hardcore: 80, casual: 80 },
@@ -73,6 +80,7 @@ function makeGame(overrides: Partial<ReleasedGame> = {}): ReleasedGame {
     weeklySales: [],
     totalUnits: 0,
     totalRevenue: 0,
+    mtxRevenue: 0,
     salesActive: true,
     ...overrides,
   };
@@ -224,6 +232,13 @@ describe('reseñas por segmento (docs/04 §5, CA)', () => {
     themeId: 'fantasia',
     audience: 'hardcore' as const,
     hype: 0,
+    monetization: {
+      model: 'premium' as const,
+      aggressiveness: 0,
+      hasLootBoxes: false,
+      hasBattlePass: false,
+      dayOneDLC: false,
+    },
     era: 'E1' as const,
     market,
   };

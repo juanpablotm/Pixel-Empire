@@ -1,5 +1,6 @@
 import type { EraId } from '../core/model/era';
 import type { ScaleStage } from '../core/model/gameState';
+import type { MonetizationModel } from '../core/model/moral';
 import type { ProjectSize } from '../core/model/project';
 import type { SalaryTier, Specialty } from '../core/model/staff';
 
@@ -31,13 +32,219 @@ export const balance = {
     upkeepExtraByStage: { 1: 0, 2: 150, 3: 600, 4: 2_000 } satisfies Record<ScaleStage, number>,
     /** Coste de desarrollo: ~500 💰 por persona·semana [DECIDIDO, docs/12 §6]. */
     devCostPerPersonWeek: 500,
-    /** Precio de venta por tamaño, dentro del rango 20–60 💰 [DECIDIDO, docs/12 §6]. */
+    /** Precio recomendado por tamaño, dentro del rango 20–60 💰 [DECIDIDO, docs/12 §6]. */
     priceBySize: { pequeno: 20, mediano: 30, grande: 45, aaa: 60 } satisfies Record<
       ProjectSize,
       number
     >,
     /** Semanas consecutivas en negativo antes de la bancarrota (docs/06 §1: "sostenido"). */
     bankruptcyGraceWeeks: 8,
+
+    /** Precio como palanca moral (docs/06 §2): rango y umbrales sobre el recomendado. */
+    pricing: {
+      /** El jugador elige el precio dentro de [min, max] × recomendado. */
+      minMultiplier: 0.5,
+      maxMultiplier: 1.5,
+      /** Desde aquí (× recomendado) el precio cuenta como "abusivo". */
+      abusiveMultiplier: 1.25,
+      /** Hasta aquí (× recomendado) cuenta como "generoso". */
+      generousMultiplier: 0.8,
+      /**
+       * modificadorPrecio(precio, público) = (recomendado/precio)^elasticidad
+       * (docs/04 §6): los públicos sensibles al precio compran menos si es caro.
+       */
+      elasticityByAudience: { hardcore: 0.6, amplio: 1, casual: 1.4, infantil: 1.6 },
+    },
+
+    /** Préstamos [DECIDIDO, docs/12 §6]: línea de crédito flexible. */
+    loans: {
+      /** Interés semanal sobre el principal vivo (~1 %/semana). */
+      weeklyInterest: 0.01,
+      /** Principal máximo: ~6 meses de costes fijos actuales. */
+      capWeeksOfFixedCosts: 26,
+      /** La reputación agregada escala la línea de crédito: 0 → min, 100 → max. */
+      creditFactorMin: 0.5,
+      creditFactorMax: 1.5,
+      /** Línea mínima aunque los costes fijos sean ínfimos (garaje). */
+      floorAmount: 5_000,
+    },
+
+    /** Campañas de marketing por nivel: 5k/20k/80k 💰 [DECIDIDO, docs/12 §6]. */
+    marketing: {
+      levels: [
+        { cost: 5_000, hypeBoost: 0.12 },
+        { cost: 20_000, hypeBoost: 0.25 },
+        { cost: 80_000, hypeBoost: 0.45 },
+      ],
+    },
+
+    /** Semanas retenidas en el libro de caja (Finanzas, docs/10 §10.9). */
+    cashflowMaxWeeks: 52,
+    /** Semanas de flujo medio usadas para estimar el runway. */
+    runwayLookbackWeeks: 4,
+  },
+
+  /** factorMonetización v1 [DECIDIDO, docs/12 §6] y sus consecuencias. */
+  monetization: {
+    /** Multiplicador de los ingresos por venta: unidades × precio × factor. */
+    salesFactor: {
+      premium: 1,
+      'premium+dlc': 1.15,
+      'premium+mtx': 1,
+      f2p: 0.3,
+    } satisfies Record<MonetizationModel, number>,
+    /**
+     * Ingresos MTX semanales = unidades × precio × coef × agresividad
+     * (premium+mtx ≈ +0.6·agg; f2p ≈ 0.8·agg sobre su valor de referencia).
+     */
+    mtxCoef: {
+      premium: 0,
+      'premium+dlc': 0,
+      'premium+mtx': 0.6,
+      f2p: 0.8,
+    } satisfies Record<MonetizationModel, number>,
+    /** Un juego gratis llega a más gente: multiplicador de demanda del F2P. */
+    f2pDemandBoost: 1.3,
+  },
+
+  /**
+   * Reputación segmentada (docs/06 §1). Escala 0..100 por segmento; los pesos
+   * del agregado viven en data/segments.ts (junto al resto de datos de segmento).
+   */
+  reputation: {
+    /** Reputación inicial de un estudio desconocido (neutra). */
+    initial: 50,
+    /** Asimetría [DECIDIDO, docs/06 §3]: perder reputación es más rápido que ganarla. */
+    lossMultiplier: 1.5,
+    /** Deltas por reseña al lanzar: (reseña_seg − neutral) / divisor, con topes. */
+    review: { neutral: 60, divisor: 8, maxGain: 3, maxLoss: 4 },
+    /** La comunidad reacciona a la reseña media, algo más fría. */
+    communityReview: { divisor: 10, maxGain: 2.5, maxLoss: 3 },
+    /** Colchón de comunidad en ventas (docs/06 §3): 1 + coef·(rep−50)/50. */
+    communitySalesCoef: 0.25,
+    /**
+     * Golpes/premios de reputación por palanca al lanzar (docs/06 §2): cada
+     * palanca tiene víctimas concretas. Puntos ± por segmento (la asimetría
+     * de pérdida se aplica encima).
+     */
+    levers: {
+      lootboxes: { hardcore: -6, comunidad: -2.5, prensa: -2 },
+      /** Loot boxes en juego infantil: los golpes se multiplican (docs/06 §5). */
+      lootboxChildMultiplier: 2,
+      battlePass: { hardcore: -2, comunidad: -1 },
+      dayOneDLC: { hardcore: -4, comunidad: -3 },
+      /** × agresividad, en modelos con MTX. */
+      mtxPerAggression: { hardcore: -6, comunidad: -2.5 },
+      abusivePrice: { casual: -4, comunidad: -3, hardcore: -2 },
+      generousPrice: { casual: 3, comunidad: 3, hardcore: 1 },
+      /** Secuela-refrito: repetir combo reciente (docs/06 §2). */
+      rehash: { critica: -5, hardcore: -3 },
+      /** Lanzamiento honesto: premium sin trampas y precio no abusivo. */
+      honestRelease: { comunidad: 2, hardcore: 2 },
+    },
+    /** Reputación de empleador → pool de contratación (docs/05 §7). */
+    employer: {
+      /** Multiplicador de la prob. de candidatos senior/estrella: 0 → min, 100 → max. */
+      tierFactorMin: 0.6,
+      tierFactorMax: 1.4,
+      /** Prima salarial exigida: rep 0 → +25 %, rep 100 → −10 %. */
+      salaryPremiumMin: 0.9,
+      salaryPremiumMax: 1.25,
+      /** Golpes directos a la reputación de empleador. */
+      firedHit: 3,
+      quitHit: 1.5,
+      /** Drenaje semanal por empleado (no fundador) bajo crunch (docs/05 §6). */
+      crunchPerEmployeeWeek: 0.15,
+    },
+  },
+
+  /** El dilema moral (docs/06 §5): deuda oculta, deriva visible y escándalos. */
+  moral: {
+    /** Ganancias de deuda de reputación por palanca de codicia. */
+    debt: {
+      lootboxRelease: 4,
+      /** Extra si el juego con loot boxes apunta a público infantil. */
+      lootboxChildExtra: 4,
+      battlePassRelease: 1,
+      dayOneDlcRelease: 2.5,
+      /** × agresividad, en modelos con MTX. */
+      mtxAggressionRelease: 4,
+      abusivePriceRelease: 2,
+      rehashRelease: 2,
+      /** Por empleado (no fundador) y semana de crunch. */
+      crunchPerEmployeeWeek: 0.15,
+      /** El público olvida despacio: decaimiento multiplicativo semanal. */
+      decayPerWeek: 0.98,
+      /** Restos menores se limpian para no acumular ruido. */
+      cleanupThreshold: 0.05,
+    },
+    /** Un "refrito": repetir combo tema×género a este plazo del anterior (docs/06 §2). */
+    rehashWindowWeeks: 52,
+    /** Deriva moral visible (Balanza "El Precio", docs/10 §7.4), rango −1..1. */
+    drift: {
+      lootboxRelease: -0.25,
+      dayOneDlcRelease: -0.15,
+      mtxAggressionRelease: -0.2,
+      abusivePriceRelease: -0.15,
+      rehashRelease: -0.1,
+      crunchPerWeek: -0.02,
+      /** Lanzamiento honesto (premium sin trampas, precio no abusivo). */
+      honestRelease: 0.15,
+      generousPriceRelease: 0.1,
+      /** Cuidar al equipo (formar/motivar) también inclina la balanza. */
+      careAction: 0.03,
+      decayPerWeek: 0.95,
+      /** Hasta esta agresividad, un modelo con MTX aún cuenta como "honesto". */
+      honestAggressivenessMax: 0.2,
+    },
+    /** Escándalos (docs/06 §5): probabilidad y magnitud escalan con la deuda. */
+    scandal: {
+      /** Deuda "gratis": por debajo no hay riesgo. */
+      freeDebt: 5,
+      /** Probabilidad semanal por punto de deuda por encima del margen. */
+      chancePerDebtPoint: 0.025,
+      maxChancePerWeek: 0.35,
+      /** Magnitud = clamp(deuda / debtForMaxMagnitude, min, 1). */
+      debtForMaxMagnitude: 15,
+      minMagnitude: 0.4,
+      /** El escándalo "cobra" esta fracción de la deuda de su fuente. */
+      dischargeFraction: 0.6,
+      /**
+       * Semanas mínimas entre escándalos: episódicos, no crónicos (con la
+       * duración típica de 6–8 semanas, deja aire entre golpe y golpe).
+       */
+      cooldownWeeks: 16,
+      /**
+       * Colchón/amplificador por reputación previa (docs/06 §5): los golpes se
+       * multiplican por 1 − coef·(repAgregada−50)/50, acotado a [min, max].
+       */
+      cushionCoef: 0.5,
+      cushionMin: 0.6,
+      cushionMax: 1.4,
+    },
+  },
+
+  /** Puntuación de Legado (docs/06 §6): normalizaciones de cada eje 0..100. */
+  legacy: {
+    /** Riqueza: 100 puntos al alcanzar este capital máximo histórico. */
+    wealthCapitalScale: 500_000,
+    /** Prestigio: mezcla de reputación agregada y reseña media histórica. */
+    prestigeRepWeight: 0.6,
+    prestigeReviewWeight: 0.4,
+    /** Impacto: puntos por apostar temprano por una moda + récord de ventas. */
+    impactPerEarlyRelease: 20,
+    impactBestSellerScale: 60_000,
+    impactBestSellerWeight: 40,
+    /** Obras maestras: reseña media ≥ este umbral cuenta como obra (docs/06 §6). */
+    masterpieceReview: 90,
+    masterpiecePoints: 25,
+    /** Ética: parte de la reputación de empleador/comunidad menos los pecados. */
+    ethicsEmployerWeight: 0.5,
+    ethicsCommunityWeight: 0.5,
+    ethicsScandalPenalty: 8,
+    ethicsCrunchWeekPenalty: 0.5,
+    ethicsCrunchPenaltyCap: 30,
+    ethicsFiredPenalty: 1,
   },
 
   development: {

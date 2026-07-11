@@ -4,10 +4,14 @@ import {
   createInitialState,
   fireEmployee,
   hireCandidate,
+  launchMarketingCampaign,
   motivateEmployee,
+  repayLoan,
+  retireStudio,
   setCrunch,
   setFocus,
   startProject,
+  takeLoan,
   tick,
   toggleAssignment,
   toggleFeature,
@@ -29,8 +33,16 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
  * añade solo estado de presentación (pantalla actual) y navegación.
  */
 
-/** Pantallas de las Fases 1–3 (docs/10 §10.1–10.4, §10.6 y §10.7). */
-export type Screen = 'estudio' | 'concepcion' | 'desarrollo' | 'resena' | 'equipo' | 'mercado';
+/** Pantallas de las Fases 1–4 (docs/10 §10.1–10.4, §10.6, §10.7, §10.9 y §10.10). */
+export type Screen =
+  | 'estudio'
+  | 'concepcion'
+  | 'desarrollo'
+  | 'resena'
+  | 'equipo'
+  | 'mercado'
+  | 'finanzas'
+  | 'legado';
 
 export interface GameStore {
   game: GameState;
@@ -59,6 +71,12 @@ export interface GameStore {
   motivate: (employeeId: string, kind: MotivationKind) => void;
   toggleAssignment: (employeeId: string) => void;
   setCrunch: (active: boolean) => void;
+  /** Acciones de economía (docs/06 §4; delegan en core/systems/economy.ts). */
+  takeLoan: (amount: number) => void;
+  repayLoan: (amount: number) => void;
+  launchMarketing: (level: number) => void;
+  /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
+  retire: () => void;
   /** Empieza una partida nueva (pausada). */
   newGame: (seed?: number) => void;
   /** Guarda la partida en localStorage. */
@@ -156,6 +174,23 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   setCrunch: (active) => {
     set((s) => ({ game: setCrunch(s.game, active) }));
+  },
+
+  takeLoan: (amount) => {
+    set((s) => ({ game: takeLoan(s.game, amount) }));
+  },
+
+  repayLoan: (amount) => {
+    set((s) => ({ game: repayLoan(s.game, amount) }));
+  },
+
+  launchMarketing: (level) => {
+    set((s) => ({ game: launchMarketingCampaign(s.game, level) }));
+  },
+
+  retire: () => {
+    gameLoop.setSpeed(0);
+    set((s) => ({ game: retireStudio(s.game), speed: 0, screen: 'legado' }));
   },
 
   newGame: (seed = defaultSeed()) => {

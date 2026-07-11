@@ -67,7 +67,7 @@ function withStage2(extraStaff: Employee[] = [], capital = 50_000): GameState {
   const base = createInitialState(SEED);
   return {
     ...base,
-    studio: { capital, scaleStage: 2 },
+    studio: { ...base.studio, capital, scaleStage: 2 },
     staff: [...base.staff, ...extraStaff],
   };
 }
@@ -82,6 +82,14 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     audience: 'hardcore',
     size: 'pequeno',
     price: 20,
+    monetization: {
+      model: 'premium',
+      aggressiveness: 0,
+      hasLootBoxes: false,
+      hasBattlePass: false,
+      dayOneDLC: false,
+    },
+    marketingUsed: [],
     phase: 3,
     focus: [{}, {}, {}],
     chosenFeatureIds: [],

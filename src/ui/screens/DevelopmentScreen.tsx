@@ -6,10 +6,12 @@ import {
   projectTotalWeeks,
   realDesignShare,
 } from '../../core';
+import { balance } from '../../data/balance';
 import { devPhases, getDevPhase } from '../../data/devPhases';
 import { features } from '../../data/features';
 import { getGenre } from '../../data/genres';
 import { useGameStore } from '../../state/store';
+import { formatMoney } from '../format';
 import { Avatar } from '../components/Avatar';
 import { HypeGauge } from '../components/HypeGauge';
 
@@ -42,9 +44,11 @@ function factorColor(value: number): string {
 export function DevelopmentScreen() {
   const project = useGameStore((s) => s.game.projects[0]);
   const staff = useGameStore((s) => s.game.staff);
+  const capital = useGameStore((s) => s.game.studio.capital);
   const setFocus = useGameStore((s) => s.setFocus);
   const toggleFeature = useGameStore((s) => s.toggleFeature);
   const setCrunch = useGameStore((s) => s.setCrunch);
+  const launchMarketing = useGameStore((s) => s.launchMarketing);
   const goTo = useGameStore((s) => s.goTo);
 
   if (!project) {
@@ -127,6 +131,42 @@ export function DevelopmentScreen() {
         {/* Manómetro de Hype (docs/04 §4): crece desde Producción, más con la moda. */}
         <div className="mt-4 border-t border-slate-800 pt-4">
           <HypeGauge hype={project.hype} />
+        </div>
+        {/* Marketing como coste (docs/06 §4): campañas que compran hype. */}
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-800 pt-4">
+          <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Marketing
+          </span>
+          {balance.economy.marketing.levels.map((campaign, level) => {
+            const used = project.marketingUsed.includes(level);
+            const tooEarly = project.phase < balance.market.hype.startPhase;
+            const noCash = capital < campaign.cost;
+            return (
+              <button
+                key={level}
+                type="button"
+                disabled={used || tooEarly || noCash}
+                title={
+                  tooEarly
+                    ? 'Disponible desde la fase de Producción (el anuncio)'
+                    : used
+                      ? 'Campaña ya lanzada'
+                      : `+hype a cambio de ${formatMoney(campaign.cost)}`
+                }
+                onClick={() => launchMarketing(level)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  used
+                    ? 'bg-slate-800 text-slate-500'
+                    : 'bg-amber-600 text-white hover:bg-amber-500'
+                } ${used || tooEarly || noCash ? 'cursor-not-allowed opacity-60' : ''}`}
+              >
+                {used ? '✔ ' : '📣 '}Nivel {level + 1} · {formatMoney(campaign.cost)}
+              </button>
+            );
+          })}
+          <p className="text-xs text-slate-500">
+            El hype vende de salida… y endurece las reseñas si el juego no cumple.
+          </p>
         </div>
       </section>
 

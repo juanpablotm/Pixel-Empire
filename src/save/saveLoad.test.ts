@@ -170,6 +170,66 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(migrated.saturationAtRelease).toBe(0);
   });
 
+  it('migra un guardado v4 (Fase 3) al esquema actual: reputación, deuda y economía', () => {
+    const base = createInitialState(SEED);
+    // Un estado "v4": sin los campos de la Fase 4.
+    const v4State = {
+      ...base,
+      week: 25,
+      studio: { capital: 9_000, scaleStage: 1 },
+      releasedGames: [
+        {
+          id: 'proyecto-1',
+          name: 'Juego v4',
+          themeId: 'fantasia',
+          genreId: 'rpg',
+          platformId: 'pcCasero',
+          audience: 'hardcore',
+          size: 'pequeno',
+          price: 20,
+          quality: 70,
+          review: 70,
+          reviewsBySegment: { critica: 70, prensa: 70, hardcore: 70, casual: 70 },
+          reviewMarket: { base: 70, modaBonus: 0, hypePenalty: 0 },
+          hypeAtRelease: 0,
+          saturationAtRelease: 0,
+          verdict: 'Un buen juego.',
+          breakdown: {},
+          lines: [],
+          releaseWeek: 10,
+          weeklySales: [120, 80],
+          totalUnits: 200,
+          totalRevenue: 4_000,
+          salesActive: true,
+        },
+      ],
+    } as unknown as Record<string, unknown>;
+    delete v4State['loanPrincipal'];
+    delete v4State['scandals'];
+    delete v4State['regulation'];
+    delete v4State['stats'];
+    delete v4State['cashflow'];
+
+    const state = deserializeSave(JSON.stringify({ saveVersion: 4, state: v4State }));
+    // La reputación arranca neutra en los 6 segmentos (docs/06 §1).
+    expect(Object.keys(state.studio.reputation)).toHaveLength(6);
+    expect(state.studio.reputation.hardcore).toBe(50);
+    expect(state.studio.reputationDebt).toBe(0);
+    expect(state.studio.moralDrift).toBe(0);
+    expect(state.loanPrincipal).toBe(0);
+    expect(state.scandals).toEqual([]);
+    expect(state.regulation).toEqual({ pressure: {}, enacted: [] });
+    // Los stats heredan lo reconstruible del historial.
+    expect(state.stats.totalRevenue).toBe(4_000);
+    expect(state.stats.peakCapital).toBeGreaterThanOrEqual(9_000);
+    expect(state.cashflow).toEqual([]);
+    // Los juegos viejos heredan el modelo honesto.
+    expect(state.releasedGames[0].monetization.model).toBe('premium');
+    expect(state.releasedGames[0].mtxRevenue).toBe(0);
+    // Un tick sobre el estado migrado no revienta.
+    expect(() => tick(state)).not.toThrow();
+  });
+
   it('el JSON incluye saveVersion', () => {
     const parsed = JSON.parse(serializeSave(createInitialState(SEED))) as {
       saveVersion: number;

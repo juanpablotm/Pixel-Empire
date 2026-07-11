@@ -1,11 +1,18 @@
-import { createFounder, createMarketState, type GameState } from '../core';
+import {
+  createFounder,
+  createMarketState,
+  initialLegacyStats,
+  initialReputation,
+  type GameState,
+} from '../core';
+import { defaultMonetization } from '../data/monetization';
 
 /**
  * Serialización y carga de partidas (docs/08 §7): JSON plano + localStorage,
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -75,6 +82,45 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       })),
     },
   }),
+  // v4 (Fase 3) → v5 (Fase 4): reputación segmentada, deuda moral, préstamos,
+  // escándalos/regulación, stats de legado, libro de caja y monetización
+  // (los juegos y proyectos antiguos heredan el modelo premium honesto).
+  4: (file) => {
+    const stats = initialLegacyStats();
+    const totalRevenue = file.state.releasedGames.reduce((sum, g) => sum + g.totalRevenue, 0);
+    return {
+      saveVersion: 5,
+      state: {
+        ...file.state,
+        studio: {
+          ...file.state.studio,
+          reputation: initialReputation(),
+          reputationDebt: 0,
+          debtBySource: {},
+          moralDrift: 0,
+        },
+        loanPrincipal: 0,
+        scandals: [],
+        regulation: { pressure: {}, enacted: [] },
+        stats: {
+          ...stats,
+          totalRevenue,
+          peakCapital: Math.max(stats.peakCapital, file.state.studio.capital),
+        },
+        cashflow: [],
+        projects: file.state.projects.map((p) => ({
+          ...p,
+          monetization: defaultMonetization(),
+          marketingUsed: [],
+        })),
+        releasedGames: file.state.releasedGames.map((g) => ({
+          ...g,
+          monetization: defaultMonetization(),
+          mtxRevenue: 0,
+        })),
+      },
+    };
+  },
 };
 
 function isSaveFile(value: unknown): value is SaveFile {

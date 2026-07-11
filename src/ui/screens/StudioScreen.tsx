@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { projectProgress, projectTotalWeeks } from '../../core';
 import { useGameStore } from '../../state/store';
 import { getDevPhase } from '../../data/devPhases';
 import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { formatMoney } from '../format';
+import { ReputationRadar } from '../components/ReputationRadar';
 import { SavePanel } from '../components/SavePanel';
 
 /**
@@ -114,6 +116,13 @@ export function StudioScreen() {
             >
               📈 Ver tendencias
             </button>
+            <button
+              type="button"
+              onClick={() => goTo('finanzas')}
+              className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            >
+              💰 Finanzas
+            </button>
           </div>
         </section>
 
@@ -157,13 +166,21 @@ export function StudioScreen() {
             Partida
           </h2>
           <SavePanel />
+          <RetireButton />
         </section>
       </div>
 
-      <aside className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Historial
-        </h2>
+      <aside className="flex flex-col gap-6">
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Reputación
+          </h2>
+          <ReputationCard />
+        </section>
+        <section className="flex-1 rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Historial
+          </h2>
         {log.length === 0 ? (
           <p className="text-slate-500">Sin novedades por ahora.</p>
         ) : (
@@ -171,12 +188,65 @@ export function StudioScreen() {
             {[...log].reverse().map((entry, i) => (
               <li key={`${entry.week}-${i}`} className="flex gap-2">
                 <span className="shrink-0 tabular-nums text-slate-500">S{entry.week}</span>
-                <span className="text-slate-300">{entry.text}</span>
+                <span className={entry.type === 'moral' ? 'text-amber-200' : 'text-slate-300'}>
+                  {entry.text}
+                </span>
               </li>
             ))}
           </ul>
         )}
+        </section>
       </aside>
     </main>
+  );
+}
+
+/** Constelación de reputación con leyenda (docs/10 I3, versión tarjeta). */
+function ReputationCard() {
+  const reputation = useGameStore((s) => s.game.studio.reputation);
+  return (
+    <div className="flex justify-center">
+      <ReputationRadar reputation={reputation} size={150} labels />
+    </div>
+  );
+}
+
+/** Cerrar el estudio para contemplar el Legado (docs/06 §6), con confirmación. */
+function RetireButton() {
+  const retire = useGameStore((s) => s.retire);
+  const gameOver = useGameStore((s) => s.game.gameOver);
+  const [confirming, setConfirming] = useState(false);
+  if (gameOver) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-800 pt-3">
+      {confirming ? (
+        <>
+          <span className="text-sm text-slate-400">¿Cerrar el estudio para siempre?</span>
+          <button
+            type="button"
+            onClick={retire}
+            className="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600"
+          >
+            Sí, ver el Legado
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            className="rounded-md bg-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-600"
+          >
+            Cancelar
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-700"
+        >
+          🏛️ Retirarse y ver el Legado
+        </button>
+      )}
+    </div>
   );
 }

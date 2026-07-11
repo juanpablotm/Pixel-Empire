@@ -162,7 +162,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     useGameStore.setState({
       game: {
         ...base,
-        studio: { capital: 30_000, scaleStage: 2 },
+        studio: { ...base.studio, capital: 30_000, scaleStage: 2 },
         candidates: generateCandidates(SEED, 1),
       },
     });
@@ -199,8 +199,9 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
   });
 
   it('la bancarrota muestra el fin de partida y permite empezar de nuevo', () => {
+    const base = createInitialState(SEED);
     useGameStore.setState({
-      game: { ...createInitialState(SEED), studio: { capital: 0, scaleStage: 1 } },
+      game: { ...base, studio: { ...base.studio, capital: 0 } },
     });
     render(<App />);
     for (let i = 0; i < balance.economy.bankruptcyGraceWeeks; i++) {

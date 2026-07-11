@@ -1,7 +1,9 @@
+import type { MonetizationConfig } from './moral';
+
 /**
- * Tipos del proyecto en desarrollo (docs/09 §1). Fase 1: los campos que usa el
- * bucle núcleo del garaje. Fases posteriores añadirán subGenreId, assignedStaff,
- * monetization y budget según el esquema de docs/09.
+ * Tipos del proyecto en desarrollo (docs/09 §1). Fase 4: incluye precio y
+ * monetización como palancas morales (docs/06 §2). Fases posteriores añadirán
+ * subGenreId y budget según el esquema de docs/09.
  */
 
 /** Público objetivo (docs/02 §2 paso 1). */
@@ -27,8 +29,15 @@ export interface Project {
   platformId: string;
   audience: Audience;
   size: ProjectSize;
-  /** Precio de venta; en Fase 1 lo fija el tamaño (data/balance.ts). */
+  /**
+   * Precio de venta elegido en la concepción (docs/06 §2: palanca moral).
+   * En F2P es el valor de referencia por jugador, no un precio de venta.
+   */
   price: number;
+  /** Modelo de negocio y agresividad (docs/09 §9): la gran palanca de codicia. */
+  monetization: MonetizationConfig;
+  /** Niveles de campaña de marketing ya comprados para este proyecto (docs/06 §4). */
+  marketingUsed: number[];
   /** Fase de desarrollo en curso. */
   phase: DevPhaseNumber;
   /** Reparto de esfuerzo por fase: focus[fase - 1]. */

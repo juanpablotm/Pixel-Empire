@@ -39,11 +39,22 @@ export type {
   TrendStage,
   TrendState,
 } from './model/market';
+export type {
+  ActiveScandal,
+  CashflowEntry,
+  DebtSource,
+  LegacyProfile,
+  LegacyTrackedStats,
+  MonetizationConfig,
+  MonetizationModel,
+  RegulationState,
+  ReputationVector,
+} from './model/moral';
 
 export { makeRng } from './engine/rng';
 export type { Rng } from './engine/rng';
 export { tick } from './engine/tick';
-export { createInitialState } from './engine/initialState';
+export { createInitialState, initialLegacyStats } from './engine/initialState';
 export { createGameLoop, SPEEDS } from './engine/gameLoop';
 export type { GameLoop, Speed } from './engine/gameLoop';
 
@@ -67,7 +78,7 @@ export {
 } from './systems/projects';
 export type { ProjectConcept } from './systems/projects';
 export { buildReviewLines, reviewVerdict } from './systems/review';
-export { advanceSales } from './systems/sales';
+export { advanceSales, weeklyRevenue } from './systems/sales';
 export {
   advanceMarket,
   comboKey,
@@ -80,13 +91,51 @@ export {
   marketSize,
   platformAvailable,
   platformStage,
+  priceModifier,
   registerReleaseSaturation,
   saturationModifier,
   trendDirection,
   trendStage,
 } from './systems/market';
-export type { SegmentReviewsInput, SegmentReviewsResult } from './systems/market';
-export { advanceEconomy } from './systems/economy';
+export type { SalesContext, SegmentReviewsInput, SegmentReviewsResult } from './systems/market';
+export {
+  advanceEconomy,
+  availableCredit,
+  creditLimit,
+  estimateRunwayWeeks,
+  launchMarketingCampaign,
+  recordIncome,
+  repayLoan,
+  takeLoan,
+  weeklyFixedCosts,
+} from './systems/economy';
+export {
+  addReputationDebt,
+  advanceMoral,
+  advanceRegulation,
+  applyReleaseMoralEffects,
+  hasMtx,
+  isRehash,
+  lootBoxesBanned,
+  nudgeMoralDrift,
+  scandalChance,
+  scandalCushion,
+  scandalMagnitude,
+  scandalSalesFactor,
+  topDebtSource,
+} from './systems/morale';
+export {
+  aggregateReputation,
+  applyReputationDeltas,
+  communitySalesModifier,
+  employerPoolModifiers,
+  initialReputation,
+  mergeDeltas,
+  reputationDeltasFromReviews,
+  withReputationDeltas,
+} from './systems/reputation';
+export type { ReputationDeltas } from './systems/reputation';
+export { computeLegacy, retireStudio } from './systems/legacy';
 export {
   advanceScale,
   advanceStaff,

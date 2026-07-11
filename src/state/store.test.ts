@@ -115,8 +115,9 @@ describe('useGameStore — estado + acciones que delegan en core (docs/08 §6)',
   });
 
   it('la bancarrota pausa el juego', () => {
+    const base = createInitialState(SEED);
     useGameStore.setState({
-      game: { ...createInitialState(SEED), studio: { capital: 0, scaleStage: 1 } },
+      game: { ...base, studio: { ...base.studio, capital: 0 } },
     });
     useGameStore.getState().setSpeed(1);
     for (let i = 0; i < balance.economy.bankruptcyGraceWeeks; i++) {

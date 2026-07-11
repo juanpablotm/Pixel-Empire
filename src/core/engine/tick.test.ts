@@ -28,11 +28,20 @@ describe('tick — avance puro de 1 semana (docs/08 §4)', () => {
     const state = createInitialState(SEED);
     const next = tick(state);
     expect(next.studio.capital).toBe(state.studio.capital - balance.economy.weeklyUpkeep);
-    // El mercado respira aunque el estudio no haga nada (docs/04).
+    // El mercado respira aunque el estudio no haga nada (docs/04)...
     expect(next.market).not.toEqual(state.market);
-    expect({ ...next, week: state.week, studio: state.studio, market: state.market }).toEqual(
-      state,
-    );
+    // ...y el libro de caja anota la semana (docs/10 §10.9).
+    expect(next.cashflow).toEqual([
+      { week: state.week, income: 0, expenses: balance.economy.weeklyUpkeep },
+    ]);
+    // Todo lo demás queda intacto: nada más se mueve sin acciones del jugador.
+    expect({
+      ...next,
+      week: state.week,
+      studio: state.studio,
+      market: state.market,
+      cashflow: state.cashflow,
+    }).toEqual(state);
   });
 
   it('el estado inicial sale de data/balance.ts', () => {

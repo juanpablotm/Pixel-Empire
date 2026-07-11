@@ -1,4 +1,5 @@
 import type { ReviewMarketInfo, Segment } from './market';
+import type { MonetizationConfig } from './moral';
 import type { Audience, ProjectSize } from './project';
 
 /**
@@ -56,6 +57,8 @@ export interface ReleasedGame {
   audience: Audience;
   size: ProjectSize;
   price: number;
+  /** Modelo de negocio con el que se lanzó (docs/09 §9); inmutable tras lanzar. */
+  monetization: MonetizationConfig;
   /** Calidad Real Q, 0..100 (docs/03). */
   quality: number;
   /** Reseña media 0..100: media ponderada de los segmentos (docs/04 §5–6). */
@@ -78,6 +81,8 @@ export interface ReleasedGame {
   weeklySales: number[];
   totalUnits: number;
   totalRevenue: number;
+  /** Parte de totalRevenue que vino de microtransacciones (docs/06 §4). */
+  mtxRevenue: number;
   /** false cuando las ventas semanales caen bajo el umbral y el juego sale del mercado. */
   salesActive: boolean;
 }
