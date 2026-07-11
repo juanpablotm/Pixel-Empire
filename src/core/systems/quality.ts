@@ -57,10 +57,12 @@ export function fitBand(fit: number): FitBand {
 /** Contexto que la calidad necesita y que no vive en el proyecto. */
 export interface QualityContext {
   era: EraId;
-  /** Factor E; en el garaje viene de balance.quality.teamFactorGaraje (Fase 2: equipo real). */
+  /** Factor E: teamFactor real del equipo asignado (core/systems/staff.ts). */
   teamFactor: number;
   /** Lanzamientos previos del estudio con la misma combinación tema×género. */
   comboRepeats: number;
+  /** Aporte de rasgos del equipo (Visionarios) al innovationMod (docs/05 §3). */
+  innovationBonus?: number;
 }
 
 /** Nivel de bugs actual: clamp(deudaBugs − inversiónQA, 0, 1) (docs/03 factor D). */
@@ -107,7 +109,11 @@ export function computeQuality(
 
   // Modificador de innovación (0.9–1.15)
   const inn = balance.quality.innovation;
-  const innovationMod = clamp(inn.freshCombo - inn.repeatStep * ctx.comboRepeats, inn.min, inn.max);
+  const innovationMod = clamp(
+    inn.freshCombo - inn.repeatStep * ctx.comboRepeats + (ctx.innovationBonus ?? 0),
+    inn.min,
+    inn.max,
+  );
 
   const w = balance.quality.weights;
   const base =

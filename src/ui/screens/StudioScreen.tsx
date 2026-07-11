@@ -11,6 +11,8 @@ import { SavePanel } from '../components/SavePanel';
 export function StudioScreen() {
   const project = useGameStore((s) => s.game.projects[0]);
   const releasedGames = useGameStore((s) => s.game.releasedGames);
+  const staffCount = useGameStore((s) => s.game.staff.length);
+  const candidateCount = useGameStore((s) => s.game.candidates.length);
   const log = useGameStore((s) => s.game.log);
   const goTo = useGameStore((s) => s.goTo);
   const openReview = useGameStore((s) => s.openReview);
@@ -27,8 +29,8 @@ export function StudioScreen() {
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-xl font-semibold">{project.name}</span>
                 <span className="text-sm text-slate-400">
-                  Fase de {getDevPhase(project.phase).name} · semana {project.weeksSpent} de{' '}
-                  {projectTotalWeeks(project)}
+                  Fase de {getDevPhase(project.phase).name} · semana{' '}
+                  {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)}
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-slate-800">
@@ -59,6 +61,25 @@ export function StudioScreen() {
               </button>
             </div>
           )}
+        </section>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Equipo
+          </h2>
+          <div className="flex flex-wrap items-center gap-4">
+            <p className="text-slate-400">
+              {staffCount === 1 ? 'La plantilla eres tú.' : `${staffCount} personas en plantilla.`}
+              {candidateCount > 0 && ` ${candidateCount} candidatos esperando.`}
+            </p>
+            <button
+              type="button"
+              onClick={() => goTo('equipo')}
+              className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            >
+              👥 Ver equipo
+            </button>
+          </div>
         </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">

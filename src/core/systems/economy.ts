@@ -3,14 +3,18 @@ import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
 
 /**
- * Economía mínima de la Fase 1 (docs/06 §4): costes fijos + coste de
- * desarrollo; capital negativo sostenido = bancarrota = fin de partida.
- * Los ingresos los aplica advanceSales; aquí solo se paga y se vigila la caja.
+ * Economía de las Fases 1–2 (docs/06 §4): costes fijos (con alquiler por
+ * etapa de escala), coste de desarrollo del fundador y salarios semanales de
+ * la plantilla contratada; capital negativo sostenido = bancarrota = fin de
+ * partida. Los ingresos los aplica advanceSales; aquí se paga y se vigila.
  */
 export function advanceEconomy(state: GameState): GameState {
-  // En el garaje trabaja solo el fundador: 1 persona·semana mientras hay proyecto.
+  // El fundador no cobra salario: su coste es la persona·semana de desarrollo.
   const devCost = state.projects.length > 0 ? balance.economy.devCostPerPersonWeek : 0;
-  const costs = balance.economy.weeklyUpkeep + devCost;
+  const salaries = state.staff.reduce((sum, e) => sum + e.salary, 0);
+  const upkeep =
+    balance.economy.weeklyUpkeep + balance.economy.upkeepExtraByStage[state.studio.scaleStage];
+  const costs = upkeep + devCost + salaries;
   const capital = state.studio.capital - costs;
 
   let next: GameState = { ...state, studio: { ...state.studio, capital } };

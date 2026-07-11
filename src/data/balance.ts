@@ -1,5 +1,7 @@
 import type { EraId } from '../core/model/era';
+import type { ScaleStage } from '../core/model/gameState';
 import type { ProjectSize } from '../core/model/project';
+import type { SalaryTier, Specialty } from '../core/model/staff';
 
 /**
  * Balance central (docs/09 §11): todo número que afecte al juego vive aquí,
@@ -25,6 +27,8 @@ export const balance = {
     initialCapital: 10_000,
     /** Coste fijo semanal del garaje (luz, alquiler...); infraestructura de docs/06 §4. */
     weeklyUpkeep: 100,
+    /** Alquiler extra sobre el coste fijo del garaje según etapa de escala (docs/02 §4). */
+    upkeepExtraByStage: { 1: 0, 2: 150, 3: 600, 4: 2_000 } satisfies Record<ScaleStage, number>,
     /** Coste de desarrollo: ~500 💰 por persona·semana [DECIDIDO, docs/12 §6]. */
     devCostPerPersonWeek: 500,
     /** Precio de venta por tamaño, dentro del rango 20–60 💰 [DECIDIDO, docs/12 §6]. */
@@ -58,8 +62,6 @@ export const balance = {
       ProjectSize,
       number
     >,
-    /** teamFactor del fundador en solitario (etapa garaje); Fase 2 lo sustituye por el cálculo real. */
-    teamFactorGaraje: 0.95,
     /** innovationMod: rango 0.9–1.15 [DECIDIDO, docs/12 §3]. */
     innovation: {
       min: 0.9,
@@ -90,6 +92,178 @@ export const balance = {
     innovationOkThreshold: 1.0,
     /** Medidor de Fit en la concepción: verde ≥, ámbar ≥, rojo debajo (docs/03 factor A). */
     fitMeter: { verde: 0.75, ambar: 0.55 },
+  },
+
+  staff: {
+    /**
+     * El fundador: tus skills iniciales (docs/02 §4, garaje: "tus skills son
+     * todo"). Determinista; no cobra salario, no renuncia y no se despide.
+     */
+    founder: {
+      id: 'fundador',
+      name: 'Fundador',
+      specialty: 'diseno' as Specialty,
+      skills: { diseno: 70, tecnica: 55, arte: 45, audio: 40, marketing: 30 } satisfies Record<
+        Specialty,
+        number
+      >,
+      traits: ['workaholic'],
+      morale: 75,
+      energy: 100,
+      loyalty: 100,
+      level: 1,
+    },
+
+    /** Salario semanal junior / senior / estrella: 300 / 800 / 2.000 💰 [DECIDIDO, docs/12 §6]. */
+    salaries: { junior: 300, senior: 800, estrella: 2_000 } satisfies Record<SalaryTier, number>,
+    /** Coste de contratación: 2–4 semanas del salario del candidato [DECIDIDO, docs/12 §6] → 3. */
+    hiringCostWeeks: 3,
+    /** Finiquito al despedir, en semanas de salario. */
+    severanceWeeks: 4,
+
+    /** Formar: invertir dinero en subir una skill (docs/05 §6). */
+    training: { cost: 1_200, skillGain: 5, moraleBoost: 2 },
+    /** Motivar: bonus puntual o subida de salario permanente (docs/05 §6). */
+    motivation: {
+      bonusWeeks: 4,
+      bonusMinCost: 500,
+      bonusMorale: 15,
+      bonusLoyalty: 5,
+      raisePct: 0.1,
+      raiseMorale: 10,
+      raiseLoyalty: 15,
+    },
+
+    /** Desgaste semanal por trabajo y recuperación por descanso (docs/05 §4). */
+    work: {
+      energyDrain: 3,
+      restEnergyRecovery: 8,
+      restMoraleRecovery: 2,
+      /** El descanso recupera la moral solo hasta este techo (motivar la sube más). */
+      restMoraleCap: 70,
+    },
+    /** Crunch: +output a corto, −moral/energía/lealtad; palanca de codicia (docs/05 §6). */
+    crunch: {
+      outputBoost: 1.25,
+      energyDrain: 10,
+      moraleDrain: 4,
+      loyaltyDrain: 2,
+      /** Deuda de bugs extra por semana de crunch ("prisa", docs/03 factor D). */
+      extraBugsPerWeek: 0.02,
+    },
+    /** Burnout: energía sostenidamente baja → penalización fuerte (docs/05 §4). */
+    burnout: {
+      energyThreshold: 20,
+      weeksToBurnout: 3,
+      exitEnergy: 60,
+      outputPenalty: 0.5,
+      competencePenalty: 0.5,
+      moraleHit: 10,
+      moraleDrainPerWeek: 2,
+    },
+    /** Renuncias por moral/lealtad bajas (docs/05 §7); el fundador nunca renuncia. */
+    quits: {
+      moraleThreshold: 35,
+      loyaltyThreshold: 30,
+      baseChance: 0.15,
+      maxChance: 0.3,
+      /** Presión extra si el empleado está en burnout. */
+      burnoutExtraPressure: 0.3,
+      /** Golpe de moral al resto cuando alguien se va. */
+      teamMoraleHit: 3,
+    },
+    /** Despedir golpea la moral y lealtad de los que quedan (docs/05 §6). */
+    firing: { teamMoraleHit: 8, teamLoyaltyHit: 5 },
+
+    /** Nivel/XP: crece trabajando; mejora skills y sube el salario (docs/05 §1). */
+    xp: {
+      perWeekWorked: 1,
+      perLevel: 30,
+      skillGainSpecialty: 2,
+      skillGainOthers: 1,
+      salaryRaisePct: 0.08,
+      /** Hasta este nivel un empleado cuenta como junior (mentoría y química). */
+      juniorMaxLevel: 2,
+      maxLevel: 10,
+    },
+    /** La moral reacciona al lanzamiento: éxitos suben, flops hunden (docs/05 §4). */
+    releaseMorale: {
+      hitReview: 75,
+      hitMorale: 15,
+      hitLoyalty: 5,
+      okReview: 60,
+      okMorale: 5,
+      flopReview: 40,
+      flopMorale: 10,
+      flopLoyalty: 3,
+    },
+
+    /** Factor E = competencia × moral × sinergia, rango 0.5–1.3 [DECIDIDO, docs/12 §3]. */
+    teamFactor: {
+      competenceMin: 0.5,
+      competenceSpan: 0.75,
+      moraleMin: 0.7,
+      moraleSpan: 0.4,
+      min: 0.5,
+      max: 1.3,
+    },
+    /** Química v1: clamp(1 + Σ pares (0.03·afín − 0.04·conflicto), 0.8, 1.2) [DECIDIDO, docs/12 §5]. */
+    chemistry: {
+      affinityBonus: 0.03,
+      conflictPenalty: 0.04,
+      min: 0.8,
+      max: 1.2,
+      /** Dos especialidades distintas son "complementarias" si ambas pesan ≥ esto en el género. */
+      complementaryWeight: 0.2,
+      /** Tamaño de equipo desde el que el Llanero solitario genera fricción. */
+      soloConflictTeamSize: 4,
+      compatibleTraitPairs: [
+        ['visionario', 'perfeccionista'],
+        ['generalista', 'especialistaObsesivo'],
+      ],
+      conflictTraitPairs: [
+        ['estrellaMediatica', 'estrellaMediatica'],
+        ['perfeccionista', 'rapidoDescuidado'],
+      ],
+    },
+
+    /** Pool de contratación (docs/05 §6); su calidad crecerá con era/reputación (Fases 3–4). */
+    candidates: {
+      poolSize: 3,
+      refreshWeeks: 12,
+      /** Marketing llega con las campañas (Fase 5): en E1–E2 "lo haces tú" (docs/05 §2). */
+      specialties: ['diseno', 'tecnica', 'arte', 'audio'] as readonly Specialty[],
+      tierWeights: { junior: 0.5, senior: 0.38, estrella: 0.12 } satisfies Record<
+        SalaryTier,
+        number
+      >,
+      specialtySkillByTier: {
+        junior: [35, 54],
+        senior: [58, 76],
+        estrella: [80, 92],
+      } satisfies Record<SalaryTier, readonly [number, number]>,
+      otherSkillRange: [15, 45] as readonly [number, number],
+      /** El Generalista nivela: skills secundarias dentro de este rango. */
+      generalistaSkillRange: [40, 60] as readonly [number, number],
+      /** El Especialista obsesivo: +especialidad / −secundarias. */
+      especialistaSkillShift: 5,
+      moraleRange: [60, 80] as readonly [number, number],
+      energyRange: [80, 100] as readonly [number, number],
+      loyaltyRange: [40, 60] as readonly [number, number],
+      levelByTier: {
+        junior: [1, 2],
+        senior: [3, 5],
+        estrella: [6, 8],
+      } satisfies Record<SalaryTier, readonly [number, number]>,
+      traitCountMin: 1,
+      traitCountMax: 3,
+    },
+
+    /** Escala Garaje → Estudio pequeño (docs/02 §4): hito de capital y aforo por etapa. */
+    scale: {
+      stage2CapitalThreshold: 15_000,
+      staffCapByStage: { 1: 1, 2: 8, 3: 40, 4: 200 } satisfies Record<ScaleStage, number>,
+    },
   },
 
   sales: {

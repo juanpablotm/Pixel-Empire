@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createInitialState } from '../core';
+import { createInitialState, generateCandidates } from '../core';
 import { balance } from '../data/balance';
 import { useGameStore } from '../state/store';
 import { App } from './App';
@@ -112,9 +112,61 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     expect(screen.getByRole('button', { name: /Nuevo juego/ })).toBeInTheDocument();
   });
 
+  it('la pantalla de equipo muestra al fundador y el pool bloqueado en el garaje (docs/10 §10.6)', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Ver equipo/ }));
+
+    expect(screen.getByLabelText('Empleado Fundador')).toBeInTheDocument();
+    expect(screen.getByText(/para mudarte a una oficina pequeña/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Volver al estudio' }));
+    expect(screen.getByRole('button', { name: /Nuevo juego/ })).toBeInTheDocument();
+  });
+
+  it('en el estudio pequeño se puede contratar desde el pool de candidatos', () => {
+    const base = createInitialState(SEED);
+    useGameStore.setState({
+      game: {
+        ...base,
+        studio: { capital: 30_000, scaleStage: 2 },
+        candidates: generateCandidates(SEED, 1),
+      },
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Ver equipo/ }));
+
+    const hireButtons = screen.getAllByRole('button', { name: 'Contratar' });
+    expect(hireButtons).toHaveLength(balance.staff.candidates.poolSize);
+    fireEvent.click(hireButtons[0]);
+
+    const { game } = useGameStore.getState();
+    expect(game.staff).toHaveLength(2);
+    expect(game.candidates).toHaveLength(balance.staff.candidates.poolSize - 1);
+    expect(screen.getByLabelText(`Empleado ${game.staff[1].name}`)).toBeInTheDocument();
+  });
+
+  it('la pantalla de desarrollo muestra el factor de equipo y permite activar el crunch', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
+    fireEvent.change(screen.getByLabelText('Nombre del juego'), {
+      target: { value: 'Crunch Simulator' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
+
+    expect(screen.getByText('Equipo asignado')).toBeInTheDocument();
+    expect(screen.getByText('Factor de equipo')).toBeInTheDocument();
+
+    const crunchButton = screen.getByRole('button', { name: 'Activar crunch' });
+    fireEvent.click(crunchButton);
+    expect(useGameStore.getState().game.projects[0].crunch).toBe(true);
+    expect(
+      screen.getByRole('button', { name: 'Crunch activo — desactivar' }),
+    ).toBeInTheDocument();
+  });
+
   it('la bancarrota muestra el fin de partida y permite empezar de nuevo', () => {
     useGameStore.setState({
-      game: { ...createInitialState(SEED), studio: { capital: 0 } },
+      game: { ...createInitialState(SEED), studio: { capital: 0, scaleStage: 1 } },
     });
     render(<App />);
     for (let i = 0; i < balance.economy.bankruptcyGraceWeeks; i++) {

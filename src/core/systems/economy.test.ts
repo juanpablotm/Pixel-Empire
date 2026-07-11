@@ -2,9 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
+import type { GameState } from '../model/gameState';
 import { startProject } from './projects';
 
 const SEED = 42;
+
+/** Estado inicial de garaje con el capital indicado. */
+function withCapital(capital: number): GameState {
+  const state = createInitialState(SEED);
+  return { ...state, studio: { ...state.studio, capital } };
+}
 
 describe('economía mínima de Fase 1 (docs/06 §4)', () => {
   it('sin proyecto solo se paga el coste fijo semanal', () => {
@@ -32,7 +39,7 @@ describe('economía mínima de Fase 1 (docs/06 §4)', () => {
   });
 
   it('capital negativo sostenido = bancarrota = fin de partida (docs/06 §1)', () => {
-    let state = { ...createInitialState(SEED), studio: { capital: 50 } };
+    let state = withCapital(50);
 
     state = tick(state); // capital -50: empieza la cuenta atrás
     expect(state.studio.capital).toBeLessThan(0);
@@ -50,7 +57,7 @@ describe('economía mínima de Fase 1 (docs/06 §4)', () => {
   });
 
   it('tras el game over el mundo se congela', () => {
-    let state = { ...createInitialState(SEED), studio: { capital: 0 } };
+    let state = withCapital(0);
     for (let i = 0; i <= balance.economy.bankruptcyGraceWeeks; i++) state = tick(state);
     expect(state.gameOver).not.toBeNull();
 
@@ -59,13 +66,13 @@ describe('economía mínima de Fase 1 (docs/06 §4)', () => {
   });
 
   it('volver a números verdes reinicia la cuenta atrás de bancarrota', () => {
-    let state = { ...createInitialState(SEED), studio: { capital: 150 } };
+    let state = withCapital(150);
     state = tick(state); // 50
     state = tick(state); // -50 → negativeWeeks 1
     expect(state.negativeWeeks).toBe(1);
 
     // Un ingreso providencial saca la caja del rojo.
-    state = { ...state, studio: { capital: 5_000 } };
+    state = { ...state, studio: { ...state.studio, capital: 5_000 } };
     state = tick(state);
     expect(state.negativeWeeks).toBe(0);
     expect(state.gameOver).toBeNull();

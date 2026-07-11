@@ -1,11 +1,13 @@
+import { stageLabels } from '../../data/staffTexts';
 import { useGameStore } from '../../state/store';
 import { formatMoney, formatWeek } from '../format';
 import { TimeControls } from './TimeControls';
 
-/** Barra superior persistente: fecha, era, capital y controles de tiempo (docs/10 §10.1). */
+/** Barra superior persistente: fecha, era, etapa, capital y controles de tiempo (docs/10 §10.1). */
 export function Hud() {
   const week = useGameStore((s) => s.game.week);
   const era = useGameStore((s) => s.game.era);
+  const scaleStage = useGameStore((s) => s.game.studio.scaleStage);
   const capital = useGameStore((s) => s.game.studio.capital);
   const inTheRed = capital < 0;
 
@@ -17,6 +19,9 @@ export function Hud() {
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <span className="text-slate-300">{formatWeek(week)}</span>
         <span className="rounded bg-slate-800 px-2 py-0.5 text-slate-300">Era {era}</span>
+        <span className="rounded bg-slate-800 px-2 py-0.5 text-slate-300">
+          {stageLabels[scaleStage]}
+        </span>
         <span
           className={`font-semibold tabular-nums ${inTheRed ? 'animate-pulse text-red-400' : 'text-amber-300'}`}
         >

@@ -3,7 +3,8 @@
  * de core/ (state/, save/, ui/) importa desde aquí, no de los módulos internos.
  */
 export type { EraId } from './model/era';
-export type { GameOverInfo, GameState, LogEntry, Studio } from './model/gameState';
+export type { GameOverInfo, GameState, LogEntry, ScaleStage, Studio } from './model/gameState';
+export type { Employee, SalaryTier, Specialty, TeamFactorResult } from './model/staff';
 export type {
   Audience,
   DevPhaseNumber,
@@ -25,6 +26,7 @@ export type {
   Genre,
   Platform,
   Theme,
+  Trait,
 } from './model/content';
 
 export { makeRng } from './engine/rng';
@@ -56,3 +58,25 @@ export type { ProjectConcept } from './systems/projects';
 export { buildReviewLines, reviewVerdict } from './systems/review';
 export { advanceSales, expectedUnits } from './systems/sales';
 export { advanceEconomy } from './systems/economy';
+export {
+  advanceScale,
+  advanceStaff,
+  applyReleaseMorale,
+  computeSynergy,
+  computeTeamFactor,
+  computeTeamOutput,
+  createFounder,
+  crunchSensitivity,
+  fireEmployee,
+  generateCandidates,
+  hireCandidate,
+  hiringCost,
+  motivateEmployee,
+  salaryTierOf,
+  setCrunch,
+  staffCap,
+  teamInnovationBonus,
+  toggleAssignment,
+  trainEmployee,
+} from './systems/staff';
+export type { MotivationKind } from './systems/staff';

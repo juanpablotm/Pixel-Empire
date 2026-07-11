@@ -2,14 +2,22 @@ import { create } from 'zustand';
 import {
   createGameLoop,
   createInitialState,
+  fireEmployee,
+  hireCandidate,
+  motivateEmployee,
+  setCrunch,
   setFocus,
   startProject,
   tick,
+  toggleAssignment,
   toggleFeature,
+  trainEmployee,
   type DevPhaseNumber,
   type FocusAllocation,
   type GameState,
+  type MotivationKind,
   type ProjectConcept,
+  type Specialty,
   type Speed,
 } from '../core';
 import { balance } from '../data/balance';
@@ -21,8 +29,8 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
  * añade solo estado de presentación (pantalla actual) y navegación.
  */
 
-/** Pantallas de la Fase 1 (docs/10 §10.1–10.4). */
-export type Screen = 'estudio' | 'concepcion' | 'desarrollo' | 'resena';
+/** Pantallas de las Fases 1–2 (docs/10 §10.1–10.4 y §10.6). */
+export type Screen = 'estudio' | 'concepcion' | 'desarrollo' | 'resena' | 'equipo';
 
 export interface GameStore {
   game: GameState;
@@ -44,6 +52,13 @@ export interface GameStore {
   startProject: (concept: ProjectConcept) => void;
   setFocus: (phase: DevPhaseNumber, allocation: FocusAllocation) => void;
   toggleFeature: (featureId: string) => void;
+  /** Acciones de personal (docs/05 §6; delegan en core/systems/staff.ts). */
+  hire: (candidateId: string) => void;
+  fire: (employeeId: string) => void;
+  train: (employeeId: string, specialty: Specialty) => void;
+  motivate: (employeeId: string, kind: MotivationKind) => void;
+  toggleAssignment: (employeeId: string) => void;
+  setCrunch: (active: boolean) => void;
   /** Empieza una partida nueva (pausada). */
   newGame: (seed?: number) => void;
   /** Guarda la partida en localStorage. */
@@ -76,8 +91,16 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const released = after.releasedGames.length > before.releasedGames.length;
     const phaseChanged = after.projects[0]?.phase !== before.projects[0]?.phase;
     const justEnded = after.gameOver !== null && before.gameOver === null;
+    const staffLost = after.staff.length < before.staff.length;
+    const stageChanged = after.studio.scaleStage !== before.studio.scaleStage;
 
-    if (released || justEnded || (phaseChanged && after.projects.length > 0)) {
+    if (
+      released ||
+      justEnded ||
+      staffLost ||
+      stageChanged ||
+      (phaseChanged && after.projects.length > 0)
+    ) {
       gameLoop.setSpeed(0);
       set({ game: after, speed: 0 });
     } else {
@@ -109,6 +132,30 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   toggleFeature: (featureId) => {
     set((s) => ({ game: toggleFeature(s.game, featureId) }));
+  },
+
+  hire: (candidateId) => {
+    set((s) => ({ game: hireCandidate(s.game, candidateId) }));
+  },
+
+  fire: (employeeId) => {
+    set((s) => ({ game: fireEmployee(s.game, employeeId) }));
+  },
+
+  train: (employeeId, specialty) => {
+    set((s) => ({ game: trainEmployee(s.game, employeeId, specialty) }));
+  },
+
+  motivate: (employeeId, kind) => {
+    set((s) => ({ game: motivateEmployee(s.game, employeeId, kind) }));
+  },
+
+  toggleAssignment: (employeeId) => {
+    set((s) => ({ game: toggleAssignment(s.game, employeeId) }));
+  },
+
+  setCrunch: (active) => {
+    set((s) => ({ game: setCrunch(s.game, active) }));
   },
 
   newGame: (seed = defaultSeed()) => {

@@ -1,5 +1,6 @@
 import type { EraId } from './era';
 import type { DevPhaseNumber } from './project';
+import type { Specialty } from './staff';
 
 /**
  * Esquemas del contenido data-driven (docs/09). Las instancias viven en
@@ -13,6 +14,8 @@ export interface Genre {
   /** Balance ideal Diseño/Técnica del género (docs/03 factor B; suman 1). */
   idealDesign: number;
   idealTech: number;
+  /** Ponderación de especialidades para el teamFactor (docs/03 factor E; suman 1). */
+  specialtyWeights: Record<Specialty, number>;
   appearsInEra: EraId;
 }
 
@@ -46,6 +49,31 @@ export interface Feature {
   /** Deuda de bugs que añade al elegirla (docs/03 factor D). */
   bugRisk: number;
   appearsInEra: EraId;
+}
+
+/** Rasgo de personalidad de un empleado (docs/05 §3 y docs/09 §6). */
+export interface Trait {
+  id: string;
+  name: string;
+  description: string;
+  modifiers: Partial<{
+    /** Multiplicador del output semanal (1 = neutro). */
+    speed: number;
+    /** Bonus a la competencia efectiva (proporción, p. ej. 0.06 = +6 %). */
+    qualityBonus: number;
+    /** Deuda de bugs extra (o menos, si es negativo) por semana trabajada. */
+    bugRisk: number;
+    /** Aporte al innovationMod del proyecto (docs/03 §3). */
+    innovation: number;
+    /** Multiplicador del daño del crunch (2 = le afecta el doble). */
+    crunchSensitivity: number;
+    /** Aporte plano a la sinergia (documental; la química usa pares, docs/12 §5). */
+    synergy: number;
+    /** Hype extra al asociar su nombre a un juego (se usa en Fase 5, docs/07). */
+    hypeBonus: number;
+    /** Aceleración del XP de los juniors del equipo (docs/05 §3). */
+    mentorBonus: number;
+  }>;
 }
 
 /** Un aspecto de una fase de desarrollo y a qué contribuye su esfuerzo. */

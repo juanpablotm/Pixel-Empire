@@ -1,11 +1,11 @@
-import type { GameState } from '../core';
+import { createFounder, type GameState } from '../core';
 
 /**
  * Serialización y carga de partidas (docs/08 §7): JSON plano + localStorage,
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -33,6 +33,25 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       log: [],
     },
   }),
+  // v2 (Fase 1) → v3 (Fase 2): plantilla con el fundador, pool de candidatos,
+  // etapa de escala y asignación/crunch en los proyectos.
+  2: (file) => {
+    const founder = createFounder(file.state.seed);
+    return {
+      saveVersion: 3,
+      state: {
+        ...file.state,
+        studio: { ...file.state.studio, scaleStage: 1 },
+        staff: [founder],
+        candidates: [],
+        projects: file.state.projects.map((p) => ({
+          ...p,
+          assignedStaff: [founder.id],
+          crunch: false,
+        })),
+      },
+    };
+  },
 };
 
 function isSaveFile(value: unknown): value is SaveFile {

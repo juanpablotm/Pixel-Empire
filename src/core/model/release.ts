@@ -35,6 +35,8 @@ export interface QualityBreakdown {
   bugLevel: number;
   /** Factor E — Multiplicador de equipo (rango típico 0.5–1.3). */
   teamFactor: number;
+  /** Descomposición legible del teamFactor (Fase 2+; docs/03 factor E). */
+  teamParts?: { competenceFactor: number; moraleFactor: number; synergyFactor: number };
   /** Modificador de innovación (0.9–1.15). */
   innovationMod: number;
   /** Media ponderada de A–D antes de multiplicadores. */

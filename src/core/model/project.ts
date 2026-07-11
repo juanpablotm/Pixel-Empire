@@ -35,6 +35,10 @@ export interface Project {
   focus: [FocusAllocation, FocusAllocation, FocusAllocation];
   /** Features elegidas durante la fase de Concepto (docs/03 factor C). */
   chosenFeatureIds: string[];
+  /** Ids de empleados asignados al proyecto (docs/09 §1). */
+  assignedStaff: string[];
+  /** Crunch activo: +output a corto, −moral/energía/lealtad (docs/05 §6). */
+  crunch: boolean;
   /** Semanas de desarrollo transcurridas. */
   weeksSpent: number;
   /** Puntos acumulados de Diseño/Técnica según el reparto de esfuerzo (docs/03 factor B). */

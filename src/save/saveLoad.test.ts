@@ -52,6 +52,51 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(state.log).toEqual([]);
   });
 
+  it('migra un guardado v2 (Fase 1) al esquema actual: fundador, pool y escala', () => {
+    const project = {
+      id: 'proyecto-1',
+      name: 'Viejo proyecto',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+      price: 20,
+      phase: 2,
+      focus: [{}, {}, {}],
+      chosenFeatureIds: [],
+      weeksSpent: 3,
+      designPoints: 2,
+      techPoints: 1,
+      qaInvested: 0,
+      bugDebt: 0.06,
+    };
+    const v2 = JSON.stringify({
+      saveVersion: 2,
+      state: {
+        seed: SEED,
+        week: 30,
+        era: 'E1',
+        studio: { capital: 12_000 },
+        projects: [project],
+        releasedGames: [],
+        projectCounter: 1,
+        negativeWeeks: 0,
+        gameOver: null,
+        log: [],
+      },
+    });
+    const state = deserializeSave(v2);
+    expect(state.studio.scaleStage).toBe(1);
+    expect(state.staff).toHaveLength(1);
+    expect(state.staff[0].founder).toBe(true);
+    expect(state.staff[0].id).toBe('fundador');
+    expect(state.candidates).toEqual([]);
+    expect(state.projects[0].assignedStaff).toEqual(['fundador']);
+    expect(state.projects[0].crunch).toBe(false);
+    expect(state.projects[0].weeksSpent).toBe(3);
+  });
+
   it('el JSON incluye saveVersion', () => {
     const parsed = JSON.parse(serializeSave(createInitialState(SEED))) as {
       saveVersion: number;

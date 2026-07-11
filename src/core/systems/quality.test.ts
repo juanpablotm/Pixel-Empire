@@ -21,6 +21,8 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     phase: 3,
     focus: [{}, {}, {}],
     chosenFeatureIds: [],
+    assignedStaff: ['fundador'],
+    crunch: false,
     weeksSpent: 6,
     designPoints: 6.5,
     techPoints: 3.5,
