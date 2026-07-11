@@ -19,6 +19,7 @@ export function Hud() {
   const reputation = useGameStore((s) => s.game.studio.reputation);
   const loan = useGameStore((s) => s.game.loanPrincipal);
   const scandalActive = useGameStore((s) => s.game.scandals.some((sc) => sc.weeksLeft > 0));
+  const bombingActive = useGameStore((s) => s.game.community.bombs.length > 0);
   const goTo = useGameStore((s) => s.goTo);
   const inTheRed = capital < 0;
   const aggregate = Math.round(aggregateReputation(reputation));
@@ -56,6 +57,14 @@ export function Hud() {
             title="Hay un escándalo en curso: las ventas sufren"
           >
             💥 Escándalo
+          </span>
+        )}
+        {bombingActive && (
+          <span
+            className="animate-pulse rounded bg-red-900/70 px-2 py-0.5 font-semibold text-red-300"
+            title="Review bombing en curso: nota visible y ventas hundidas hasta que amaine o lo gestiones"
+          >
+            💣 Review bombing
           </span>
         )}
       </div>

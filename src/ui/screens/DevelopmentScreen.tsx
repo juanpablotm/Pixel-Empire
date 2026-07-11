@@ -164,6 +164,13 @@ export function DevelopmentScreen() {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => goTo('creadores')}
+            className="rounded-md bg-fuchsia-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-fuchsia-600"
+          >
+            🔑 Campaña de creadores
+          </button>
           <p className="text-xs text-slate-500">
             El hype vende de salida… y endurece las reseñas si el juego no cumple.
           </p>

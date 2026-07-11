@@ -3,6 +3,7 @@ import { genres, getGenre } from '../../data/genres';
 import { getPlatform, platforms } from '../../data/platforms';
 import { getTheme, themes } from '../../data/themes';
 import { monetizationReviewBias, reviewSegments } from '../../data/segments';
+import { getTrait } from '../../data/traits';
 import { appendLog } from '../engine/log';
 import type { Rng } from '../engine/rng';
 import type { EraId } from '../model/era';
@@ -254,10 +255,12 @@ export function priceModifier(game: Pick<ReleasedGame, 'price' | 'size' | 'audie
 
 /** Modificadores de ventas que dependen del estudio, no del mercado (docs/06). */
 export interface SalesContext {
-  /** Colchón de comunidad (docs/06 §3); 1 = neutro. */
+  /** Colchón de comunidad (docs/06 §3 y docs/07 §2); 1 = neutro. */
   communityFactor?: number;
   /** Penalización por escándalos activos (docs/06 §5); 1 = sin escándalo. */
   scandalFactor?: number;
+  /** Review bombing sobre ESTE juego (docs/07 §5); 1 = sin bombardeo. */
+  bombFactor?: number;
 }
 
 /**
@@ -291,6 +294,8 @@ export function expectedWeeklyUnits(
   const spike =
     s.launch.spikeBase *
     (1 + balance.market.hype.salesSpikeCoef * game.hypeAtRelease) *
+    // La campaña de creadores empuja el pico de salida (docs/07 §3).
+    (1 + (game.creatorSpikeBoost ?? 0)) *
     s.launch.spikeDecay ** weeksSinceRelease;
   const tailDecay =
     s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * (game.review / 100);
@@ -303,6 +308,7 @@ export function expectedWeeklyUnits(
     priceModifier(game) *
     (context.communityFactor ?? 1) *
     (context.scandalFactor ?? 1) *
+    (context.bombFactor ?? 1) *
     (spike + tail)
   );
 }
@@ -421,12 +427,21 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
   };
 
   // Hype base (docs/04 §4): crece desde la fase de Producción, más si hay moda.
+  // Las "Estrellas mediáticas" asignadas dan hype extra (docs/07 §6).
   const projects = state.projects.map((project) => {
     if (project.phase < cfg.hype.startPhase) return project;
     const pop = comboPopularity(market, project.genreId, project.themeId);
+    const starBonus = state.staff
+      .filter((e) => project.assignedStaff.includes(e.id))
+      .reduce(
+        (sum, e) =>
+          sum + e.traits.reduce((s, id) => s + (getTrait(id).modifiers.hypeBonus ?? 0), 0),
+        0,
+      );
     const gain =
       cfg.hype.gainBySize[project.size] *
-      (cfg.hype.popCouplingBase + cfg.hype.popCouplingSpan * pop);
+      (cfg.hype.popCouplingBase + cfg.hype.popCouplingSpan * pop) *
+      (1 + balance.community.mediaStarHypeCoef * starBonus);
     return { ...project, hype: Math.min(cfg.hype.max, project.hype + gain) };
   });
 

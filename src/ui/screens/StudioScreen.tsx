@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { projectProgress, projectTotalWeeks } from '../../core';
+import { projectProgress, projectTotalWeeks, visibleReview } from '../../core';
 import { useGameStore } from '../../state/store';
 import { getDevPhase } from '../../data/devPhases';
 import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { formatMoney } from '../format';
+import { CommunityFeed } from '../components/CommunityFeed';
 import { ReputationRadar } from '../components/ReputationRadar';
 import { SavePanel } from '../components/SavePanel';
+import { SentimentMeter } from '../components/SentimentMeter';
 
 /**
  * Vista principal del estudio (docs/10 §10.1, versión garaje de Fase 1):
@@ -27,6 +29,7 @@ export function StudioScreen() {
   const staffCount = useGameStore((s) => s.game.staff.length);
   const candidateCount = useGameStore((s) => s.game.candidates.length);
   const market = useGameStore((s) => s.game.market);
+  const community = useGameStore((s) => s.game.community);
   const log = useGameStore((s) => s.game.log);
   const goTo = useGameStore((s) => s.goTo);
   const openReview = useGameStore((s) => s.openReview);
@@ -123,6 +126,13 @@ export function StudioScreen() {
             >
               💰 Finanzas
             </button>
+            <button
+              type="button"
+              onClick={() => goTo('creadores')}
+              className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            >
+              📣 Creadores
+            </button>
           </div>
         </section>
 
@@ -140,7 +150,16 @@ export function StudioScreen() {
                   className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-slate-800/60 px-3 py-2"
                 >
                   <span className="font-medium">{game.name}</span>
-                  <span className="text-sm text-slate-400">Reseña {game.review}/100</span>
+                  {visibleReview(game, community) < game.review ? (
+                    <span
+                      className="text-sm font-semibold text-red-400"
+                      title={`Review bombing en curso: la nota real es ${game.review}/100`}
+                    >
+                      💣 Nota visible {visibleReview(game, community)}/100
+                    </span>
+                  ) : (
+                    <span className="text-sm text-slate-400">Reseña {game.review}/100</span>
+                  )}
                   <span className="text-sm text-slate-400">
                     {game.totalUnits.toLocaleString('es-ES')} uds ·{' '}
                     {formatMoney(game.totalRevenue)}
@@ -176,6 +195,16 @@ export function StudioScreen() {
             Reputación
           </h2>
           <ReputationCard />
+        </section>
+        {/* El hub de la Comunidad (docs/07 §2): termómetro + feed "Chirp". */}
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Comunidad
+          </h2>
+          <SentimentMeter sentiment={community.sentiment} />
+          <div className="mt-4 max-h-80 overflow-y-auto border-t border-slate-800 pt-3">
+            <CommunityFeed posts={community.feed} />
+          </div>
         </section>
         <section className="flex-1 rounded-lg border border-slate-800 bg-slate-900 p-5">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">

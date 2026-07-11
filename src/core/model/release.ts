@@ -1,3 +1,4 @@
+import type { StreamResult } from './community';
 import type { ReviewMarketInfo, Segment } from './market';
 import type { MonetizationConfig } from './moral';
 import type { Audience, ProjectSize } from './project';
@@ -85,4 +86,12 @@ export interface ReleasedGame {
   mtxRevenue: number;
   /** false cuando las ventas semanales caen bajo el umbral y el juego sale del mercado. */
   salesActive: boolean;
+  /**
+   * Fase 5 (docs/07). Opcionales para que los juegos de fases/saves previos
+   * sigan siendo válidos: los directos de la campaña de creadores, el empuje
+   * que aportaron al pico de ventas y si el marketing prometió de más.
+   */
+  streams?: StreamResult[];
+  creatorSpikeBoost?: number;
+  overPromised?: boolean;
 }

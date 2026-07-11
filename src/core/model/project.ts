@@ -38,6 +38,14 @@ export interface Project {
   monetization: MonetizationConfig;
   /** Niveles de campaña de marketing ya comprados para este proyecto (docs/06 §4). */
   marketingUsed: number[];
+  /** Creadores con clave de acceso para este lanzamiento (docs/07 §3). */
+  creatorCampaign: string[];
+  /**
+   * Marketing engañoso (docs/07 §4): se activó "capitalizar el leak" o
+   * "prometer la luna". Si al lanzar el juego no cumple, el backlash estalla
+   * como crisis de promesa rota — siempre trazable a esa decisión.
+   */
+  overPromised: boolean;
   /** Fase de desarrollo en curso. */
   phase: DevPhaseNumber;
   /** Reparto de esfuerzo por fase: focus[fase - 1]. */

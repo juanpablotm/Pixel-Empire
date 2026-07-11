@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import {
+  assignCreatorKey,
   createGameLoop,
   createInitialState,
   fireEmployee,
@@ -7,6 +8,8 @@ import {
   launchMarketingCampaign,
   motivateEmployee,
   repayLoan,
+  resolveDilemma,
+  respondToCrisis,
   retireStudio,
   setCrunch,
   setFocus,
@@ -16,7 +19,10 @@ import {
   toggleAssignment,
   toggleFeature,
   trainEmployee,
+  type CrisisResponseId,
   type DevPhaseNumber,
+  type DilemmaChoice,
+  type DilemmaKind,
   type FocusAllocation,
   type GameState,
   type MotivationKind,
@@ -33,7 +39,7 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
  * añade solo estado de presentación (pantalla actual) y navegación.
  */
 
-/** Pantallas de las Fases 1–4 (docs/10 §10.1–10.4, §10.6, §10.7, §10.9 y §10.10). */
+/** Pantallas de las Fases 1–5 (docs/10 §10.1–10.10). */
 export type Screen =
   | 'estudio'
   | 'concepcion'
@@ -41,6 +47,7 @@ export type Screen =
   | 'resena'
   | 'equipo'
   | 'mercado'
+  | 'creadores'
   | 'finanzas'
   | 'legado';
 
@@ -75,6 +82,10 @@ export interface GameStore {
   takeLoan: (amount: number) => void;
   repayLoan: (amount: number) => void;
   launchMarketing: (level: number) => void;
+  /** Acciones sociales (docs/07; delegan en core/systems/community.ts). */
+  assignCreatorKey: (creatorId: string) => void;
+  respondToCrisis: (crisisId: string, responseId: CrisisResponseId) => void;
+  resolveDilemma: (kind: DilemmaKind, choice: DilemmaChoice) => void;
   /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
   retire: () => void;
   /** Empieza una partida nueva (pausada). */
@@ -111,12 +122,19 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const justEnded = after.gameOver !== null && before.gameOver === null;
     const staffLost = after.staff.length < before.staff.length;
     const stageChanged = after.studio.scaleStage !== before.studio.scaleStage;
+    // La capa social también pausa (docs/07): crisis con reloj y dilemas.
+    const openCrises = (s: GameState) =>
+      s.community.crises.filter((c) => c.status === 'abierta').length;
+    const crisisErupted = openCrises(after) > openCrises(before);
+    const dilemmaFired = after.community.dilemmas.length > before.community.dilemmas.length;
 
     if (
       released ||
       justEnded ||
       staffLost ||
       stageChanged ||
+      crisisErupted ||
+      dilemmaFired ||
       (phaseChanged && after.projects.length > 0)
     ) {
       gameLoop.setSpeed(0);
@@ -186,6 +204,18 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   launchMarketing: (level) => {
     set((s) => ({ game: launchMarketingCampaign(s.game, level) }));
+  },
+
+  assignCreatorKey: (creatorId) => {
+    set((s) => ({ game: assignCreatorKey(s.game, creatorId) }));
+  },
+
+  respondToCrisis: (crisisId, responseId) => {
+    set((s) => ({ game: respondToCrisis(s.game, crisisId, responseId) }));
+  },
+
+  resolveDilemma: (kind, choice) => {
+    set((s) => ({ game: resolveDilemma(s.game, kind, choice) }));
   },
 
   retire: () => {

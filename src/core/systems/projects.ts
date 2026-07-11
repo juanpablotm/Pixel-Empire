@@ -16,6 +16,7 @@ import type {
   ProjectSize,
 } from '../model/project';
 import type { ReleasedGame } from '../model/release';
+import { applyReleaseCommunityEffects } from './community';
 import {
   computeSegmentReviews,
   effectiveSaturation,
@@ -165,6 +166,8 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     price,
     monetization,
     marketingUsed: [],
+    creatorCampaign: [],
+    overPromised: false,
     phase: 1,
     focus: [evenAllocation(1), evenAllocation(2), evenAllocation(3)],
     chosenFeatureIds: [],
@@ -289,6 +292,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     totalRevenue: 0,
     mtxRevenue: 0,
     salesActive: true,
+    overPromised: project.overPromised,
   };
   let next: GameState = {
     ...state,
@@ -305,6 +309,9 @@ function releaseProject(state: GameState, project: Project): GameState {
   // El dilema moral pasa factura (docs/06): reputación por segmento, deuda
   // por las palancas de codicia y contadores de legado.
   next = applyReleaseMoralEffects(next, released);
+  // La capa social lo dramatiza (docs/07): directos de creadores, promesa
+  // inflada, feed y posibles crisis — siempre trazables al lanzamiento.
+  next = applyReleaseCommunityEffects(next, released.id, project.creatorCampaign);
   // La moral del equipo reacciona al resultado (docs/05 §4).
   return applyReleaseMorale(next, review);
 }

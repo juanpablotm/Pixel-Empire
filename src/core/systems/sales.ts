@@ -3,10 +3,10 @@ import { appendLog } from '../engine/log';
 import type { Rng } from '../engine/rng';
 import type { GameState } from '../model/gameState';
 import type { ReleasedGame } from '../model/release';
+import { bombSalesFactor, sentimentSalesModifier } from './community';
 import { recordIncome } from './economy';
 import { expectedWeeklyUnits } from './market';
 import { lootBoxesBanned, scandalSalesFactor } from './morale';
-import { communitySalesModifier } from './reputation';
 
 /**
  * Ventas por tick (docs/04 §6 y docs/06 §4): la curva pico + cola larga se
@@ -42,8 +42,9 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
   let income = 0;
   let next = state;
 
-  // Modificadores del estudio, comunes a todo el catálogo esta semana.
-  const communityFactor = communitySalesModifier(state.studio);
+  // Modificadores del estudio, comunes a todo el catálogo esta semana. El boca
+  // a boca lo pone el termómetro de sentimiento (docs/07 §2 y docs/04 §6).
+  const communityFactor = sentimentSalesModifier(state.community.sentiment);
   const scandalFactor = scandalSalesFactor(state.scandals);
   const banned = lootBoxesBanned(state);
 
@@ -53,7 +54,12 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
     const t = state.week - game.releaseWeek;
     const noise = 1 + (rng.next() * 2 - 1) * balance.sales.weeklyNoise;
     const units = Math.round(
-      expectedWeeklyUnits(game, t, state.market, { communityFactor, scandalFactor }) * noise,
+      expectedWeeklyUnits(game, t, state.market, {
+        communityFactor,
+        scandalFactor,
+        // El review bombing hunde las ventas del juego señalado (docs/07 §5).
+        bombFactor: bombSalesFactor(state.community, game.id),
+      }) * noise,
     );
 
     if (units < balance.sales.cutoffUnits) {

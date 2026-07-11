@@ -50,6 +50,21 @@ export type {
   RegulationState,
   ReputationVector,
 } from './model/moral';
+export type {
+  ActiveCrisis,
+  CommunityPost,
+  CommunityState,
+  CreatorArchetype,
+  CrisisCause,
+  CrisisResponseId,
+  CrisisStatus,
+  DilemmaKind,
+  PendingDilemma,
+  PostMood,
+  ReviewBomb,
+  StreamResult,
+  StreamTier,
+} from './model/community';
 
 export { makeRng } from './engine/rng';
 export type { Rng } from './engine/rng';
@@ -135,6 +150,23 @@ export {
   withReputationDeltas,
 } from './systems/reputation';
 export type { ReputationDeltas } from './systems/reputation';
+export {
+  advanceCommunity,
+  applyReleaseCommunityEffects,
+  assignCreatorKey,
+  availableCreators,
+  bombSalesFactor,
+  computeStreamOutcome,
+  creatorFit,
+  initialCommunityState,
+  keysAllowed,
+  resolveDilemma,
+  respondToCrisis,
+  sentimentSalesModifier,
+  spawnCrisis,
+  visibleReview,
+} from './systems/community';
+export type { DilemmaChoice } from './systems/community';
 export { computeLegacy, retireStudio } from './systems/legacy';
 export {
   advanceScale,

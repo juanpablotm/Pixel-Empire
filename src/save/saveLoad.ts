@@ -1,6 +1,7 @@
 import {
   createFounder,
   createMarketState,
+  initialCommunityState,
   initialLegacyStats,
   initialReputation,
   type GameState,
@@ -12,7 +13,7 @@ import { defaultMonetization } from '../data/monetization';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -121,6 +122,20 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       },
     };
   },
+  // v5 (Fase 4) → v6 (Fase 5): capa social (sentimiento, feed, crisis,
+  // bombing, dilemas) y campaña de creadores en los proyectos (docs/07).
+  5: (file) => ({
+    saveVersion: 6,
+    state: {
+      ...file.state,
+      community: initialCommunityState(),
+      projects: file.state.projects.map((p) => ({
+        ...p,
+        creatorCampaign: [],
+        overPromised: false,
+      })),
+    },
+  }),
 };
 
 function isSaveFile(value: unknown): value is SaveFile {

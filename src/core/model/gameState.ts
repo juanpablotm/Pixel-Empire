@@ -1,3 +1,4 @@
+import type { CommunityState } from './community';
 import type { EraId } from './era';
 import type { MarketState } from './market';
 import type {
@@ -52,6 +53,7 @@ export interface LogEntry {
     | 'staff'
     | 'estudio'
     | 'mercado'
+    | 'comunidad'
     | 'fin';
   text: string;
 }
@@ -91,6 +93,8 @@ export interface GameState {
   loanPrincipal: number;
   /** Escándalos en curso: penalizan ventas mientras duran (docs/06 §5). */
   scandals: ActiveScandal[];
+  /** La capa social (docs/07): sentimiento, feed, creadores, bombing y crisis. */
+  community: CommunityState;
   /** Presión y regulaciones promulgadas por era (docs/06 §5). */
   regulation: RegulationState;
   /** Contadores históricos para el Legado (docs/06 §6). */

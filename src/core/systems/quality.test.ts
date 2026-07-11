@@ -26,6 +26,8 @@ function makeProject(overrides: Partial<Project> = {}): Project {
       dayOneDLC: false,
     },
     marketingUsed: [],
+    creatorCampaign: [],
+    overPromised: false,
     phase: 3,
     focus: [{}, {}, {}],
     chosenFeatureIds: [],

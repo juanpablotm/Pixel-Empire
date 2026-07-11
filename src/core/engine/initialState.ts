@@ -1,6 +1,7 @@
 import { balance } from '../../data/balance';
 import type { GameState } from '../model/gameState';
 import type { LegacyTrackedStats } from '../model/moral';
+import { initialCommunityState } from '../systems/community';
 import { createMarketState } from '../systems/market';
 import { initialReputation } from '../systems/reputation';
 import { createFounder } from '../systems/staff';
@@ -39,6 +40,7 @@ export function createInitialState(seed: number): GameState {
     market: createMarketState(balance.time.startWeek),
     loanPrincipal: 0,
     scandals: [],
+    community: initialCommunityState(),
     regulation: { pressure: {}, enacted: [] },
     stats: initialLegacyStats(),
     cashflow: [],

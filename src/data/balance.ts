@@ -548,6 +548,150 @@ export const balance = {
     },
   },
 
+  /** La capa social (docs/07): sentimiento, creadores, leaks, bombing y crisis. */
+  community: {
+    /** Termómetro de sentimiento 0..100 (docs/07 §2). */
+    sentiment: {
+      initial: 50,
+      /** Reversión semanal hacia la reputación de comunidad (el poso lento). */
+      revertRate: 0.15,
+      /** Lastre semanal mientras hay crisis abiertas / bombing activo. */
+      crisisDragPerWeek: 2,
+      bombDragPerWeek: 1.5,
+      /** Sacudida al lanzar: (reseña − neutral) / divisor, con tope ±. */
+      releaseNeutralReview: 60,
+      releaseDivisor: 3,
+      releaseJoltCap: 12,
+      /** Sacudidas inmediatas por palanca moral al lanzar (docs/06 §2). */
+      levers: {
+        lootboxes: -6,
+        /** × agresividad, en modelos con MTX. */
+        mtxPerAggression: -5,
+        dayOneDLC: -3,
+        abusivePrice: -4,
+        generousPrice: 4,
+        honestRelease: 2,
+      },
+      /** modificadorComunidad(sentimiento) = 1 + coef·(sentimiento−50)/50 (docs/04 §6). */
+      salesCoef: 0.25,
+    },
+
+    /** Feed de posts (docs/10 §7.3). */
+    feed: {
+      maxPosts: 30,
+      /** Probabilidad semanal de un post ambiental (solo sabor). */
+      ambientChance: 0.4,
+      /** Bandas del termómetro para el tono ambiental. */
+      positiveBand: 62,
+      negativeBand: 38,
+    },
+
+    /** Reparto de claves (docs/07 §3): recurso limitado por lanzamiento. */
+    keys: {
+      bySize: { pequeno: 2, mediano: 3, grande: 4, aaa: 5 } satisfies Record<ProjectSize, number>,
+      /** Hype inmediato al anunciar la colaboración: (alcance/escala) × boost. */
+      reachScale: 1_000,
+      hypeBoost: 0.04,
+      hypeBoostCap: 0.12,
+    },
+
+    /** resultadoCreador = fit × factorCalidad × factorBugs (docs/07 §3). */
+    creators: {
+      /** fit = wG·afinidadGénero + wA·afinidadPúblico. */
+      fitGenreWeight: 0.6,
+      fitAudienceWeight: 0.4,
+      /** factorCalidad = clamp01(Q / (floor + span·exigencia)): el exigente pide Q≈100. */
+      qualityFloor: 60,
+      qualitySpan: 40,
+      /** factorBugs = max(0, 1 − penal·bugLevel). */
+      bugPenalty: 1.6,
+      /** Umbrales del resultado: ≥ éxito · ≥ tibio · debajo, desastre. */
+      successThreshold: 0.6,
+      lukewarmThreshold: 0.35,
+      /** Empuje al pico de ventas: (alcance/escala) × resultado × coef, con tope total. */
+      spikeBoostCoef: 0.3,
+      spikeBoostCap: 1.5,
+      /** Δ reputación por segmento objetivo: share × (resultado − neutral) × coef, tope ±cap. */
+      repNeutral: 0.45,
+      repCoef: 8,
+      repCap: 4,
+      /** Sacudidas de sentimiento por directo. */
+      sentimentSuccess: 2.5,
+      sentimentDisaster: -3,
+      /**
+       * Bug en directo (docs/07 §3): determinista por bugLevel — solo si
+       * lanzaste un juego con bugs a los creadores; el PRNG elige a quién.
+       */
+      liveBugThreshold: 0.35,
+      /** El directo del afectado se hunde: resultado × este factor. */
+      liveBugOutcomeFactor: 0.3,
+      /** Severidad de la crisis: clamp(bugLevel × coef, min de crisis, 1). */
+      liveBugSeverityCoef: 1.4,
+    },
+
+    /** Leak de la build alpha (docs/07 §4): exige empleados (alguien que filtre). */
+    leak: {
+      minPhase: 2,
+      minHype: 0.25,
+      /** El PRNG solo decide el timing dentro de la ventana elegible. */
+      chancePerWeek: 0.12,
+      transparency: { hype: -0.05, sentiment: 4, communityRep: 1.5, drift: 0.05 },
+      capitalize: { hype: 0.1, drift: -0.05 },
+    },
+
+    /** Dilema de sobre-hype al cruzar la zona roja del manómetro (docs/10 §7.5). */
+    overHype: {
+      moderate: { hypeMargin: 0.05, sentiment: 2, communityRep: 1, drift: 0.05 },
+      promise: { hype: 0.15, drift: -0.1 },
+    },
+
+    /** Promesa vs realidad (docs/07 §4): expectativa = base + span×hype al lanzar. */
+    promise: {
+      expectedBase: 55,
+      expectedSpan: 30,
+      /** Brecha mínima (puntos de reseña) para que estalle la crisis. */
+      minGap: 8,
+      /** Brecha con la que la severidad llega a 1. */
+      gapForMaxSeverity: 30,
+      /** Cumplir lo prometido premia (el sobre-hype que sí entrega). */
+      deliveredSentiment: 6,
+      deliveredCommunityRep: 2,
+    },
+
+    /** Crisis con reloj (docs/07 §5). El colchón reutiliza moral.scandal.cushion*. */
+    crisis: {
+      minSeverity: 0.15,
+      /** Golpe de sentimiento al estallar (× severidad). */
+      spawnSentimentHit: 8,
+      /** Ignorar el reloj = silencio forzado con los golpes multiplicados. */
+      lateFactor: 1.3,
+      /** Silencio: la reputación de comunidad decide amainar (≥) o pudrirse (<). */
+      silenceFadeRep: 55,
+      silence: {
+        fade: { repDeltas: { comunidad: -1 }, sentiment: -2 },
+        rot: {
+          repDeltas: { comunidad: -4, hardcore: -2, prensa: -2 },
+          sentiment: -8,
+          bombExtendWeeks: 3,
+        },
+      },
+      /** 'culpar' se destapa (backfire) desde esta severidad — determinista. */
+      culparBackfireSeverity: 0.6,
+      /** Efectos 'acorta'/'alarga' sobre el bombing ligado. */
+      bombShortenFactor: 0.5,
+      bombExtendWeeks: 3,
+      /** 'acorta' sobre el escándalo de docs/06 que la originó. */
+      scandalShortenFactor: 0.5,
+      /** Duración del bombing = round(semanasBase × (floor + (1−floor)×severidad)). */
+      bombDurationSeverityFloor: 0.5,
+      /** Crisis resueltas retenidas como historial en el estado. */
+      historyMax: 8,
+    },
+
+    /** Las "Estrellas mediáticas" asignadas dan hype extra (docs/07 §6). */
+    mediaStarHypeCoef: 1,
+  },
+
   sales: {
     /** factorReseña = (reseña/100)^exponente: las reseñas altas venden desproporcionadamente más. */
     reviewExponent: 2,
