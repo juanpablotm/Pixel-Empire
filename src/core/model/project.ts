@@ -39,6 +39,11 @@ export interface Project {
   assignedStaff: string[];
   /** Crunch activo: +output a corto, −moral/energía/lealtad (docs/05 §6). */
   crunch: boolean;
+  /**
+   * Hype acumulado 0..1 (docs/04 §4, versión base de Fase 3): crece durante
+   * el desarrollo, más deprisa si el combo está de moda. Doble filo al lanzar.
+   */
+  hype: number;
   /** Semanas de desarrollo transcurridas. */
   weeksSpent: number;
   /** Puntos acumulados de Diseño/Técnica según el reparto de esfuerzo (docs/03 factor B). */

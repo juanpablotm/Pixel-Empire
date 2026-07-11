@@ -266,6 +266,81 @@ export const balance = {
     },
   },
 
+  market: {
+    /** Evolución de popularidades por tick (docs/04 §2): base guionizada + ruido suave. */
+    popularity: {
+      /** Amplitud del ruido semanal (± sobre la popularidad, antes del clamp 0..1). */
+      noiseAmplitude: 0.02,
+      /** Persistencia de la desviación: cada tick la popularidad revierte hacia la curva base. */
+      noisePersistence: 0.85,
+      /** Semanas hacia atrás para medir la dirección ↑→↓ sobre la curva base. */
+      directionLookbackWeeks: 6,
+      /** Cambio mínimo de la curva base en ese lapso para marcar ↑ o ↓. */
+      directionThreshold: 0.02,
+      /** Umbrales de etapa del ciclo de vida (docs/04 §2). */
+      stage: { deadLevel: 0.15, emergingLevel: 0.35, peakLevel: 0.65 },
+    },
+
+    /** Saturación por lanzamientos similares (docs/04 §3): sube al lanzar, decae al olvidar. */
+    saturation: {
+      /** Cuánto suma cada lanzamiento al contador de su combo género|tema. */
+      releaseIncrement: 1,
+      /** Peso de la saturación de otros temas del mismo género (secuelas "de género"). */
+      sameGenreWeight: 0.5,
+      /** Decaimiento multiplicativo semanal del contador (el público "olvida"). */
+      decayPerWeek: 0.94,
+      /** k del modificador: modificadorVentas = 1 − k·saturación [DECIDIDO, docs/04 §3]. */
+      k: 0.25,
+      /** Un juego similar reciente es "lo normal": no penaliza hasta superar este margen. */
+      freeAllowance: 1,
+      /** Suelo del modificador de ventas por saturación. */
+      minModifier: 0.25,
+    },
+
+    /** Hype base (docs/04 §4): crece durante el desarrollo, doble filo al lanzar. */
+    hype: {
+      /** El hype empieza a acumularse en esta fase de desarrollo (el "anuncio"). */
+      startPhase: 2,
+      /** Ganancia semanal base por tamaño de proyecto (los grandes generan más expectación). */
+      gainBySize: { pequeno: 0.07, mediano: 0.05, grande: 0.04, aaa: 0.045 } satisfies Record<
+        ProjectSize,
+        number
+      >,
+      /** La moda alimenta la expectación: ganancia × (base + span·popCombo). */
+      popCouplingBase: 0.4,
+      popCouplingSpan: 0.6,
+      max: 1,
+      /** Zona roja del Manómetro de Hype (docs/10 §7.5): sobre-hype a partir de aquí. */
+      overHypeThreshold: 0.65,
+      /** Puntos de reseña restados con hype 1.0 (penalizaciónExpectativas, docs/04 §5). */
+      reviewPenaltyMax: 10,
+      /** Hasta este hype las expectativas no endurecen la reseña. */
+      freeHype: 0.25,
+      /** Empuje a las ventas de salida: pico × (1 + coef·hype) (docs/04 §6). */
+      salesSpikeCoef: 1.2,
+    },
+
+    /** De Calidad a Reseña (docs/04 §5). Los sesgos por segmento viven en data/segments.ts. */
+    reviews: {
+      /** estándarEra: el listón sube con las eras (E2+ se define en Fase 6). */
+      eraStandard: { E1: 1 } as Partial<Record<EraId, number>>,
+      /** afinidadModa = span × (popCombo − neutral): ± puntos por estar (o no) de moda. */
+      modaSpan: 12,
+      modaNeutral: 0.5,
+    },
+
+    /** Ciclos de vida de plataformas (docs/04 §7). */
+    platforms: {
+      /** Ruido semanal (±proporción) sobre la base instalada guionizada. */
+      noiseAmplitude: 0.01,
+      /** Semanas tras el lanzamiento que cuentan como etapa "lanzamiento". */
+      launchWindowWeeks: 10,
+      /** Ventana y umbral (relativo al pico de la curva) para crecimiento/madurez/declive. */
+      directionLookbackWeeks: 8,
+      directionThreshold: 0.02,
+    },
+  },
+
   sales: {
     /** factorReseña = (reseña/100)^exponente: las reseñas altas venden desproporcionadamente más. */
     reviewExponent: 2,
@@ -274,9 +349,21 @@ export const balance = {
       ProjectSize,
       number
     >,
-    /** Decaimiento semanal de ventas, interpolado por reseña: mala → decayMin, perfecta → decayMax (cola larga). */
-    decayMin: 0.5,
-    decayMax: 0.85,
+    /**
+     * Curva de lanzamiento (docs/04 §6): pico inicial + cola larga.
+     *   curva(t) = pico(hype)·spikeDecay^t + tailAmp·tailDecay(reseña)^t
+     */
+    launch: {
+      /** Altura base del pico de salida (se multiplica por el empuje del hype). */
+      spikeBase: 1.5,
+      /** Decaimiento semanal del pico (rápido: las primeras semanas concentran ventas). */
+      spikeDecay: 0.55,
+      /** Altura de la cola larga. */
+      tailAmp: 0.35,
+      /** Decaimiento semanal de la cola, interpolado por reseña: mala → Min, perfecta → Max. */
+      tailDecayMin: 0.88,
+      tailDecayMax: 0.96,
+    },
     /** Ruido determinista (PRNG) sobre las ventas semanales, ±proporción. */
     weeklyNoise: 0.1,
     /** Por debajo de estas unidades semanales el juego sale del mercado. */

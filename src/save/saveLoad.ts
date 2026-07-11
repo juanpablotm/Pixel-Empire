@@ -1,11 +1,11 @@
-import { createFounder, type GameState } from '../core';
+import { createFounder, createMarketState, type GameState } from '../core';
 
 /**
  * Serialización y carga de partidas (docs/08 §7): JSON plano + localStorage,
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -52,6 +52,29 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       },
     };
   },
+  // v3 (Fase 2) → v4 (Fase 3): estado del mercado, hype en proyectos y
+  // reseñas por segmento en los juegos lanzados (docs/04).
+  3: (file) => ({
+    saveVersion: 4,
+    state: {
+      ...file.state,
+      market: createMarketState(file.state.week),
+      projects: file.state.projects.map((p) => ({ ...p, hype: 0 })),
+      releasedGames: file.state.releasedGames.map((g) => ({
+        ...g,
+        // Los juegos antiguos no tenían segmentos: todos heredan la reseña única.
+        reviewsBySegment: {
+          critica: g.review,
+          prensa: g.review,
+          hardcore: g.review,
+          casual: g.review,
+        },
+        reviewMarket: { base: g.review, modaBonus: 0, hypePenalty: 0 },
+        hypeAtRelease: 0,
+        saturationAtRelease: 0,
+      })),
+    },
+  }),
 };
 
 function isSaveFile(value: unknown): value is SaveFile {

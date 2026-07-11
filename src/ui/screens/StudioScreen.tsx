@@ -1,21 +1,36 @@
 import { projectProgress, projectTotalWeeks } from '../../core';
 import { useGameStore } from '../../state/store';
 import { getDevPhase } from '../../data/devPhases';
+import { getGenre } from '../../data/genres';
+import { getTheme } from '../../data/themes';
 import { formatMoney } from '../format';
 import { SavePanel } from '../components/SavePanel';
 
 /**
  * Vista principal del estudio (docs/10 §10.1, versión garaje de Fase 1):
- * proyecto en curso, catálogo de juegos lanzados y el historial de eventos.
+ * proyecto en curso, pulso del mercado, catálogo de juegos lanzados y el
+ * historial de eventos.
  */
+
+/** Lo más popular ahora mismo (solo presentación; el estado viene de core/). */
+function hottest(trends: Record<string, { pop: number }>): string | null {
+  const entries = Object.entries(trends);
+  if (entries.length === 0) return null;
+  return entries.reduce((best, cur) => (cur[1].pop > best[1].pop ? cur : best))[0];
+}
+
 export function StudioScreen() {
   const project = useGameStore((s) => s.game.projects[0]);
   const releasedGames = useGameStore((s) => s.game.releasedGames);
   const staffCount = useGameStore((s) => s.game.staff.length);
   const candidateCount = useGameStore((s) => s.game.candidates.length);
+  const market = useGameStore((s) => s.game.market);
   const log = useGameStore((s) => s.game.log);
   const goTo = useGameStore((s) => s.goTo);
   const openReview = useGameStore((s) => s.openReview);
+
+  const hotGenre = hottest(market.genres);
+  const hotTheme = hottest(market.themes);
 
   return (
     <main className="grid flex-1 gap-6 px-6 py-6 lg:grid-cols-[2fr_1fr]">
@@ -78,6 +93,26 @@ export function StudioScreen() {
               className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
             >
               👥 Ver equipo
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Mercado
+          </h2>
+          <div className="flex flex-wrap items-center gap-4">
+            <p className="text-slate-400">
+              {hotGenre && hotTheme
+                ? `Lo que está de moda: ${getGenre(hotGenre).name} y ${getTheme(hotTheme).name}.`
+                : 'El mercado despierta.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => goTo('mercado')}
+              className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            >
+              📈 Ver tendencias
             </button>
           </div>
         </section>

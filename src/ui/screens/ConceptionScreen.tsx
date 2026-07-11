@@ -1,18 +1,29 @@
 import { useState } from 'react';
-import { computeFit, estimateProject, fitBand, type Audience, type ProjectSize } from '../../core';
+import {
+  computeFit,
+  estimateProject,
+  fitBand,
+  platformAvailable,
+  type Audience,
+  type ProjectSize,
+} from '../../core';
 import { genres } from '../../data/genres';
 import { themes } from '../../data/themes';
 import { platforms } from '../../data/platforms';
 import { audienceLabels, sizeLabels } from '../../data/reviewTexts';
+import { platformStageLabels } from '../../data/marketTexts';
 import { balance } from '../../data/balance';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
 import { FitMeter } from '../components/FitMeter';
+import { TrendArrow } from '../components/TrendArrow';
 
 /**
  * Asistente de concepción (docs/10 §10.2): Tema → Género → Plataforma →
- * Público → Tamaño → Nombre, con medidor de Fit en vivo. La UI solo muestra:
- * el fit lo calcula core/systems/quality.ts.
+ * Público → Tamaño → Nombre, con medidor de Fit en vivo y las tendencias del
+ * mercado a la vista (docs/04 §2: decisión informada, no trivial). La UI solo
+ * muestra: el fit lo calcula core/systems/quality.ts y las tendencias vienen
+ * de core/systems/market.ts.
  */
 
 const AUDIENCES: Audience[] = ['hardcore', 'amplio', 'casual', 'infantil'];
@@ -55,6 +66,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function ConceptionScreen() {
   const start = useGameStore((s) => s.startProject);
   const goTo = useGameStore((s) => s.goTo);
+  const market = useGameStore((s) => s.game.market);
+  const week = useGameStore((s) => s.game.week);
 
   const [name, setName] = useState('');
   const [themeId, setThemeId] = useState(themes[0].id);
@@ -84,7 +97,8 @@ export function ConceptionScreen() {
         <Field label="Tema">
           {themes.map((t) => (
             <OptionButton key={t.id} selected={themeId === t.id} onClick={() => setThemeId(t.id)}>
-              {t.name}
+              {t.name}{' '}
+              {market.themes[t.id] && <TrendArrow direction={market.themes[t.id].direction} />}
             </OptionButton>
           ))}
         </Field>
@@ -92,21 +106,37 @@ export function ConceptionScreen() {
         <Field label="Género">
           {genres.map((g) => (
             <OptionButton key={g.id} selected={genreId === g.id} onClick={() => setGenreId(g.id)}>
-              {g.name}
+              {g.name}{' '}
+              {market.genres[g.id] && <TrendArrow direction={market.genres[g.id].direction} />}
             </OptionButton>
           ))}
         </Field>
 
         <Field label="Plataforma">
-          {platforms.map((p) => (
-            <OptionButton
-              key={p.id}
-              selected={platformId === p.id}
-              onClick={() => setPlatformId(p.id)}
-            >
-              {p.name}
-            </OptionButton>
-          ))}
+          {platforms.map((p) => {
+            const available = platformAvailable(p, week);
+            const stage = market.platforms[p.id]?.stage;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={platformId === p.id}
+                disabled={!available}
+                onClick={() => setPlatformId(p.id)}
+                title={stage ? platformStageLabels[stage] : undefined}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  platformId === p.id
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                } ${!available ? 'cursor-not-allowed opacity-50' : ''}`}
+              >
+                {p.name}
+                {stage && (
+                  <span className="ml-1.5 text-xs opacity-75">({platformStageLabels[stage]})</span>
+                )}
+              </button>
+            );
+          })}
         </Field>
 
         <Field label="Público objetivo">

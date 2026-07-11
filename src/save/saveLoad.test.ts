@@ -97,6 +97,79 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(state.projects[0].weeksSpent).toBe(3);
   });
 
+  it('migra un guardado v3 (Fase 2) al esquema actual: mercado, hype y segmentos', () => {
+    const base = createInitialState(SEED);
+    const oldGame = {
+      id: 'proyecto-1',
+      name: 'Juego viejo',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+      price: 20,
+      quality: 70,
+      review: 70,
+      verdict: 'Un buen juego con margen de mejora.',
+      breakdown: {},
+      lines: [],
+      releaseWeek: 10,
+      weeklySales: [120, 80],
+      totalUnits: 200,
+      totalRevenue: 4_000,
+      salesActive: true,
+    };
+    const project = {
+      id: 'proyecto-2',
+      name: 'En marcha',
+      themeId: 'espacio',
+      genreId: 'puzzle',
+      platformId: 'commo64',
+      audience: 'casual',
+      size: 'pequeno',
+      price: 20,
+      phase: 2,
+      focus: [{}, {}, {}],
+      chosenFeatureIds: [],
+      assignedStaff: ['fundador'],
+      crunch: false,
+      weeksSpent: 3,
+      designPoints: 2,
+      techPoints: 1,
+      qaInvested: 0,
+      bugDebt: 0.06,
+    };
+    const v3 = JSON.stringify({
+      saveVersion: 3,
+      state: {
+        ...base,
+        week: 20,
+        projects: [project],
+        releasedGames: [oldGame],
+        market: undefined,
+      },
+    });
+
+    const state = deserializeSave(v3);
+    // El mercado se reconstruye desde las curvas guionizadas en su semana.
+    expect(state.market).toBeDefined();
+    expect(state.market.genres.rpg.pop).toBeGreaterThan(0);
+    expect(state.market.platforms.commo64.installedBase).toBeGreaterThan(0);
+    expect(state.market.saturation).toEqual({});
+    // Los proyectos en marcha arrancan sin hype; los juegos viejos heredan su reseña.
+    expect(state.projects[0].hype).toBe(0);
+    const migrated = state.releasedGames[0];
+    expect(migrated.reviewsBySegment).toEqual({
+      critica: 70,
+      prensa: 70,
+      hardcore: 70,
+      casual: 70,
+    });
+    expect(migrated.reviewMarket).toEqual({ base: 70, modaBonus: 0, hypePenalty: 0 });
+    expect(migrated.hypeAtRelease).toBe(0);
+    expect(migrated.saturationAtRelease).toBe(0);
+  });
+
   it('el JSON incluye saveVersion', () => {
     const parsed = JSON.parse(serializeSave(createInitialState(SEED))) as {
       saveVersion: number;

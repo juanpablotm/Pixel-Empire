@@ -28,6 +28,17 @@ export type {
   Theme,
   Trait,
 } from './model/content';
+export type {
+  CurvePoint,
+  MarketState,
+  PlatformMarketState,
+  PlatformStage,
+  ReviewMarketInfo,
+  Segment,
+  TrendDirection,
+  TrendStage,
+  TrendState,
+} from './model/market';
 
 export { makeRng } from './engine/rng';
 export type { Rng } from './engine/rng';
@@ -56,7 +67,25 @@ export {
 } from './systems/projects';
 export type { ProjectConcept } from './systems/projects';
 export { buildReviewLines, reviewVerdict } from './systems/review';
-export { advanceSales, expectedUnits } from './systems/sales';
+export { advanceSales } from './systems/sales';
+export {
+  advanceMarket,
+  comboKey,
+  comboPopularity,
+  computeSegmentReviews,
+  createMarketState,
+  curveValueAt,
+  effectiveSaturation,
+  expectedWeeklyUnits,
+  marketSize,
+  platformAvailable,
+  platformStage,
+  registerReleaseSaturation,
+  saturationModifier,
+  trendDirection,
+  trendStage,
+} from './systems/market';
+export type { SegmentReviewsInput, SegmentReviewsResult } from './systems/market';
 export { advanceEconomy } from './systems/economy';
 export {
   advanceScale,

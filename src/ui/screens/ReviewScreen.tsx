@@ -1,11 +1,14 @@
 import type { FactorTone } from '../../core';
+import { reviewSegments } from '../../data/segments';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
 
 /**
- * Desglose de reseña (docs/03 §5 y docs/10 §10.4): la nota, la frase-veredicto
- * y una línea ✔/~/✘ por factor. Versión baseline de la "gala" (docs/10 §7.1):
- * las líneas entran escalonadas con CSS; la coreografía completa llega en Fase 7.
+ * Desglose de reseña (docs/03 §5 y docs/10 §10.4): la nota media, las notas
+ * por segmento (docs/04 §5), la frase-veredicto, una línea ✔/~/✘ por factor y
+ * el ajuste del mercado (moda y expectativas). Versión baseline de la "gala"
+ * (docs/10 §7.1): las líneas entran escalonadas con CSS; la coreografía
+ * completa llega en Fase 7.
  */
 
 const TONE_ICON: Record<FactorTone, string> = { good: '✔', ok: '~', bad: '✘' };
@@ -40,13 +43,29 @@ export function ReviewScreen() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-8">
       <section className="review-pop flex flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 p-8 text-center">
-        <span className="text-sm uppercase tracking-wide text-slate-400">Reseña</span>
+        <span className="text-sm uppercase tracking-wide text-slate-400">Reseña media</span>
         <span className="text-6xl font-bold tabular-nums">
           {game.review}
           <span className="text-2xl font-normal text-slate-500"> / 100</span>
         </span>
         <p className="text-lg text-slate-300">«{game.verdict}»</p>
         <p className="text-sm text-slate-500">{game.name}</p>
+
+        {/* Cada público juzga distinto (docs/04 §5). */}
+        <ul className="mt-3 flex flex-wrap justify-center gap-2">
+          {reviewSegments.map((segment) => {
+            const score = game.reviewsBySegment[segment.id];
+            if (score === undefined) return null;
+            return (
+              <li
+                key={segment.id}
+                className="review-line rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-300"
+              >
+                {segment.name} <span className="font-semibold tabular-nums">{score}</span>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
@@ -70,6 +89,34 @@ export function ReviewScreen() {
             </li>
           ))}
         </ul>
+
+        {/* El ajuste del mercado sobre Q (docs/04 §5), para que la nota sea explicable. */}
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-slate-800 pt-3 text-sm text-slate-400">
+          <span>
+            Calidad <span className="font-semibold tabular-nums">{game.quality}</span>
+          </span>
+          <span>
+            Moda{' '}
+            <span
+              className={`font-semibold tabular-nums ${
+                game.reviewMarket.modaBonus >= 0 ? 'text-emerald-400' : 'text-red-400'
+              }`}
+            >
+              {game.reviewMarket.modaBonus >= 0 ? '+' : ''}
+              {game.reviewMarket.modaBonus}
+            </span>
+          </span>
+          <span>
+            Expectativas por hype{' '}
+            <span
+              className={`font-semibold tabular-nums ${
+                game.reviewMarket.hypePenalty > 0 ? 'text-red-400' : 'text-slate-300'
+              }`}
+            >
+              −{game.reviewMarket.hypePenalty}
+            </span>
+          </span>
+        </div>
       </section>
 
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 p-5">

@@ -1,4 +1,5 @@
 import type { EraId } from './era';
+import type { MarketState } from './market';
 import type { Project } from './project';
 import type { ReleasedGame } from './release';
 import type { Employee } from './staff';
@@ -17,7 +18,16 @@ export interface Studio {
 /** Entrada del historial de eventos para la UI y el Legado (docs/08 §5). */
 export interface LogEntry {
   week: number;
-  type: 'proyecto' | 'fase' | 'lanzamiento' | 'ventas' | 'economia' | 'staff' | 'estudio' | 'fin';
+  type:
+    | 'proyecto'
+    | 'fase'
+    | 'lanzamiento'
+    | 'ventas'
+    | 'economia'
+    | 'staff'
+    | 'estudio'
+    | 'mercado'
+    | 'fin';
   text: string;
 }
 
@@ -31,8 +41,8 @@ export interface GameOverInfo {
  * Estado completo de la partida. JSON plano y serializable: sin clases,
  * funciones ni valores no serializables (docs/08 §5 y §7).
  *
- * Fase 2: bucle núcleo + personal. Las fases siguientes añadirán market,
- * community y research según docs/08 §5.
+ * Fase 3: bucle núcleo + personal + mercado vivo. Las fases siguientes
+ * añadirán community y research según docs/08 §5.
  */
 export interface GameState {
   seed: number;
@@ -47,6 +57,8 @@ export interface GameState {
   /** Proyectos en desarrollo. En el garaje (etapa 1) solo puede haber uno. */
   projects: Project[];
   releasedGames: ReleasedGame[];
+  /** Mercado vivo: popularidades, saturación y plataformas (docs/04). */
+  market: MarketState;
   /** Contador para generar ids de proyecto únicos y deterministas. */
   projectCounter: number;
   /** Semanas consecutivas con capital negativo (bancarrota al agotar la gracia). */

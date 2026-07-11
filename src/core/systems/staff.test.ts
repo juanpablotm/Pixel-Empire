@@ -87,6 +87,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     chosenFeatureIds: [],
     assignedStaff: ['fundador'],
     crunch: false,
+    hype: 0,
     weeksSpent: 6,
     designPoints: 6.5,
     techPoints: 3.5,

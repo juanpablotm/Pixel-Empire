@@ -57,8 +57,8 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     // Por defecto: Fantasía × RPG en PC Casero para público Amplio → verde.
     expect(screen.getByRole('status', { name: 'Fit: Encaje prometedor' })).toBeInTheDocument();
 
-    // Deportes × RPG para Infantil → rojo.
-    fireEvent.click(screen.getByRole('button', { name: 'Deportes' }));
+    // Deportes × RPG para Infantil → rojo. (El nombre incluye la flecha de tendencia.)
+    fireEvent.click(screen.getByRole('button', { name: /Deportes/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Infantil' }));
     expect(screen.getByRole('status', { name: 'Fit: Mal encaje' })).toBeInTheDocument();
   });
@@ -89,9 +89,13 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
       fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
     }
 
-    // 4. Pantalla de reseña: nota + veredicto + desglose de 6 factores (docs/03 §5).
-    expect(screen.getByText('Reseña')).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(6);
+    // 4. Pantalla de reseña: nota media + segmentos + desglose de 6 factores (docs/03 §5, docs/04 §5).
+    expect(screen.getByText('Reseña media')).toBeInTheDocument();
+    expect(screen.getByText('Crítica')).toBeInTheDocument();
+    expect(screen.getByText('Hardcore')).toBeInTheDocument();
+    const breakdown = screen.getByText('Por qué esta nota').closest('section');
+    expect(breakdown).not.toBeNull();
+    expect(within(breakdown as HTMLElement).getAllByRole('listitem')).toHaveLength(6);
     expect(screen.getByText('Contenido escaso')).toBeInTheDocument(); // sin features → ✘
     const game = useGameStore.getState().game.releasedGames[0];
     expect(game.lines.map((l) => l.factor)).toEqual([
@@ -110,6 +114,36 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     const updated = useGameStore.getState().game.releasedGames[0];
     expect(updated.totalUnits).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /Nuevo juego/ })).toBeInTheDocument();
+  });
+
+  it('el panel de tendencias muestra dirección por género/tema y plataformas (docs/10 §10.7)', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Ver tendencias/ }));
+
+    expect(screen.getByText('Mercado y tendencias')).toBeInTheDocument();
+    // Cada género y tema lleva su flecha ↑→↓ (docs/04 §2).
+    const arrows = screen.getAllByRole('img', { name: /subiendo|estable|bajando/ });
+    expect(arrows.length).toBeGreaterThanOrEqual(10); // 4 géneros + 6 temas
+    // Plataformas con su etapa de ciclo de vida y base instalada.
+    expect(screen.getByText('Commo 64')).toBeInTheDocument();
+    expect(screen.getAllByText(/uds\/sem/).length).toBeGreaterThanOrEqual(2);
+    // Sin lanzamientos similares todavía: nada saturado.
+    expect(screen.getByText(/mercado tiene hambre/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Volver al estudio' }));
+    expect(screen.getByRole('button', { name: /Nuevo juego/ })).toBeInTheDocument();
+  });
+
+  it('la pantalla de desarrollo muestra el Manómetro de Hype (docs/10 §7.5)', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
+    fireEvent.change(screen.getByLabelText('Nombre del juego'), {
+      target: { value: 'Hype Machine' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
+
+    const gauge = screen.getByRole('meter', { name: 'Hype' });
+    expect(gauge).toHaveAttribute('aria-valuenow', '0');
   });
 
   it('la pantalla de equipo muestra al fundador y el pool bloqueado en el garaje (docs/10 §10.6)', () => {

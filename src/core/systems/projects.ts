@@ -14,6 +14,12 @@ import type {
   ProjectSize,
 } from '../model/project';
 import type { ReleasedGame } from '../model/release';
+import {
+  computeSegmentReviews,
+  effectiveSaturation,
+  platformAvailable,
+  registerReleaseSaturation,
+} from './market';
 import { computeQuality } from './quality';
 import { buildReviewLines, reviewVerdict } from './review';
 import {
@@ -99,6 +105,9 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
   getTheme(concept.themeId);
   getGenre(concept.genreId);
   const platform = getPlatform(concept.platformId);
+  if (!platformAvailable(platform, state.week)) {
+    throw new Error(`${platform.name} no está a la venta (docs/04 §7)`);
+  }
 
   const project: Project = {
     id: `proyecto-${state.projectCounter + 1}`,
@@ -115,6 +124,7 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     // Por defecto toda la plantilla arranca el proyecto (docs/02 §2 paso 2).
     assignedStaff: state.staff.map((e) => e.id),
     crunch: false,
+    hype: 0,
     weeksSpent: 0,
     designPoints: 0,
     techPoints: 0,
@@ -194,8 +204,18 @@ function releaseProject(state: GameState, project: Project): GameState {
       synergyFactor: teamResult.synergyFactor,
     },
   };
-  // Fase 1: reseña = Q (las modas/hype/segmentos llegan en Fase 3, docs/04).
-  const review = q;
+  // El mercado transforma Q en reseñas por segmento (docs/04 §5): moda,
+  // expectativas del hype y sesgo de cada público.
+  const reviews = computeSegmentReviews({
+    quality: q,
+    genreId: project.genreId,
+    themeId: project.themeId,
+    audience: project.audience,
+    hype: project.hype,
+    era: state.era,
+    market: state.market,
+  });
+  const review = reviews.average;
   const released: ReleasedGame = {
     id: project.id,
     name: project.name,
@@ -207,6 +227,10 @@ function releaseProject(state: GameState, project: Project): GameState {
     price: project.price,
     quality: q,
     review,
+    reviewsBySegment: reviews.bySegment,
+    reviewMarket: reviews.info,
+    hypeAtRelease: project.hype,
+    saturationAtRelease: effectiveSaturation(state.market, project.genreId, project.themeId),
     verdict: reviewVerdict(review),
     breakdown: fullBreakdown,
     lines: buildReviewLines(fullBreakdown, project),
@@ -220,11 +244,13 @@ function releaseProject(state: GameState, project: Project): GameState {
     ...state,
     projects: [],
     releasedGames: [...state.releasedGames, released],
+    // El lanzamiento inunda un poco su combo género+tema (docs/04 §3).
+    market: registerReleaseSaturation(state.market, project.genreId, project.themeId),
   };
   next = appendLog(
     next,
     'lanzamiento',
-    `«${released.name}» sale a la venta: reseña ${review}/100.`,
+    `«${released.name}» sale a la venta: reseña media ${review}/100.`,
   );
   // La moral del equipo reacciona al resultado (docs/05 §4).
   return applyReleaseMorale(next, review);

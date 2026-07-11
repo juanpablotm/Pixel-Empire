@@ -29,8 +29,8 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
  * añade solo estado de presentación (pantalla actual) y navegación.
  */
 
-/** Pantallas de las Fases 1–2 (docs/10 §10.1–10.4 y §10.6). */
-export type Screen = 'estudio' | 'concepcion' | 'desarrollo' | 'resena' | 'equipo';
+/** Pantallas de las Fases 1–3 (docs/10 §10.1–10.4, §10.6 y §10.7). */
+export type Screen = 'estudio' | 'concepcion' | 'desarrollo' | 'resena' | 'equipo' | 'mercado';
 
 export interface GameStore {
   game: GameState;

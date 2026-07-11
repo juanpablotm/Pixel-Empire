@@ -1,30 +1,15 @@
 import { balance } from '../../data/balance';
-import { getPlatform } from '../../data/platforms';
 import { appendLog } from '../engine/log';
 import type { Rng } from '../engine/rng';
 import type { GameState } from '../model/gameState';
-import type { ReleasedGame } from '../model/release';
+import { expectedWeeklyUnits } from './market';
 
 /**
- * Ventas simples de la Fase 1 (docs/11): demanda base × reseña, con pico
- * inicial y cola larga. Sin modas, saturación, hype ni segmentos (docs/04,
- * Fase 3). El ruido semanal usa el PRNG con semilla: mismo seed → misma curva.
- *
- *   unidades(t) = demandaBase(plataforma) × factorTamaño × (reseña/100)^k × decay^t
+ * Ventas por tick (docs/04 §6): la curva pico + cola larga se recalcula cada
+ * semana con el mercado ACTUAL (popularidades, saturación y base instalada),
+ * en core/systems/market.ts. Aquí solo se aplica el ruido determinista del
+ * PRNG, se ingresa la recaudación y se retiran los juegos agotados.
  */
-
-/** Unidades esperadas (sin ruido) del juego en su semana t desde el lanzamiento. */
-export function expectedUnits(game: ReleasedGame, weeksSinceRelease: number): number {
-  const s = balance.sales;
-  const reviewFactor = (game.review / 100) ** s.reviewExponent;
-  const decay = s.decayMin + (s.decayMax - s.decayMin) * (game.review / 100);
-  return (
-    getPlatform(game.platformId).baseMarketSize *
-    s.sizeDemandFactor[game.size] *
-    reviewFactor *
-    decay ** weeksSinceRelease
-  );
-}
 
 /** Una semana de ventas para todos los juegos vivos; ingresa la recaudación al capital. */
 export function advanceSales(state: GameState, rng: Rng): GameState {
@@ -35,7 +20,7 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
 
     const t = state.week - game.releaseWeek;
     const noise = 1 + (rng.next() * 2 - 1) * balance.sales.weeklyNoise;
-    const units = Math.round(expectedUnits(game, t) * noise);
+    const units = Math.round(expectedWeeklyUnits(game, t, state.market) * noise);
 
     if (units < balance.sales.cutoffUnits) {
       next = appendLog(next, 'ventas', `«${game.name}» sale de las tiendas.`);

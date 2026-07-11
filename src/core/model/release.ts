@@ -1,3 +1,4 @@
+import type { ReviewMarketInfo, Segment } from './market';
 import type { Audience, ProjectSize } from './project';
 
 /**
@@ -57,8 +58,16 @@ export interface ReleasedGame {
   price: number;
   /** Calidad Real Q, 0..100 (docs/03). */
   quality: number;
-  /** Reseña pública 0..100. Fase 1: igual a Q (sin modas, hype ni segmentos aún). */
+  /** Reseña media 0..100: media ponderada de los segmentos (docs/04 §5–6). */
   review: number;
+  /** Reseña por segmento (docs/04 §5); solo los segmentos activos de data/segments.ts. */
+  reviewsBySegment: Partial<Record<Segment, number>>;
+  /** Ajustes de mercado sobre Q, guardados para explicar la reseña (docs/04 §5). */
+  reviewMarket: ReviewMarketInfo;
+  /** Hype acumulado al lanzar, 0..1 (docs/04 §4): pico inicial + reseña más dura. */
+  hypeAtRelease: number;
+  /** Saturación efectiva del combo al lanzar (docs/04 §3 y docs/09 §1). */
+  saturationAtRelease: number;
   /** Frase-veredicto de la reseña (data/reviewTexts.ts). */
   verdict: string;
   breakdown: QualityBreakdown;

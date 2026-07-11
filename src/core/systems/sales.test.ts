@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
+import { getPlatform } from '../../data/platforms';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
 import type { ReleasedGame } from '../model/release';
-import { expectedUnits } from './sales';
+import { expectedWeeklyUnits, saturationModifier, effectiveSaturation } from './market';
 
 const SEED = 42;
 
@@ -21,6 +22,10 @@ function makeGame(overrides: Partial<ReleasedGame> = {}): ReleasedGame {
     price: 20,
     quality: 80,
     review: 80,
+    reviewsBySegment: { critica: 80, prensa: 80, hardcore: 80, casual: 80 },
+    reviewMarket: { base: 80, modaBonus: 0, hypePenalty: 0 },
+    hypeAtRelease: 0,
+    saturationAtRelease: 0,
     verdict: 'Una joya honesta con algún defecto.',
     breakdown: {
       fit: 1,
@@ -51,13 +56,33 @@ function withGame(game = makeGame()): GameState {
   return { ...state, releasedGames: [game] };
 }
 
-describe('ventas simples de Fase 1 — demanda base × reseña (docs/11)', () => {
-  it('expectedUnits: demanda base × factorTamaño × (reseña/100)^k × decay^t', () => {
+describe('ventas de Fase 3 — pico + cola larga recalculada por tick (docs/04 §6)', () => {
+  it('expectedWeeklyUnits: demanda × factorReseña × saturación × curva(t, hype)', () => {
     const game = makeGame();
-    // 400 × 1 × 0.8² × decay⁰ = 256
-    expect(expectedUnits(game, 0)).toBeCloseTo(256, 10);
-    const decay = balance.sales.decayMin + (balance.sales.decayMax - balance.sales.decayMin) * 0.8;
-    expect(expectedUnits(game, 3)).toBeCloseTo(256 * decay ** 3, 10);
+    const market = createInitialState(SEED).market;
+    const s = balance.sales;
+    const platform = getPlatform('pcCasero');
+
+    const demand =
+      market.platforms.pcCasero.installedBase *
+      platform.audienceBias.hardcore *
+      s.sizeDemandFactor.pequeno *
+      market.genres.rpg.pop *
+      market.themes.fantasia.pop;
+    const reviewFactor = 0.8 ** s.reviewExponent;
+    const satMod = saturationModifier(effectiveSaturation(market, 'rpg', 'fantasia'));
+    const tailDecay = s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * 0.8;
+    const curveAt = (t: number) =>
+      s.launch.spikeBase * s.launch.spikeDecay ** t + s.launch.tailAmp * tailDecay ** t;
+
+    expect(expectedWeeklyUnits(game, 0, market)).toBeCloseTo(
+      demand * reviewFactor * satMod * curveAt(0),
+      8,
+    );
+    expect(expectedWeeklyUnits(game, 5, market)).toBeCloseTo(
+      demand * reviewFactor * satMod * curveAt(5),
+      8,
+    );
   });
 
   it('la primera semana vende cerca del pico esperado (± ruido del PRNG)', () => {
@@ -65,8 +90,10 @@ describe('ventas simples de Fase 1 — demanda base × reseña (docs/11)', () =>
     const game = state.releasedGames[0];
     expect(game.weeklySales).toHaveLength(1);
     const units = game.weeklySales[0];
-    expect(units).toBeGreaterThanOrEqual(Math.floor(256 * (1 - balance.sales.weeklyNoise)));
-    expect(units).toBeLessThanOrEqual(Math.ceil(256 * (1 + balance.sales.weeklyNoise)));
+    // El tick evoluciona el mercado antes de vender: el esperado usa ese mercado.
+    const expected = expectedWeeklyUnits(makeGame(), 0, state.market);
+    expect(units).toBeGreaterThanOrEqual(Math.floor(expected * (1 - balance.sales.weeklyNoise)));
+    expect(units).toBeLessThanOrEqual(Math.ceil(expected * (1 + balance.sales.weeklyNoise)));
     expect(game.totalRevenue).toBe(units * game.price);
     expect(game.totalUnits).toBe(units);
   });
@@ -80,20 +107,24 @@ describe('ventas simples de Fase 1 — demanda base × reseña (docs/11)', () =>
     );
   });
 
-  it('las ventas decaen semana a semana (pico + cola)', () => {
+  it('pico + cola larga: las ventas caen fuerte al principio y suave después', () => {
     let state = withGame();
-    for (let i = 0; i < 4; i++) state = tick(state);
+    for (let i = 0; i < 9; i++) state = tick(state);
     const sales = state.releasedGames[0].weeklySales;
-    expect(sales).toHaveLength(4);
-    for (let i = 1; i < sales.length; i++) {
-      expect(sales[i]).toBeLessThan(sales[i - 1]);
-    }
+    expect(sales).toHaveLength(9);
+    // El pico se desinfla en las primeras semanas...
+    expect(sales[0]).toBeGreaterThan(sales[3]);
+    // ...y la cola sigue decayendo, más despacio.
+    expect(sales[3]).toBeGreaterThan(sales[8]);
+    const spikeDrop = sales[3] / sales[0];
+    const tailDrop = sales[8] / sales[3];
+    expect(tailDrop).toBeGreaterThan(spikeDrop);
   });
 
   it('una reseña mejor vende más y aguanta más semanas en tiendas', () => {
     const run = (review: number) => {
       let state = withGame(makeGame({ review }));
-      for (let i = 0; i < 52; i++) state = tick(state);
+      for (let i = 0; i < 60; i++) state = tick(state);
       return state.releasedGames[0];
     };
     const buena = run(85);
@@ -104,7 +135,7 @@ describe('ventas simples de Fase 1 — demanda base × reseña (docs/11)', () =>
 
   it('el juego sale de las tiendas cuando las ventas caen bajo el umbral', () => {
     let state = withGame();
-    for (let i = 0; i < 52; i++) state = tick(state);
+    for (let i = 0; i < 60; i++) state = tick(state);
     const game = state.releasedGames[0];
     expect(game.salesActive).toBe(false);
     expect(game.weeklySales[game.weeklySales.length - 1]).toBeGreaterThanOrEqual(
@@ -112,7 +143,7 @@ describe('ventas simples de Fase 1 — demanda base × reseña (docs/11)', () =>
     );
     expect(state.log.some((e) => e.type === 'ventas')).toBe(true);
 
-    // Tras salir de tiendas, nada cambia salvo la economía semanal.
+    // Tras salir de tiendas, sus ventas no cambian más.
     const next = tick(state);
     expect(next.releasedGames[0].weeklySales).toEqual(game.weeklySales);
   });

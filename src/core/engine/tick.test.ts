@@ -24,11 +24,15 @@ describe('tick — avance puro de 1 semana (docs/08 §4)', () => {
     expect(tick(state)).toEqual(tick(state));
   });
 
-  it('sin proyecto ni juegos lanzados: solo avanza la semana y paga el coste fijo', () => {
+  it('sin proyecto ni juegos lanzados: avanza la semana, paga el coste fijo y mueve el mercado', () => {
     const state = createInitialState(SEED);
     const next = tick(state);
     expect(next.studio.capital).toBe(state.studio.capital - balance.economy.weeklyUpkeep);
-    expect({ ...next, week: state.week, studio: state.studio }).toEqual(state);
+    // El mercado respira aunque el estudio no haga nada (docs/04).
+    expect(next.market).not.toEqual(state.market);
+    expect({ ...next, week: state.week, studio: state.studio, market: state.market }).toEqual(
+      state,
+    );
   });
 
   it('el estado inicial sale de data/balance.ts', () => {

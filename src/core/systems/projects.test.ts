@@ -142,7 +142,10 @@ describe('desarrollo por fases hasta el lanzamiento (docs/02 §2 pasos 3 y 6)', 
     const game = state.releasedGames[0];
     expect(game.name).toBe(CONCEPT.name);
     expect(game.releaseWeek).toBe(balance.time.startWeek + 5); // 6 semanas de desarrollo
-    expect(game.review).toBe(game.quality);
+    // Fase 3: la reseña ya no es Q a secas, es la media de los segmentos (docs/04 §5).
+    expect(Object.keys(game.reviewsBySegment)).toHaveLength(4);
+    expect(game.review).toBeGreaterThan(0);
+    expect(game.hypeAtRelease).toBeGreaterThan(0);
     expect(game.quality).toBeGreaterThan(0);
     expect(game.quality).toBeLessThanOrEqual(100);
     expect(game.verdict).not.toBe('');

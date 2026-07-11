@@ -1,5 +1,6 @@
 import { balance } from '../../data/balance';
 import type { GameState } from '../model/gameState';
+import { createMarketState } from '../systems/market';
 import { createFounder } from '../systems/staff';
 
 /** Crea el estado inicial de una partida nueva. Los valores vienen de data/balance.ts. */
@@ -17,6 +18,7 @@ export function createInitialState(seed: number): GameState {
     candidates: [],
     projects: [],
     releasedGames: [],
+    market: createMarketState(balance.time.startWeek),
     projectCounter: 0,
     negativeWeeks: 0,
     gameOver: null,

@@ -11,6 +11,7 @@ import { features } from '../../data/features';
 import { getGenre } from '../../data/genres';
 import { useGameStore } from '../../state/store';
 import { Avatar } from '../components/Avatar';
+import { HypeGauge } from '../components/HypeGauge';
 
 /**
  * Pantalla de desarrollo (docs/10 §10.3): reparto de esfuerzo por fase con
@@ -123,6 +124,10 @@ export function DevelopmentScreen() {
           Semana {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)} · deja correr el
           tiempo para avanzar
         </p>
+        {/* Manómetro de Hype (docs/04 §4): crece desde Producción, más con la moda. */}
+        <div className="mt-4 border-t border-slate-800 pt-4">
+          <HypeGauge hype={project.hype} />
+        </div>
       </section>
 
       {/* Equipo asignado: el Factor E legible (docs/03 factor E, docs/10 §10.6) */}
