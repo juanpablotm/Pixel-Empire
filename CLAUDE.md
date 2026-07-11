@@ -78,12 +78,13 @@ Para cada fase del roadmap (`11`):
    aceptación (CA) del documento.
 4. **No avanzar** a la siguiente fase hasta que los CA se cumplan y los tests estén verdes.
 
-### Fase actual: **Fase 2 — Personal y equipo (profundidad de producción)** (ver `11`)
-Objetivo: pasar de "lo haces tú" a dirigir un equipo. Sistema `05`. Empleados con especialidad,
-skills, rasgos, moral, energía y lealtad; pool de contratación; `teamFactor` conectado a `03`
-(competencia × moral × sinergia); acciones de contratar/formar/asignar/motivar/crunch/despedir;
-burnout y renuncias; transición de escala Garaje → Estudio pequeño (`02` §4). Antes de codificar,
-leer `05`, `03` (para conectar `teamFactor`), `09` (esquemas) y `08` (arquitectura).
+### Fase actual: **Fase 3 — Mercado y modas vivas (el mundo respira)** (ver `11`)
+Objetivo: el mercado deja de ser estático. Sistema `04`. Curvas de popularidad de géneros/temas
+evolucionando por tick con panel de tendencias; saturación por lanzamientos similares; hype
+(versión base) con doble filo en ventas/reseñas; ciclos de vida de plataformas + base instalada
+→ tamaño de mercado; reseñas por segmento (introduce el vector de segmentos que `06`
+necesitará); curva de ventas con pico + cola larga, recalculada por tick. Antes de codificar,
+leer `04`, `09` (esquemas) y `08` (arquitectura).
 
 ## 6. Comandos
 
