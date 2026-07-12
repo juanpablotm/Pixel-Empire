@@ -208,11 +208,16 @@ export function applyReleaseMoralEffects(state: GameState, game: ReleasedGame): 
 // Semana a semana: crunch, decaimientos, escándalos y regulación
 // ---------------------------------------------------------------------------
 
-/** Nº de empleados (no fundador) afectados por el crunch esta semana. */
+/** Nº de empleados (no fundador) afectados por el crunch esta semana (todos los proyectos). */
 function crunchAffectedCount(state: GameState): number {
-  const project = state.projects[0];
-  if (!project || !project.crunch) return 0;
-  return state.staff.filter((e) => !e.founder && project.assignedStaff.includes(e.id)).length;
+  let affected = 0;
+  for (const project of state.projects) {
+    if (!project.crunch) continue;
+    affected += state.staff.filter(
+      (e) => !e.founder && project.assignedStaff.includes(e.id),
+    ).length;
+  }
+  return affected;
 }
 
 /** Probabilidad semanal de escándalo para una deuda total (docs/06 §5). */

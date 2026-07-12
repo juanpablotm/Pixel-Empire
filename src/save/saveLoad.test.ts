@@ -230,6 +230,34 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(() => tick(state)).not.toThrow();
   });
 
+  it('migra un guardado v6 (Fase 5) al esquema actual: eras, investigación, políticas y premios', () => {
+    const base = createInitialState(SEED);
+    // Un estado "v6": semana avanzada con la era congelada en E1 (antes de la
+    // Fase 6 la era nunca avanzaba) y sin los campos nuevos.
+    const v6State = {
+      ...base,
+      week: 700,
+      studio: { ...base.studio, awards: undefined, awardHype: undefined },
+    } as unknown as Record<string, unknown>;
+    delete v6State['research'];
+    delete v6State['policies'];
+
+    const state = deserializeSave(JSON.stringify({ saveVersion: 6, state: v6State }));
+    // La era se recalcula por la semana (700 cae en E3, docs/02 §5).
+    expect(state.era).toBe('E3');
+    expect(state.research).toEqual({ points: 0, unlocked: [], rdStaff: [] });
+    expect(state.policies).toEqual({
+      salary: 'mercado',
+      antiCrunch: false,
+      autoTraining: false,
+      autoBonus: false,
+    });
+    expect(state.studio.awards).toEqual([]);
+    expect(state.studio.awardHype).toBe(0);
+    // Un tick sobre el estado migrado no revienta.
+    expect(() => tick(state)).not.toThrow();
+  });
+
   it('el JSON incluye saveVersion', () => {
     const parsed = JSON.parse(serializeSave(createInitialState(SEED))) as {
       saveVersion: number;

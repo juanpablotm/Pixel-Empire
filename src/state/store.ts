@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   assignCreatorKey,
+  buyResearch,
   createGameLoop,
   createInitialState,
   fireEmployee,
@@ -13,22 +14,26 @@ import {
   retireStudio,
   setCrunch,
   setFocus,
+  setPolicies,
   startProject,
   takeLoan,
   tick,
   toggleAssignment,
   toggleFeature,
+  toggleResearchAssignment,
   trainEmployee,
   type CrisisResponseId,
   type DevPhaseNumber,
   type DilemmaChoice,
   type DilemmaKind,
+  type EraId,
   type FocusAllocation,
   type GameState,
   type MotivationKind,
   type ProjectConcept,
   type Specialty,
   type Speed,
+  type StudioPolicies,
 } from '../core';
 import { balance } from '../data/balance';
 import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
@@ -36,10 +41,11 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
 /**
  * Store Zustand (docs/08 §6): contiene el GameState y expone acciones que
  * delegan en core/. Ningún cálculo de juego vive aquí ni en la UI; el store
- * añade solo estado de presentación (pantalla actual) y navegación.
+ * añade solo estado de presentación (pantalla actual, proyecto activo,
+ * overlays de era/premios y preferencia de piel) y navegación.
  */
 
-/** Pantallas de las Fases 1–5 (docs/10 §10.1–10.10). */
+/** Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). */
 export type Screen =
   | 'estudio'
   | 'concepcion'
@@ -48,6 +54,7 @@ export type Screen =
   | 'equipo'
   | 'mercado'
   | 'creadores'
+  | 'investigacion'
   | 'finanzas'
   | 'legado';
 
@@ -59,6 +66,14 @@ export interface GameStore {
   screen: Screen;
   /** Juego cuya reseña se muestra en la pantalla de reseña. */
   reviewGameId: string | null;
+  /** Proyecto seleccionado en las pantallas de desarrollo/creadores (multi-proyecto). */
+  activeProjectId: string | null;
+  /** Transición de era pendiente de mostrar a pantalla completa (docs/10 §7.6). */
+  eraTransition: EraId | null;
+  /** Semana de la última gala de premios pendiente de mostrar (docs/06 §7). */
+  awardsWeek: number | null;
+  /** Toggle "UI moderna siempre": desactiva las pieles de era (docs/10 §8). */
+  modernUi: boolean;
   /** Avanza 1 semana (1 tick) inmediatamente. */
   advanceWeek: () => void;
   /** Cambia la velocidad del bucle: 0 = pausa, 1/2/4 = multiplicador. */
@@ -67,23 +82,36 @@ export interface GameStore {
   goTo: (screen: Screen) => void;
   /** Abre la reseña de un juego lanzado. */
   openReview: (gameId: string) => void;
+  /** Selecciona el proyecto activo para las pantallas de proyecto. */
+  selectProject: (projectId: string) => void;
+  /** Cierra el beat de transición de era. */
+  dismissEraTransition: () => void;
+  /** Cierra el modal de la gala de premios. */
+  dismissAwards: () => void;
+  /** Activa/desactiva las pieles de era (docs/10 §8: "UI moderna siempre"). */
+  setModernUi: (modern: boolean) => void;
   /** Acciones del proyecto (delegan en core/). */
   startProject: (concept: ProjectConcept) => void;
-  setFocus: (phase: DevPhaseNumber, allocation: FocusAllocation) => void;
-  toggleFeature: (featureId: string) => void;
+  setFocus: (phase: DevPhaseNumber, allocation: FocusAllocation, projectId?: string) => void;
+  toggleFeature: (featureId: string, projectId?: string) => void;
   /** Acciones de personal (docs/05 §6; delegan en core/systems/staff.ts). */
   hire: (candidateId: string) => void;
   fire: (employeeId: string) => void;
   train: (employeeId: string, specialty: Specialty) => void;
   motivate: (employeeId: string, kind: MotivationKind) => void;
-  toggleAssignment: (employeeId: string) => void;
-  setCrunch: (active: boolean) => void;
+  toggleAssignment: (employeeId: string, projectId?: string) => void;
+  setCrunch: (active: boolean, projectId?: string) => void;
+  /** Acciones de investigación (docs/02 §3; delegan en core/systems/research.ts). */
+  toggleResearch: (employeeId: string) => void;
+  buyResearch: (nodeId: string) => void;
+  /** Gestión por políticas (docs/02 §4; delegan en core/systems/policies.ts). */
+  setPolicies: (patch: Partial<StudioPolicies>) => void;
   /** Acciones de economía (docs/06 §4; delegan en core/systems/economy.ts). */
   takeLoan: (amount: number) => void;
   repayLoan: (amount: number) => void;
-  launchMarketing: (level: number) => void;
+  launchMarketing: (level: number, projectId?: string) => void;
   /** Acciones sociales (docs/07; delegan en core/systems/community.ts). */
-  assignCreatorKey: (creatorId: string) => void;
+  assignCreatorKey: (creatorId: string, projectId?: string) => void;
   respondToCrisis: (crisisId: string, responseId: CrisisResponseId) => void;
   resolveDilemma: (kind: DilemmaKind, choice: DilemmaChoice) => void;
   /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
@@ -110,6 +138,10 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   speed: 0,
   screen: 'estudio',
   reviewGameId: null,
+  activeProjectId: null,
+  eraTransition: null,
+  awardsWeek: null,
+  modernUi: false,
 
   advanceWeek: () => {
     const before = get().game;
@@ -118,7 +150,10 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     // Momentos que piden decisión: el juego pausa y navega (docs/02 §1:
     // "el juego nunca fuerza una decisión importante sin pausa").
     const released = after.releasedGames.length > before.releasedGames.length;
-    const phaseChanged = after.projects[0]?.phase !== before.projects[0]?.phase;
+    const phaseChanged = after.projects.some((p) => {
+      const prev = before.projects.find((q) => q.id === p.id);
+      return prev !== undefined && prev.phase !== p.phase;
+    });
     const justEnded = after.gameOver !== null && before.gameOver === null;
     const staffLost = after.staff.length < before.staff.length;
     const stageChanged = after.studio.scaleStage !== before.studio.scaleStage;
@@ -127,6 +162,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       s.community.crises.filter((c) => c.status === 'abierta').length;
     const crisisErupted = openCrises(after) > openCrises(before);
     const dilemmaFired = after.community.dilemmas.length > before.community.dilemmas.length;
+    // Los beats de la Fase 6: transición de era (docs/10 §7.6) y gala anual.
+    const eraChanged = after.era !== before.era;
+    const awardsWon = after.studio.awards.length > before.studio.awards.length;
 
     if (
       released ||
@@ -135,7 +173,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       stageChanged ||
       crisisErupted ||
       dilemmaFired ||
-      (phaseChanged && after.projects.length > 0)
+      eraChanged ||
+      awardsWon ||
+      phaseChanged
     ) {
       gameLoop.setSpeed(0);
       set({ game: after, speed: 0 });
@@ -143,6 +183,21 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       set({ game: after });
     }
 
+    // El proyecto activo pudo lanzarse esta semana: limpiar la selección.
+    if (
+      get().activeProjectId !== null &&
+      !after.projects.some((p) => p.id === get().activeProjectId)
+    ) {
+      set({ activeProjectId: after.projects[0]?.id ?? null });
+    }
+
+    if (eraChanged) {
+      set({ eraTransition: after.era });
+    }
+    if (awardsWon) {
+      const latest = after.studio.awards[after.studio.awards.length - 1];
+      set({ awardsWeek: latest.week });
+    }
     if (released) {
       const latest = after.releasedGames[after.releasedGames.length - 1];
       set({ screen: 'resena', reviewGameId: latest.id });
@@ -158,16 +213,28 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   openReview: (gameId) => set({ screen: 'resena', reviewGameId: gameId }),
 
+  selectProject: (projectId) => set({ activeProjectId: projectId }),
+
+  dismissEraTransition: () => set({ eraTransition: null }),
+
+  dismissAwards: () => set({ awardsWeek: null }),
+
+  setModernUi: (modern) => set({ modernUi: modern }),
+
   startProject: (concept) => {
-    set((s) => ({ game: startProject(s.game, concept), screen: 'desarrollo' }));
+    set((s) => {
+      const game = startProject(s.game, concept);
+      const created = game.projects[game.projects.length - 1];
+      return { game, screen: 'desarrollo', activeProjectId: created.id };
+    });
   },
 
-  setFocus: (phase, allocation) => {
-    set((s) => ({ game: setFocus(s.game, phase, allocation) }));
+  setFocus: (phase, allocation, projectId) => {
+    set((s) => ({ game: setFocus(s.game, phase, allocation, projectId) }));
   },
 
-  toggleFeature: (featureId) => {
-    set((s) => ({ game: toggleFeature(s.game, featureId) }));
+  toggleFeature: (featureId, projectId) => {
+    set((s) => ({ game: toggleFeature(s.game, featureId, projectId) }));
   },
 
   hire: (candidateId) => {
@@ -186,12 +253,24 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     set((s) => ({ game: motivateEmployee(s.game, employeeId, kind) }));
   },
 
-  toggleAssignment: (employeeId) => {
-    set((s) => ({ game: toggleAssignment(s.game, employeeId) }));
+  toggleAssignment: (employeeId, projectId) => {
+    set((s) => ({ game: toggleAssignment(s.game, employeeId, projectId) }));
   },
 
-  setCrunch: (active) => {
-    set((s) => ({ game: setCrunch(s.game, active) }));
+  setCrunch: (active, projectId) => {
+    set((s) => ({ game: setCrunch(s.game, active, projectId) }));
+  },
+
+  toggleResearch: (employeeId) => {
+    set((s) => ({ game: toggleResearchAssignment(s.game, employeeId) }));
+  },
+
+  buyResearch: (nodeId) => {
+    set((s) => ({ game: buyResearch(s.game, nodeId) }));
+  },
+
+  setPolicies: (patch) => {
+    set((s) => ({ game: setPolicies(s.game, patch) }));
   },
 
   takeLoan: (amount) => {
@@ -202,12 +281,12 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     set((s) => ({ game: repayLoan(s.game, amount) }));
   },
 
-  launchMarketing: (level) => {
-    set((s) => ({ game: launchMarketingCampaign(s.game, level) }));
+  launchMarketing: (level, projectId) => {
+    set((s) => ({ game: launchMarketingCampaign(s.game, level, projectId) }));
   },
 
-  assignCreatorKey: (creatorId) => {
-    set((s) => ({ game: assignCreatorKey(s.game, creatorId) }));
+  assignCreatorKey: (creatorId, projectId) => {
+    set((s) => ({ game: assignCreatorKey(s.game, creatorId, projectId) }));
   },
 
   respondToCrisis: (crisisId, responseId) => {
@@ -225,7 +304,15 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   newGame: (seed = defaultSeed()) => {
     gameLoop.setSpeed(0);
-    set({ game: createInitialState(seed), speed: 0, screen: 'estudio', reviewGameId: null });
+    set({
+      game: createInitialState(seed),
+      speed: 0,
+      screen: 'estudio',
+      reviewGameId: null,
+      activeProjectId: null,
+      eraTransition: null,
+      awardsWeek: null,
+    });
   },
 
   saveGame: () => {
@@ -237,7 +324,15 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       const loaded = loadFromLocalStorage();
       if (loaded === null) return false;
       gameLoop.setSpeed(0);
-      set({ game: loaded, speed: 0, screen: 'estudio', reviewGameId: null });
+      set({
+        game: loaded,
+        speed: 0,
+        screen: 'estudio',
+        reviewGameId: null,
+        activeProjectId: loaded.projects[0]?.id ?? null,
+        eraTransition: null,
+        awardsWeek: null,
+      });
       return true;
     } catch {
       return false;

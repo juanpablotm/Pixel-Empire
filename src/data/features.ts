@@ -1,8 +1,9 @@
 import type { Feature } from '../core/model/content';
 
 /**
- * Features básicas de la Fase 1 (docs/09 §5): cada una suma calidad potencial
- * pero cuesta semanas de desarrollo y añade deuda de bugs (docs/03 factores C y D).
+ * Features (docs/09 §5), gateadas por era y a veces por investigación
+ * (docs/02 §3): cada una suma calidad potencial pero cuesta semanas de
+ * desarrollo y añade deuda de bugs (docs/03 factores C y D).
  */
 export const features: readonly Feature[] = [
   {
@@ -49,6 +50,91 @@ export const features: readonly Feature[] = [
     timeCostWeeks: 4,
     bugRisk: 0.25,
     appearsInEra: 'E1',
+  },
+  {
+    id: 'vozDigitalizada',
+    name: 'Voz digitalizada',
+    description: 'Los personajes hablan de verdad. El CD-ROM lo hace posible.',
+    qualityValue: 1.5,
+    timeCostWeeks: 1,
+    bugRisk: 0.06,
+    appearsInEra: 'E3',
+  },
+  {
+    id: 'cinematicas',
+    name: 'Cinemáticas',
+    description: 'Escenas de vídeo que venden la historia (y la caja del juego).',
+    qualityValue: 2,
+    timeCostWeeks: 2,
+    bugRisk: 0.08,
+    appearsInEra: 'E3',
+  },
+  {
+    id: 'multijugadorOnline',
+    name: 'Multijugador online',
+    description: 'Jugar contra el mundo entero. Exige dominar la tecnología de red.',
+    qualityValue: 3,
+    timeCostWeeks: 3,
+    bugRisk: 0.2,
+    appearsInEra: 'E4',
+    requiresResearch: 'tecnologiaOnline',
+  },
+  {
+    id: 'logros',
+    name: 'Logros y desafíos',
+    description: 'Medallitas digitales. A la comunidad le encantan más de lo que admite.',
+    qualityValue: 1,
+    timeCostWeeks: 1,
+    bugRisk: 0.03,
+    appearsInEra: 'E4',
+  },
+  {
+    id: 'mapaProcedural',
+    name: 'Mundo procedural',
+    description: 'Cada partida, un mundo distinto. La generación procedural manda.',
+    qualityValue: 2.5,
+    timeCostWeeks: 2,
+    bugRisk: 0.15,
+    appearsInEra: 'E5',
+    requiresResearch: 'generacionProcedural',
+  },
+  {
+    id: 'guardadoNube',
+    name: 'Guardado en la nube',
+    description: 'Tu partida te sigue a todas partes.',
+    qualityValue: 1,
+    timeCostWeeks: 1,
+    bugRisk: 0.05,
+    appearsInEra: 'E5',
+  },
+  {
+    id: 'modoFoto',
+    name: 'Modo foto',
+    description: 'Los jugadores hacen tu marketing en las redes.',
+    qualityValue: 1.5,
+    timeCostWeeks: 1,
+    bugRisk: 0.04,
+    appearsInEra: 'E6',
+  },
+  {
+    id: 'crossPlay',
+    name: 'Cross-play',
+    description: 'Todas las plataformas, una sola partida. Un reto de infraestructura.',
+    qualityValue: 2.5,
+    timeCostWeeks: 2,
+    bugRisk: 0.18,
+    appearsInEra: 'E6',
+    requiresResearch: 'infraestructuraCloud',
+  },
+  {
+    id: 'companeroIA',
+    name: 'Compañero con IA',
+    description: 'Un personaje que conversa de verdad. El futuro, con sus riesgos.',
+    qualityValue: 3,
+    timeCostWeeks: 3,
+    bugRisk: 0.22,
+    appearsInEra: 'E7',
+    requiresResearch: 'iaGenerativa',
   },
 ];
 

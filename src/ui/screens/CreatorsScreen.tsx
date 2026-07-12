@@ -1,4 +1,4 @@
-import { availableCreators, creatorFit, keysAllowed, visibleReview } from '../../core';
+import { availableCreators, creatorFit, keysAllowed, visibleReview, type Project } from '../../core';
 import { archetypeLabels, type CreatorDef } from '../../data/creators';
 import { balance } from '../../data/balance';
 import { useGameStore } from '../../state/store';
@@ -9,7 +9,8 @@ import { StreamPanel } from '../components/StreamPanel';
 /**
  * Marketing y creadores (docs/10 §10.5): el roster como tarjetas, el reparto
  * de claves limitadas y el resultado del último directo. El marketing es una
- * decisión de casting con riesgo (docs/07 §3): fit × calidad × bugs.
+ * decisión de casting con riesgo (docs/07 §3): fit × calidad × bugs. Con
+ * varios proyectos, la campaña es la del proyecto activo (pestañas).
  */
 
 /** Afinidad estimada sin exponer el número crudo (docs/10 §10.2, criterio Fit). */
@@ -19,8 +20,7 @@ function fitBandOf(fit: number): { label: string; className: string } {
   return { label: 'afinidad baja', className: 'bg-red-900/60 text-red-300' };
 }
 
-function CreatorCard({ creator }: { creator: CreatorDef }) {
-  const project = useGameStore((s) => s.game.projects[0]);
+function CreatorCard({ creator, project }: { creator: CreatorDef; project?: Project }) {
   const capital = useGameStore((s) => s.game.studio.capital);
   const assign = useGameStore((s) => s.assignCreatorKey);
 
@@ -64,7 +64,7 @@ function CreatorCard({ creator }: { creator: CreatorDef }) {
       <button
         type="button"
         disabled={disabled}
-        onClick={() => assign(creator.id)}
+        onClick={() => project && assign(creator.id, project.id)}
         title={
           !project
             ? 'No hay proyecto en desarrollo'
@@ -93,12 +93,15 @@ function CreatorCard({ creator }: { creator: CreatorDef }) {
 }
 
 export function CreatorsScreen() {
-  const project = useGameStore((s) => s.game.projects[0]);
+  const projects = useGameStore((s) => s.game.projects);
+  const activeProjectId = useGameStore((s) => s.activeProjectId);
+  const selectProject = useGameStore((s) => s.selectProject);
   const era = useGameStore((s) => s.game.era);
   const lastGame = useGameStore((s) => s.game.releasedGames[s.game.releasedGames.length - 1]);
   const community = useGameStore((s) => s.game.community);
   const goTo = useGameStore((s) => s.goTo);
 
+  const project = projects.find((p) => p.id === activeProjectId) ?? projects[0];
   const roster = availableCreators(era);
   const keysTotal = project ? keysAllowed(project.size) : 0;
   const keysUsed = project?.creatorCampaign.length ?? 0;
@@ -115,6 +118,26 @@ export function CreatorsScreen() {
           ← Volver al estudio
         </button>
       </div>
+
+      {projects.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {projects.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              aria-pressed={p.id === project?.id}
+              onClick={() => selectProject(p.id)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                p.id === project?.id
+                  ? 'bg-fuchsia-600 text-white'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
         {project ? (
@@ -147,7 +170,7 @@ export function CreatorsScreen() {
         </h3>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {roster.map((creator) => (
-            <CreatorCard key={creator.id} creator={creator} />
+            <CreatorCard key={creator.id} creator={creator} project={project} />
           ))}
         </div>
       </section>

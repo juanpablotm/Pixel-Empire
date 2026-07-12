@@ -278,10 +278,20 @@ export const balance = {
       /** Cuánto baja por cada lanzamiento previo con la misma combinación. */
       repeatStep: 0.05,
     },
-    /** techoQ(era, tamaño): límite de Q por era (docs/03 §3). E2+ se define en Fase 6. */
+    /**
+     * techoQ(era, tamaño): límite de Q por era (docs/03 §3). Sube con las
+     * eras (mejor tecnología permite mejores juegos); en eras tardías un
+     * juego pequeño ya no puede ser una obra maestra absoluta.
+     */
     capByEraSize: {
       E1: { pequeno: 85, mediano: 85, grande: 85, aaa: 85 },
-    } as Partial<Record<EraId, Record<ProjectSize, number>>>,
+      E2: { pequeno: 88, mediano: 88, grande: 88, aaa: 88 },
+      E3: { pequeno: 88, mediano: 91, grande: 91, aaa: 91 },
+      E4: { pequeno: 90, mediano: 93, grande: 94, aaa: 94 },
+      E5: { pequeno: 92, mediano: 95, grande: 96, aaa: 96 },
+      E6: { pequeno: 93, mediano: 96, grande: 98, aaa: 98 },
+      E7: { pequeno: 94, mediano: 97, grande: 100, aaa: 100 },
+    } satisfies Record<EraId, Record<ProjectSize, number>>,
   },
 
   reviews: {
@@ -466,11 +476,76 @@ export const balance = {
       traitCountMax: 3,
     },
 
-    /** Escala Garaje → Estudio pequeño (docs/02 §4): hito de capital y aforo por etapa. */
+    /**
+     * Las 4 etapas de escala (docs/02 §4): hitos de transición, aforo de
+     * plantilla y proyectos en paralelo por etapa. Las etapas grandes se
+     * desbloquean por capital + tamaño de plantilla (hitos legibles).
+     */
     scale: {
       stage2CapitalThreshold: 15_000,
+      /** Estudio consolidado: capital y equipo que justifican varios equipos. */
+      stage3: { capital: 120_000, staff: 5 },
+      /** Corporación: la escala del magnate (docs/02 §4). */
+      stage4: { capital: 800_000, staff: 15 },
       staffCapByStage: { 1: 1, 2: 8, 3: 40, 4: 200 } satisfies Record<ScaleStage, number>,
+      /** Proyectos en paralelo permitidos por etapa (docs/02 §4). */
+      projectCapByStage: { 1: 1, 2: 1, 3: 3, 4: 6 } satisfies Record<ScaleStage, number>,
+      /** Tamaño del pool de contratación por etapa (más escala, más candidatos). */
+      poolSizeByStage: { 1: 3, 2: 3, 3: 5, 4: 8 } satisfies Record<ScaleStage, number>,
     },
+  },
+
+  /** Investigación (docs/02 §3 y docs/12 §6): puntos 💡 y su goteo. */
+  research: {
+    /** ~1 💡 por persona·semana en I+D [DECIDIDO, docs/12 §6]. */
+    pointsPerPersonWeek: 1,
+    /** 💡 al lanzar un juego, por tamaño ("se acumulan al desarrollar juegos"). */
+    releasePointsBySize: { pequeno: 2, mediano: 4, grande: 7, aaa: 12 } satisfies Record<
+      ProjectSize,
+      number
+    >,
+  },
+
+  /** Premios anuales (docs/06 §7): umbrales por categoría y recompensas. */
+  awards: {
+    /** La ceremonia se celebra cada fin de año (52 ticks = 1 año, docs/02 §1). */
+    intervalWeeks: 52,
+    /** Umbrales de candidatura (sin rivales aún: o los superas, o el premio vuela). */
+    thresholds: {
+      goty: { minReview: 78 },
+      innovacion: { minInnovation: 1.03, minReview: 62 },
+      tecnica: { minPolish: 0.92, minReview: 62 },
+      diseno: { minFit: 0.85, minReview: 68 },
+      pueblo: { minCasualReview: 74 },
+    },
+    /** Recompensas por premio ganado (docs/06 §7). */
+    rewards: {
+      /** Reputación: sobre todo Crítica/Prensa; el talento también toma nota. */
+      repDeltas: { critica: 2.5, prensa: 2, empleador: 1 },
+      /** Hype pendiente para el próximo proyecto, por premio (con tope). */
+      hypePerAward: 0.08,
+      hypeCap: 0.25,
+    },
+  },
+
+  /** Gestión por políticas en la escala grande (docs/02 §4 y docs/10 §14). */
+  policies: {
+    /** Etapa de escala desde la que las políticas están disponibles. */
+    minStage: 3 as ScaleStage,
+    /** Política salarial: coste semanal vs ánimo de la plantilla. */
+    salary: {
+      austera: { costFactor: 0.92, moralePerWeek: -1, loyaltyPerWeek: -0.7, employerRepPerWeek: -0.06 },
+      mercado: { costFactor: 1, moralePerWeek: 0, loyaltyPerWeek: 0, employerRepPerWeek: 0 },
+      generosa: { costFactor: 1.12, moralePerWeek: 0.6, loyaltyPerWeek: 0.5, employerRepPerWeek: 0.06 },
+    },
+    /** La política generosa/anti-crunch solo sube la moral hasta este techo. */
+    moraleCap: 85,
+    /** Anti-crunch: prohibido crunchear; el equipo se siente seguro. */
+    antiCrunch: { moralePerWeek: 0.4 },
+    /** Formación automática: cada N semanas, al empleado más flojo. */
+    autoTraining: { intervalWeeks: 4 },
+    /** Bonus automático a quien tenga la moral bajo el umbral (máx. K/semana). */
+    autoBonus: { moraleThreshold: 40, maxPerWeek: 2 },
   },
 
   market: {
@@ -529,8 +604,20 @@ export const balance = {
 
     /** De Calidad a Reseña (docs/04 §5). Los sesgos por segmento viven en data/segments.ts. */
     reviews: {
-      /** estándarEra: el listón sube con las eras (E2+ se define en Fase 6). */
-      eraStandard: { E1: 1 } as Partial<Record<EraId, number>>,
+      /**
+       * estándarEra (docs/02 §5): el listón del público sube con las eras —
+       * la misma Q puntúa peor cuanto más tarde (lo compensan los techos de
+       * calidad crecientes, las features nuevas y la investigación).
+       */
+      eraStandard: {
+        E1: 1,
+        E2: 0.97,
+        E3: 0.94,
+        E4: 0.92,
+        E5: 0.9,
+        E6: 0.88,
+        E7: 0.86,
+      } satisfies Record<EraId, number>,
       /** afinidadModa = span × (popCombo − neutral): ± puntos por estar (o no) de moda. */
       modaSpan: 12,
       modaNeutral: 0.5,

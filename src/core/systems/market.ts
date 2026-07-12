@@ -23,6 +23,7 @@ import type {
 import type { MonetizationConfig } from '../model/moral';
 import type { Audience } from '../model/project';
 import type { ReleasedGame } from '../model/release';
+import { capabilityBonus } from './research';
 
 /**
  * Mercado y modas dinámicas (docs/04): popularidades que evolucionan por tick,
@@ -427,7 +428,9 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
   };
 
   // Hype base (docs/04 §4): crece desde la fase de Producción, más si hay moda.
-  // Las "Estrellas mediáticas" asignadas dan hype extra (docs/07 §6).
+  // Las "Estrellas mediáticas" asignadas dan hype extra (docs/07 §6) y el
+  // marketing investigado lo acelera (docs/02 §3: capacidad hypeGain).
+  const hypeCapability = capabilityBonus(state, 'hypeGain');
   const projects = state.projects.map((project) => {
     if (project.phase < cfg.hype.startPhase) return project;
     const pop = comboPopularity(market, project.genreId, project.themeId);
@@ -441,7 +444,8 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
     const gain =
       cfg.hype.gainBySize[project.size] *
       (cfg.hype.popCouplingBase + cfg.hype.popCouplingSpan * pop) *
-      (1 + balance.community.mediaStarHypeCoef * starBonus);
+      (1 + balance.community.mediaStarHypeCoef * starBonus) *
+      hypeCapability;
     return { ...project, hype: Math.min(cfg.hype.max, project.hype + gain) };
   });
 

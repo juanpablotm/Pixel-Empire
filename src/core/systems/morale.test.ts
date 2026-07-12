@@ -382,7 +382,9 @@ describe('integración en el tick (docs/08 §4)', () => {
 
   it('es determinista: misma semilla → misma reputación y misma deuda', () => {
     const run = () => {
-      let state = createInitialState(SEED);
+      // Desde Fase 6 las MTX están gateadas por era (docs/09 §9): el test
+      // fuerza E6, donde ya existen premium+mtx y el pase de batalla.
+      let state: GameState = { ...createInitialState(SEED), era: 'E6' };
       state = startProject(state, {
         name: 'Det',
         themeId: 'fantasia',

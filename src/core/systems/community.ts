@@ -502,13 +502,20 @@ function tierOf(outcome: number): StreamTier {
 }
 
 /**
- * Acción: dar una clave de acceso a un creador para el proyecto en curso
- * (docs/07 §3). Recurso limitado por lanzamiento; cuesta dinero y alimenta el
- * hype (la campaña de creadores de docs/04 §4).
+ * Acción: dar una clave de acceso a un creador para un proyecto (sin id, el
+ * primero; docs/07 §3). Recurso limitado por lanzamiento; cuesta dinero y
+ * alimenta el hype (la campaña de creadores de docs/04 §4).
  */
-export function assignCreatorKey(state: GameState, creatorId: string): GameState {
+export function assignCreatorKey(
+  state: GameState,
+  creatorId: string,
+  projectId?: string,
+): GameState {
   if (state.gameOver) throw new Error('La partida ha terminado');
-  const project = state.projects[0];
+  const project =
+    projectId === undefined
+      ? state.projects[0]
+      : state.projects.find((p) => p.id === projectId);
   if (!project) throw new Error('No hay proyecto en desarrollo');
   if (project.phase < balance.market.hype.startPhase) {
     throw new Error('Demasiado pronto: las claves se reparten desde la Producción (el anuncio)');
@@ -529,13 +536,15 @@ export function assignCreatorKey(state: GameState, creatorId: string): GameState
   const next: GameState = {
     ...state,
     studio: { ...state.studio, capital: state.studio.capital - creator.acquisitionCost },
-    projects: [
-      {
-        ...project,
-        creatorCampaign: [...project.creatorCampaign, creatorId],
-        hype: Math.min(balance.market.hype.max, round2(project.hype + hypeBoost)),
-      },
-    ],
+    projects: state.projects.map((p) =>
+      p.id === project.id
+        ? {
+            ...p,
+            creatorCampaign: [...p.creatorCampaign, creatorId],
+            hype: Math.min(balance.market.hype.max, round2(p.hype + hypeBoost)),
+          }
+        : p,
+    ),
   };
   return appendLog(
     next,
@@ -760,8 +769,8 @@ export function resolveDilemma(
   if (!dilemmaChoices[kind].includes(choice)) {
     throw new Error(`La opción ${choice} no pertenece al dilema ${kind}`);
   }
-  const project = state.projects[0];
-  if (!project || project.id !== dilemma.projectId) {
+  const project = state.projects.find((p) => p.id === dilemma.projectId);
+  if (!project) {
     // El proyecto ya no existe: el dilema caduca sin efectos.
     return {
       ...state,
@@ -855,7 +864,10 @@ export function resolveDilemma(
     }
   }
 
-  return { ...next, projects: [updated] };
+  return {
+    ...next,
+    projects: next.projects.map((p) => (p.id === updated.id ? updated : p)),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -908,9 +920,11 @@ export function advanceCommunity(state: GameState, rng: Rng): GameState {
   }
   next = { ...next, community: { ...next.community, bombs: stillActive } };
 
-  // 4 — Dilemas de pre-lanzamiento (docs/07 §4).
-  const project = next.projects[0];
-  if (project && next.community.dilemmas.length === 0) {
+  // 4 — Dilemas de pre-lanzamiento (docs/07 §4). Con multi-proyecto se revisa
+  // cada proyecto en orden, pero solo puede estallar un dilema por semana
+  // (las decisiones llegan de una en una; docs/02 §1).
+  for (const project of next.projects) {
+    if (next.community.dilemmas.length > 0) break;
     const fired = next.community.firedDilemmas[project.id] ?? [];
     // Cruzar la zona roja del manómetro dispara el dilema de sobre-hype (determinista).
     if (

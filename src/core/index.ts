@@ -2,8 +2,11 @@
  * API pública del núcleo de simulación (docs/08 §3). Todo lo que esté fuera
  * de core/ (state/, save/, ui/) importa desde aquí, no de los módulos internos.
  */
-export type { EraId } from './model/era';
+export type { EraDef, EraId } from './model/era';
 export type { GameOverInfo, GameState, LogEntry, ScaleStage, Studio } from './model/gameState';
+export type { Award } from './model/awards';
+export type { ResearchNodeDef, ResearchState, StudioCapability } from './model/research';
+export type { SalaryPolicy, StudioPolicies } from './model/policies';
 export type { Employee, SalaryTier, Specialty, TeamFactorResult } from './model/staff';
 export type {
   Audience,
@@ -84,7 +87,9 @@ export type { ConceptDraft, FitBand, FitResult, QualityContext } from './systems
 export {
   advanceProjects,
   estimateProject,
+  findProject,
   phaseWeeks,
+  projectCap,
   projectProgress,
   projectTotalWeeks,
   setFocus,
@@ -92,6 +97,36 @@ export {
   toggleFeature,
 } from './systems/projects';
 export type { ProjectConcept } from './systems/projects';
+export { advanceEras } from './systems/eras';
+export {
+  addReleaseResearchPoints,
+  advanceResearch,
+  buyResearch,
+  capabilityBonus,
+  initialResearchState,
+  researchNodeStatus,
+  toggleResearchAssignment,
+} from './systems/research';
+export { advanceAwards, pickCategoryWinner } from './systems/awards';
+export {
+  advancePolicies,
+  defaultPolicies,
+  policiesUnlocked,
+  salaryCostFactor,
+  setPolicies,
+} from './systems/policies';
+export {
+  availableCreatorDefs,
+  availableFeatures,
+  availableGenres,
+  availableMonetizationModels,
+  availablePlatforms,
+  availableThemes,
+  featureAvailable,
+  genreAvailable,
+  monetizationFlagAvailable,
+  themeAvailable,
+} from './systems/unlocks';
 export { buildReviewLines, reviewVerdict } from './systems/review';
 export { advanceSales, weeklyRevenue } from './systems/sales';
 export {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { projectProgress, projectTotalWeeks, visibleReview } from '../../core';
+import { projectCap, projectProgress, projectTotalWeeks, visibleReview } from '../../core';
 import { useGameStore } from '../../state/store';
 import { getDevPhase } from '../../data/devPhases';
 import { getGenre } from '../../data/genres';
@@ -24,7 +24,10 @@ function hottest(trends: Record<string, { pop: number }>): string | null {
 }
 
 export function StudioScreen() {
-  const project = useGameStore((s) => s.game.projects[0]);
+  const projects = useGameStore((s) => s.game.projects);
+  const cap = useGameStore((s) => projectCap(s.game));
+  const selectProject = useGameStore((s) => s.selectProject);
+  const researchPoints = useGameStore((s) => s.game.research.points);
   const releasedGames = useGameStore((s) => s.game.releasedGames);
   const staffCount = useGameStore((s) => s.game.staff.length);
   const candidateCount = useGameStore((s) => s.game.candidates.length);
@@ -42,45 +45,52 @@ export function StudioScreen() {
       <div className="flex flex-col gap-6">
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Proyecto en curso
+            Proyectos en curso {cap > 1 && `(${projects.length}/${cap})`}
           </h2>
-          {project ? (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-xl font-semibold">{project.name}</span>
-                <span className="text-sm text-slate-400">
-                  Fase de {getDevPhase(project.phase).name} · semana{' '}
-                  {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)}
-                </span>
+          <div className="flex flex-col gap-4">
+            {projects.map((project) => (
+              <div key={project.id} className="flex flex-col gap-3">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="text-xl font-semibold">{project.name}</span>
+                  <span className="text-sm text-slate-400">
+                    Fase de {getDevPhase(project.phase).name} · semana{' '}
+                    {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)} ·{' '}
+                    {project.assignedStaff.length} 👥
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectProject(project.id);
+                    goTo('desarrollo');
+                  }}
+                  className="self-start rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                >
+                  Ver desarrollo
+                </button>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => goTo('desarrollo')}
-                className="self-start rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-              >
-                Ver desarrollo
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-start gap-3">
+            ))}
+            {projects.length === 0 && (
               <p className="text-slate-400">
-                El garaje está en silencio. Toca inventar el próximo éxito.
+                El estudio está en silencio. Toca inventar el próximo éxito.
               </p>
+            )}
+            {projects.length < cap && (
               <button
                 type="button"
                 onClick={() => goTo('concepcion')}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                className="self-start rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
               >
                 💡 Nuevo juego
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
@@ -132,6 +142,13 @@ export function StudioScreen() {
               className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
             >
               📣 Creadores
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo('investigacion')}
+              className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            >
+              💡 Investigación ({Math.floor(researchPoints)})
             </button>
           </div>
         </section>

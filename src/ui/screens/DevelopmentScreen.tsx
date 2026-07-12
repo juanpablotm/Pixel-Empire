@@ -1,4 +1,5 @@
 import {
+  availableFeatures,
   computeBugLevel,
   computeTeamFactor,
   computeTeamOutput,
@@ -8,7 +9,6 @@ import {
 } from '../../core';
 import { balance } from '../../data/balance';
 import { devPhases, getDevPhase } from '../../data/devPhases';
-import { features } from '../../data/features';
 import { getGenre } from '../../data/genres';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
@@ -18,7 +18,9 @@ import { HypeGauge } from '../components/HypeGauge';
 /**
  * Pantalla de desarrollo (docs/10 §10.3): reparto de esfuerzo por fase con
  * lectura del balance Diseño/Técnica frente al ideal del género, features como
- * tarjetas (solo en Concepto) y estado de bugs. Los cálculos viven en core/.
+ * tarjetas (solo en Concepto, filtradas por era/investigación) y estado de
+ * bugs. Con varios proyectos en paralelo (docs/02 §4) se elige con pestañas.
+ * Los cálculos viven en core/.
  */
 
 function bugLabel(level: number): { text: string; color: string } {
@@ -42,9 +44,14 @@ function factorColor(value: number): string {
 }
 
 export function DevelopmentScreen() {
-  const project = useGameStore((s) => s.game.projects[0]);
-  const staff = useGameStore((s) => s.game.staff);
-  const capital = useGameStore((s) => s.game.studio.capital);
+  const game = useGameStore((s) => s.game);
+  const activeProjectId = useGameStore((s) => s.activeProjectId);
+  const selectProject = useGameStore((s) => s.selectProject);
+  const projects = game.projects;
+  const project = projects.find((p) => p.id === activeProjectId) ?? projects[0];
+  const staff = game.staff;
+  const capital = game.studio.capital;
+  const antiCrunch = game.policies.antiCrunch && game.studio.scaleStage >= 3;
   const setFocus = useGameStore((s) => s.setFocus);
   const toggleFeature = useGameStore((s) => s.toggleFeature);
   const setCrunch = useGameStore((s) => s.setCrunch);
@@ -82,8 +89,10 @@ export function DevelopmentScreen() {
   const bugLevel = computeBugLevel(project.bugDebt, project.qaInvested);
   const bugs = bugLabel(bugLevel);
 
+  const featuresShown = availableFeatures(game);
+
   const onSlider = (aspectId: string, value: number) => {
-    setFocus(project.phase, { ...allocation, [aspectId]: value / 100 });
+    setFocus(project.phase, { ...allocation, [aspectId]: value / 100 }, project.id);
   };
 
   return (
@@ -98,6 +107,27 @@ export function DevelopmentScreen() {
           Volver al estudio
         </button>
       </div>
+
+      {/* Pestañas de proyecto (multi-proyecto, docs/02 §4 y docs/10 §14). */}
+      {projects.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {projects.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              aria-pressed={p.id === project.id}
+              onClick={() => selectProject(p.id)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                p.id === project.id
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Fases y progreso */}
       <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
@@ -153,7 +183,7 @@ export function DevelopmentScreen() {
                       ? 'Campaña ya lanzada'
                       : `+hype a cambio de ${formatMoney(campaign.cost)}`
                 }
-                onClick={() => launchMarketing(level)}
+                onClick={() => launchMarketing(level, project.id)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   used
                     ? 'bg-slate-800 text-slate-500'
@@ -247,14 +277,20 @@ export function DevelopmentScreen() {
           <button
             type="button"
             aria-pressed={project.crunch}
-            onClick={() => setCrunch(!project.crunch)}
+            disabled={antiCrunch && !project.crunch}
+            title={antiCrunch ? 'La política anti-crunch del estudio lo prohíbe' : undefined}
+            onClick={() => setCrunch(!project.crunch, project.id)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               project.crunch
                 ? 'bg-red-600 text-white hover:bg-red-500'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
+            } ${antiCrunch && !project.crunch ? 'cursor-not-allowed opacity-50' : ''}`}
           >
-            {project.crunch ? 'Crunch activo — desactivar' : 'Activar crunch'}
+            {project.crunch
+              ? 'Crunch activo — desactivar'
+              : antiCrunch
+                ? 'Crunch prohibido (política)'
+                : 'Activar crunch'}
           </button>
           <p className="text-xs text-slate-500">
             El crunch acelera el desarrollo a costa de moral, energía y lealtad; los quemados
@@ -313,7 +349,7 @@ export function DevelopmentScreen() {
           Features {project.phase !== 1 && '(cerradas al salir del Concepto)'}
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
-          {features.map((feature) => {
+          {featuresShown.map((feature) => {
             const chosen = project.chosenFeatureIds.includes(feature.id);
             const disabled = project.phase !== 1;
             return (
@@ -322,7 +358,7 @@ export function DevelopmentScreen() {
                 type="button"
                 disabled={disabled}
                 aria-pressed={chosen}
-                onClick={() => toggleFeature(feature.id)}
+                onClick={() => toggleFeature(feature.id, project.id)}
                 className={`rounded-lg border p-3 text-left transition-colors ${
                   chosen
                     ? 'border-emerald-500 bg-emerald-500/10'

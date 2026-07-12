@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import {
+  availableGenres,
+  availableMonetizationModels,
+  availablePlatforms,
+  availableThemes,
   computeFit,
   estimateProject,
   fitBand,
   lootBoxesBanned,
+  monetizationFlagAvailable,
   platformAvailable,
   type Audience,
   type MonetizationModel,
@@ -12,7 +17,7 @@ import {
 import { genres } from '../../data/genres';
 import { themes } from '../../data/themes';
 import { platforms } from '../../data/platforms';
-import { defaultMonetization, monetizationModels, getMonetizationModel } from '../../data/monetization';
+import { defaultMonetization, getMonetizationModel } from '../../data/monetization';
 import { audienceLabels, sizeLabels } from '../../data/reviewTexts';
 import { platformStageLabels } from '../../data/marketTexts';
 import { balance } from '../../data/balance';
@@ -24,8 +29,9 @@ import { TrendArrow } from '../components/TrendArrow';
 /**
  * Asistente de concepción (docs/10 §10.2): Tema → Género → Plataforma →
  * Público → Tamaño → Precio → Monetización → Nombre, con medidor de Fit en
- * vivo y tendencias a la vista. Precio y monetización son las palancas
- * morales de docs/06 §2; la UI solo muestra, el núcleo valida y calcula.
+ * vivo y tendencias a la vista. Solo muestra el contenido desbloqueado por
+ * era/investigación (docs/09 §7 y docs/10 §14). Precio y monetización son
+ * las palancas morales de docs/06 §2; el núcleo valida y calcula.
  */
 
 const AUDIENCES: Audience[] = ['hardcore', 'amplio', 'casual', 'infantil'];
@@ -74,9 +80,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function ConceptionScreen() {
   const start = useGameStore((s) => s.startProject);
   const goTo = useGameStore((s) => s.goTo);
-  const market = useGameStore((s) => s.game.market);
-  const week = useGameStore((s) => s.game.week);
-  const regulation = useGameStore((s) => s.game.regulation);
+  // La pantalla filtra contenido con los helpers de core (era + investigación),
+  // que reciben el estado entero; se abre en pausa, así que no hay coste real.
+  const game = useGameStore((s) => s.game);
+  const market = game.market;
+  const week = game.week;
+  const regulation = game.regulation;
+
+  const themesShown = availableThemes(game);
+  const genresShown = availableGenres(game);
+  const platformsShown = availablePlatforms(game);
+  const modelsShown = availableMonetizationModels(game);
+  const lootBoxesInvented = monetizationFlagAvailable(game, 'lootBoxes');
+  const battlePassInvented = monetizationFlagAvailable(game, 'battlePass');
 
   const [name, setName] = useState('');
   const [themeId, setThemeId] = useState(themes[0].id);
@@ -124,8 +140,8 @@ export function ConceptionScreen() {
         ...defaultMonetization(),
         model,
         aggressiveness: modelDef.supportsMtx ? aggressiveness : 0,
-        hasLootBoxes: modelDef.supportsMtx && !banned ? hasLootBoxes : false,
-        hasBattlePass: modelDef.supportsMtx ? hasBattlePass : false,
+        hasLootBoxes: modelDef.supportsMtx && lootBoxesInvented && !banned ? hasLootBoxes : false,
+        hasBattlePass: modelDef.supportsMtx && battlePassInvented ? hasBattlePass : false,
         dayOneDLC: modelDef.supportsDayOneDlc ? dayOneDLC : false,
       },
     });
@@ -146,7 +162,7 @@ export function ConceptionScreen() {
 
       <section className="flex flex-col gap-5 rounded-lg border border-slate-800 bg-slate-900 p-5">
         <Field label="Tema">
-          {themes.map((t) => (
+          {themesShown.map((t) => (
             <OptionButton key={t.id} selected={themeId === t.id} onClick={() => setThemeId(t.id)}>
               {t.name}{' '}
               {market.themes[t.id] && <TrendArrow direction={market.themes[t.id].direction} />}
@@ -155,7 +171,7 @@ export function ConceptionScreen() {
         </Field>
 
         <Field label="Género">
-          {genres.map((g) => (
+          {genresShown.map((g) => (
             <OptionButton key={g.id} selected={genreId === g.id} onClick={() => setGenreId(g.id)}>
               {g.name}{' '}
               {market.genres[g.id] && <TrendArrow direction={market.genres[g.id].direction} />}
@@ -164,7 +180,7 @@ export function ConceptionScreen() {
         </Field>
 
         <Field label="Plataforma">
-          {platforms.map((p) => {
+          {platformsShown.map((p) => {
             const available = platformAvailable(p, week);
             const stage = market.platforms[p.id]?.stage;
             return (
@@ -226,7 +242,7 @@ export function ConceptionScreen() {
 
         {/* Monetización: la gran palanca de codicia (docs/06 §2, docs/09 §9) */}
         <Field label="Modelo de negocio">
-          {monetizationModels.map((m) => (
+          {modelsShown.map((m) => (
             <OptionButton
               key={m.id}
               selected={model === m.id}
@@ -256,25 +272,29 @@ export function ConceptionScreen() {
               </span>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              <label className={`flex items-center gap-2 ${banned ? 'opacity-50' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={hasLootBoxes && !banned}
-                  disabled={banned}
-                  onChange={(e) => setHasLootBoxes(e.target.checked)}
-                  className="accent-amber-500"
-                />
-                Loot boxes {banned && '(prohibidas por ley)'}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={hasBattlePass}
-                  onChange={(e) => setHasBattlePass(e.target.checked)}
-                  className="accent-amber-500"
-                />
-                Pase de batalla
-              </label>
+              {lootBoxesInvented && (
+                <label className={`flex items-center gap-2 ${banned ? 'opacity-50' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={hasLootBoxes && !banned}
+                    disabled={banned}
+                    onChange={(e) => setHasLootBoxes(e.target.checked)}
+                    className="accent-amber-500"
+                  />
+                  Loot boxes {banned && '(prohibidas por ley)'}
+                </label>
+              )}
+              {battlePassInvented && (
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasBattlePass}
+                    onChange={(e) => setHasBattlePass(e.target.checked)}
+                    className="accent-amber-500"
+                  />
+                  Pase de batalla
+                </label>
+              )}
             </div>
             <p className="text-xs text-amber-300/80">
               Más ingresos por jugador… y los hardcore afilan las antorchas. La codicia se paga.

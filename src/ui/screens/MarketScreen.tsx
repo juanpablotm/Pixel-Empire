@@ -1,21 +1,24 @@
 import {
+  availableGenres,
+  availablePlatforms,
+  availableThemes,
   effectiveSaturation,
   saturationModifier,
   type MarketState,
   type TrendStage,
   type TrendState,
 } from '../../core';
-import { genres, getGenre } from '../../data/genres';
-import { themes, getTheme } from '../../data/themes';
-import { platforms } from '../../data/platforms';
+import { getGenre } from '../../data/genres';
+import { getTheme } from '../../data/themes';
 import { platformStageLabels, trendStageLabels } from '../../data/marketTexts';
 import { useGameStore } from '../../state/store';
 import { TrendArrow } from '../components/TrendArrow';
 
 /**
  * Panel de mercado y tendencias (docs/10 §10.7): dirección ↑→↓ y etapa por
- * género/tema, ciclo de vida de plataformas con su base instalada, y las
- * zonas saturadas. La UI solo muestra: todo se calcula en core/systems/market.ts.
+ * género/tema (solo contenido ya desbloqueado por era/investigación), ciclo
+ * de vida de plataformas con su base instalada, y las zonas saturadas. La UI
+ * solo muestra: todo se calcula en core/systems/market.ts.
  */
 
 const STAGE_COLOR: Record<TrendStage, string> = {
@@ -82,9 +85,14 @@ function SaturationList({ market }: { market: MarketState }) {
 }
 
 export function MarketScreen() {
-  const market = useGameStore((s) => s.game.market);
-  const week = useGameStore((s) => s.game.week);
+  const game = useGameStore((s) => s.game);
+  const market = game.market;
+  const week = game.week;
   const goTo = useGameStore((s) => s.goTo);
+
+  const genresShown = availableGenres(game);
+  const themesShown = availableThemes(game);
+  const platformsShown = availablePlatforms(game);
 
   const maxBase = Math.max(1, ...Object.values(market.platforms).map((p) => p.installedBase));
 
@@ -106,7 +114,7 @@ export function MarketScreen() {
           Géneros
         </h3>
         <ul className="flex flex-col gap-2 text-sm">
-          {genres.map((g) => {
+          {genresShown.map((g) => {
             const trend = market.genres[g.id];
             return trend ? <TrendRow key={g.id} name={g.name} trend={trend} /> : null;
           })}
@@ -118,7 +126,7 @@ export function MarketScreen() {
           Temas
         </h3>
         <ul className="flex flex-col gap-2 text-sm">
-          {themes.map((t) => {
+          {themesShown.map((t) => {
             const trend = market.themes[t.id];
             return trend ? <TrendRow key={t.id} name={t.name} trend={trend} /> : null;
           })}
@@ -130,7 +138,7 @@ export function MarketScreen() {
           Plataformas
         </h3>
         <ul className="flex flex-col gap-2 text-sm">
-          {platforms.map((p) => {
+          {platformsShown.map((p) => {
             const state = market.platforms[p.id];
             if (!state) return null;
             const dead = state.stage === 'descatalogada' || state.stage === 'anunciada';

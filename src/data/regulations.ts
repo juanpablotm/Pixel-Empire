@@ -38,9 +38,6 @@ export function getRegulation(id: string): RegulationDef {
   return def;
 }
 
-/** Orden de las eras para comparar "la era ya llegó" (docs/02 §5). */
-export const eraOrder: readonly EraId[] = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7'];
-
-export function eraAtLeast(era: EraId, minEra: EraId): boolean {
-  return eraOrder.indexOf(era) >= eraOrder.indexOf(minEra);
-}
+// El orden canónico de las eras vive en data/eras.ts desde Fase 6; se
+// re-exporta aquí por compatibilidad con los consumidores previos.
+export { eraAtLeast, eraOrder } from './eras';

@@ -1,4 +1,5 @@
 import { aggregateReputation } from '../../core';
+import { getEra } from '../../data/eras';
 import { stageLabels } from '../../data/staffTexts';
 import { useGameStore } from '../../state/store';
 import { formatMoney, formatWeek } from '../format';
@@ -31,7 +32,12 @@ export function Hud() {
       </h1>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <span className="text-slate-300">{formatWeek(week)}</span>
-        <span className="rounded bg-slate-800 px-2 py-0.5 text-slate-300">Era {era}</span>
+        <span
+          className="rounded bg-slate-800 px-2 py-0.5 text-slate-300"
+          title={`${era} · ${getEra(era).period}`}
+        >
+          🌍 {getEra(era).name}
+        </span>
         <span className="rounded bg-slate-800 px-2 py-0.5 text-slate-300">
           {stageLabels[scaleStage]}
         </span>

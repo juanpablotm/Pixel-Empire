@@ -3,7 +3,9 @@ import type { GameState } from '../model/gameState';
 import type { LegacyTrackedStats } from '../model/moral';
 import { initialCommunityState } from '../systems/community';
 import { createMarketState } from '../systems/market';
+import { defaultPolicies } from '../systems/policies';
 import { initialReputation } from '../systems/reputation';
+import { initialResearchState } from '../systems/research';
 import { createFounder } from '../systems/staff';
 
 /** Contadores de legado a cero (docs/06 §6). */
@@ -31,6 +33,8 @@ export function createInitialState(seed: number): GameState {
       debtBySource: {},
       moralDrift: 0,
       scaleStage: 1,
+      awards: [],
+      awardHype: 0,
     },
     // En el garaje eres tú solo; el pool de contratación llega con la etapa 2.
     staff: [createFounder(seed)],
@@ -42,6 +46,8 @@ export function createInitialState(seed: number): GameState {
     scandals: [],
     community: initialCommunityState(),
     regulation: { pressure: {}, enacted: [] },
+    research: initialResearchState(),
+    policies: defaultPolicies(),
     stats: initialLegacyStats(),
     cashflow: [],
     projectCounter: 0,

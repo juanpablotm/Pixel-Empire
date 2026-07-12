@@ -1,6 +1,7 @@
 import { balance } from '../../data/balance';
 import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
+import { salaryCostFactor } from './policies';
 import { aggregateReputation } from './reputation';
 
 /**
@@ -17,10 +18,12 @@ import { aggregateReputation } from './reputation';
 
 /** Costes fijos semanales actuales (los que el banco mira para prestar). */
 export function weeklyFixedCosts(state: GameState): number {
-  const salaries = state.staff.reduce((sum, e) => sum + e.salary, 0);
+  // La política salarial abarata o encarece la nómina (docs/02 §4, escala grande).
+  const salaries =
+    state.staff.reduce((sum, e) => sum + e.salary, 0) * salaryCostFactor(state);
   const upkeep =
     balance.economy.weeklyUpkeep + balance.economy.upkeepExtraByStage[state.studio.scaleStage];
-  return upkeep + salaries;
+  return Math.round(upkeep + salaries);
 }
 
 /**
@@ -90,10 +93,17 @@ export function repayLoan(state: GameState, amount: number): GameState {
 // Marketing como coste (docs/06 §4): campañas por nivel que compran hype
 // ---------------------------------------------------------------------------
 
-/** Acción: comprar una campaña de marketing para el proyecto en curso. */
-export function launchMarketingCampaign(state: GameState, level: number): GameState {
+/** Acción: comprar una campaña de marketing para un proyecto (sin id, el primero). */
+export function launchMarketingCampaign(
+  state: GameState,
+  level: number,
+  projectId?: string,
+): GameState {
   if (state.gameOver) throw new Error('La partida ha terminado');
-  const project = state.projects[0];
+  const project =
+    projectId === undefined
+      ? state.projects[0]
+      : state.projects.find((p) => p.id === projectId);
   if (!project) throw new Error('No hay proyecto en desarrollo');
   const campaign = balance.economy.marketing.levels[level];
   if (!campaign) throw new Error(`Nivel de campaña desconocido: ${level}`);
@@ -107,13 +117,15 @@ export function launchMarketingCampaign(state: GameState, level: number): GameSt
   const next: GameState = {
     ...state,
     studio: { ...state.studio, capital: state.studio.capital - campaign.cost },
-    projects: [
-      {
-        ...project,
-        hype: Math.min(balance.market.hype.max, project.hype + campaign.hypeBoost),
-        marketingUsed: [...project.marketingUsed, level],
-      },
-    ],
+    projects: state.projects.map((p) =>
+      p.id === project.id
+        ? {
+            ...p,
+            hype: Math.min(balance.market.hype.max, p.hype + campaign.hypeBoost),
+            marketingUsed: [...p.marketingUsed, level],
+          }
+        : p,
+    ),
   };
   return appendLog(
     next,
@@ -173,7 +185,8 @@ export function estimateRunwayWeeks(state: GameState): number | null {
 
 export function advanceEconomy(state: GameState): GameState {
   // El fundador no cobra salario: su coste es la persona·semana de desarrollo.
-  const devCost = state.projects.length > 0 ? balance.economy.devCostPerPersonWeek : 0;
+  // Con multi-proyecto, cada proyecto activo paga su semana (docs/06 §4).
+  const devCost = balance.economy.devCostPerPersonWeek * state.projects.length;
   // Interés del préstamo: ~1 %/semana sobre el principal vivo (docs/06 §4).
   const interest = Math.round(state.loanPrincipal * balance.economy.loans.weeklyInterest);
   const costs = weeklyFixedCosts(state) + devCost + interest;

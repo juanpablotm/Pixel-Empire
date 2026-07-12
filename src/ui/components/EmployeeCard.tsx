@@ -44,14 +44,21 @@ function ActionButton({
 }
 
 export function EmployeeCard({ employee }: { employee: Employee }) {
-  const project = useGameStore((s) => s.game.projects[0]);
+  const projects = useGameStore((s) => s.game.projects);
+  const rdStaff = useGameStore((s) => s.game.research.rdStaff);
+  const activeProjectId = useGameStore((s) => s.activeProjectId);
   const capital = useGameStore((s) => s.game.studio.capital);
   const fire = useGameStore((s) => s.fire);
   const train = useGameStore((s) => s.train);
   const motivate = useGameStore((s) => s.motivate);
   const toggleAssignment = useGameStore((s) => s.toggleAssignment);
+  const toggleResearch = useGameStore((s) => s.toggleResearch);
 
-  const assigned = project?.assignedStaff.includes(employee.id) ?? false;
+  // Con multi-proyecto (docs/02 §4): la acción asigna al proyecto activo.
+  const project = projects.find((p) => p.id === activeProjectId) ?? projects[0];
+  const assignedProject = projects.find((p) => p.assignedStaff.includes(employee.id));
+  const assigned = project !== undefined && project.assignedStaff.includes(employee.id);
+  const inResearch = rdStaff.includes(employee.id);
   const tier = salaryTierOf(employee);
   const b = balance.staff;
   const bonusCost = Math.max(b.motivation.bonusMinCost, b.motivation.bonusWeeks * employee.salary);
@@ -77,9 +84,17 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
                 Burnout
               </span>
             )}
-            {assigned && (
-              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
-                En proyecto
+            {assignedProject && (
+              <span
+                className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300"
+                title={assignedProject.name}
+              >
+                {projects.length > 1 ? `En «${assignedProject.name}»` : 'En proyecto'}
+              </span>
+            )}
+            {inResearch && (
+              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-300">
+                En I+D
               </span>
             )}
           </div>
@@ -123,10 +138,19 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
 
       <div className="flex flex-wrap gap-1.5 border-t border-slate-800 pt-3">
         {project && (
-          <ActionButton onClick={() => toggleAssignment(employee.id)}>
+          <ActionButton
+            onClick={() => toggleAssignment(employee.id, project.id)}
+            title={projects.length > 1 ? `Proyecto activo: «${project.name}»` : undefined}
+          >
             {assigned ? 'Retirar del proyecto' : 'Asignar al proyecto'}
           </ActionButton>
         )}
+        <ActionButton
+          onClick={() => toggleResearch(employee.id)}
+          title={inResearch ? 'Sacar de I+D' : 'Mover a I+D (~1 💡/semana)'}
+        >
+          {inResearch ? 'Sacar de I+D' : '💡 A I+D'}
+        </ActionButton>
         <ActionButton
           onClick={() => train(employee.id, employee.specialty)}
           disabled={capital < b.training.cost}

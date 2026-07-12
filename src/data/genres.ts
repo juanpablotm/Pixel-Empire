@@ -1,14 +1,15 @@
 import type { Genre } from '../core/model/content';
 
 /**
- * Géneros semilla de la Fase 1: los cuatro disponibles en E1 (docs/09 §2).
+ * Los 14 géneros del baseline (docs/09 §2), gateados por era (docs/02 §5).
  * El balance ideal Diseño/Técnica viene de la tabla cerrada de docs/09.
  * specialtyWeights pondera las skills del equipo en el teamFactor (docs/03
- * factor E): un RPG valora Diseño; el marketing no aporta calidad (docs/05 §2).
+ * factor E); el marketing no aporta calidad (docs/05 §2).
  *
- * basePopularityCurve (docs/04 §2): tendencia guionizada por semana absoluta,
- * pensada para que en E1 haya una moda temprana que muere (Aventura), una que
- * nace y crece (Estrategia), un clásico en ascenso (RPG) y un estable (Puzzle).
+ * basePopularityCurve (docs/04 §2): la tendencia guionizada por semana
+ * absoluta da el "sabor histórico" de cada era (E1≈s1, E2≈s261, E3≈s677,
+ * E4≈s1093, E5≈s1509, E6≈s1873, E7≈s2289; ver data/eras.ts). Los puntos de
+ * las semanas 0–300 de los géneros de E1 se conservan de fases anteriores.
  */
 export const genres: readonly Genre[] = [
   {
@@ -25,6 +26,12 @@ export const genres: readonly Genre[] = [
       { week: 140, value: 0.8 },
       { week: 200, value: 0.7 },
       { week: 300, value: 0.6 },
+      // El clásico eterno: fuerte en E3–E4, digno para siempre.
+      { week: 700, value: 0.7 },
+      { week: 1100, value: 0.75 },
+      { week: 1500, value: 0.6 },
+      { week: 1900, value: 0.65 },
+      { week: 2400, value: 0.6 },
     ],
   },
   {
@@ -42,6 +49,12 @@ export const genres: readonly Genre[] = [
       { week: 150, value: 0.85 },
       { week: 210, value: 0.6 },
       { week: 280, value: 0.4 },
+      // Edad de oro del PC en E3–E4; nicho fiel después.
+      { week: 700, value: 0.6 },
+      { week: 1000, value: 0.7 },
+      { week: 1300, value: 0.5 },
+      { week: 1700, value: 0.4 },
+      { week: 2200, value: 0.45 },
     ],
   },
   {
@@ -59,6 +72,12 @@ export const genres: readonly Genre[] = [
       { week: 150, value: 0.35 },
       { week: 220, value: 0.25 },
       { week: 280, value: 0.3 },
+      // Muere en E3–E4 y renace narrativa con los indies de E5–E6.
+      { week: 800, value: 0.25 },
+      { week: 1200, value: 0.2 },
+      { week: 1600, value: 0.45 },
+      { week: 2000, value: 0.55 },
+      { week: 2400, value: 0.5 },
     ],
   },
   {
@@ -73,6 +92,174 @@ export const genres: readonly Genre[] = [
       { week: 60, value: 0.6 },
       { week: 120, value: 0.55 },
       { week: 200, value: 0.6 },
+      // El móvil lo dispara en E5; meseta alta después.
+      { week: 900, value: 0.5 },
+      { week: 1400, value: 0.55 },
+      { week: 1650, value: 0.8 },
+      { week: 1900, value: 0.75 },
+      { week: 2400, value: 0.7 },
+    ],
+  },
+  {
+    id: 'shooter',
+    name: 'Shooter',
+    idealDesign: 0.4,
+    idealTech: 0.6,
+    specialtyWeights: { diseno: 0.25, tecnica: 0.45, arte: 0.2, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E2',
+    basePopularityCurve: [
+      { week: 261, value: 0.3 },
+      { week: 500, value: 0.45 },
+      { week: 800, value: 0.6 },
+      { week: 1100, value: 0.7 },
+      { week: 1500, value: 0.8 },
+      { week: 1900, value: 0.75 },
+      { week: 2400, value: 0.65 },
+    ],
+  },
+  {
+    id: 'plataformas',
+    name: 'Plataformas',
+    idealDesign: 0.6,
+    idealTech: 0.4,
+    specialtyWeights: { diseno: 0.4, tecnica: 0.3, arte: 0.2, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E2',
+    basePopularityCurve: [
+      { week: 261, value: 0.5 },
+      { week: 400, value: 0.8 },
+      { week: 700, value: 0.75 },
+      { week: 1000, value: 0.5 },
+      { week: 1400, value: 0.3 },
+      { week: 1800, value: 0.5 },
+      { week: 2300, value: 0.45 },
+    ],
+  },
+  {
+    id: 'simulacion',
+    name: 'Simulación',
+    idealDesign: 0.5,
+    idealTech: 0.5,
+    specialtyWeights: { diseno: 0.35, tecnica: 0.4, arte: 0.15, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E2',
+    basePopularityCurve: [
+      { week: 261, value: 0.3 },
+      { week: 600, value: 0.45 },
+      { week: 1000, value: 0.55 },
+      { week: 1400, value: 0.6 },
+      { week: 1900, value: 0.55 },
+      { week: 2400, value: 0.6 },
+    ],
+  },
+  {
+    id: 'deportivo',
+    name: 'Deportes',
+    idealDesign: 0.35,
+    idealTech: 0.65,
+    specialtyWeights: { diseno: 0.2, tecnica: 0.45, arte: 0.25, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E2',
+    basePopularityCurve: [
+      { week: 261, value: 0.35 },
+      { week: 600, value: 0.5 },
+      { week: 1000, value: 0.65 },
+      { week: 1500, value: 0.7 },
+      { week: 2000, value: 0.7 },
+      { week: 2400, value: 0.65 },
+    ],
+  },
+  {
+    id: 'carreras',
+    name: 'Carreras',
+    idealDesign: 0.45,
+    idealTech: 0.55,
+    specialtyWeights: { diseno: 0.25, tecnica: 0.45, arte: 0.2, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E3',
+    basePopularityCurve: [
+      { week: 677, value: 0.4 },
+      { week: 900, value: 0.65 },
+      { week: 1200, value: 0.7 },
+      { week: 1600, value: 0.55 },
+      { week: 2000, value: 0.45 },
+      { week: 2400, value: 0.45 },
+    ],
+  },
+  {
+    id: 'terror',
+    name: 'Terror',
+    idealDesign: 0.6,
+    idealTech: 0.4,
+    specialtyWeights: { diseno: 0.35, tecnica: 0.2, arte: 0.25, audio: 0.2, marketing: 0 },
+    appearsInEra: 'E3',
+    basePopularityCurve: [
+      { week: 677, value: 0.35 },
+      { week: 900, value: 0.6 },
+      { week: 1200, value: 0.55 },
+      { week: 1600, value: 0.45 },
+      // El streaming adora el terror (docs/07): segundo pico en E6.
+      { week: 1950, value: 0.7 },
+      { week: 2400, value: 0.6 },
+    ],
+  },
+  {
+    id: 'gestion',
+    name: 'Gestión',
+    idealDesign: 0.6,
+    idealTech: 0.4,
+    specialtyWeights: { diseno: 0.45, tecnica: 0.3, arte: 0.15, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E4',
+    basePopularityCurve: [
+      { week: 1093, value: 0.3 },
+      { week: 1400, value: 0.45 },
+      { week: 1800, value: 0.55 },
+      { week: 2200, value: 0.6 },
+      { week: 2500, value: 0.55 },
+    ],
+  },
+  {
+    id: 'ritmo',
+    name: 'Ritmo',
+    idealDesign: 0.55,
+    idealTech: 0.45,
+    specialtyWeights: { diseno: 0.3, tecnica: 0.25, arte: 0.15, audio: 0.3, marketing: 0 },
+    appearsInEra: 'E4',
+    basePopularityCurve: [
+      { week: 1093, value: 0.35 },
+      { week: 1250, value: 0.7 },
+      { week: 1450, value: 0.55 },
+      { week: 1700, value: 0.3 },
+      { week: 2100, value: 0.35 },
+      { week: 2400, value: 0.4 },
+    ],
+  },
+  {
+    id: 'sandbox',
+    name: 'Sandbox',
+    idealDesign: 0.55,
+    idealTech: 0.45,
+    specialtyWeights: { diseno: 0.35, tecnica: 0.35, arte: 0.2, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E5',
+    requiresResearch: 'generacionProcedural',
+    basePopularityCurve: [
+      { week: 1509, value: 0.45 },
+      { week: 1750, value: 0.7 },
+      { week: 2000, value: 0.8 },
+      { week: 2300, value: 0.75 },
+      { week: 2500, value: 0.7 },
+    ],
+  },
+  {
+    id: 'battleRoyale',
+    name: 'Battle Royale',
+    idealDesign: 0.45,
+    idealTech: 0.55,
+    specialtyWeights: { diseno: 0.25, tecnica: 0.45, arte: 0.2, audio: 0.1, marketing: 0 },
+    appearsInEra: 'E6',
+    requiresResearch: 'serviciosOnline',
+    basePopularityCurve: [
+      { week: 1873, value: 0.25 },
+      { week: 1980, value: 0.7 },
+      { week: 2100, value: 0.9 },
+      { week: 2300, value: 0.7 },
+      { week: 2500, value: 0.6 },
     ],
   },
 ];

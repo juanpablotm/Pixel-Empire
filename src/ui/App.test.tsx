@@ -31,7 +31,8 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
   it('muestra el HUD con fecha, era y capital iniciales', () => {
     render(<App />);
     expect(screen.getByText('Semana 1 · 1980')).toBeInTheDocument();
-    expect(screen.getByText('Era E1')).toBeInTheDocument();
+    // Desde Fase 6 la era se muestra con su nombre (docs/02 §5).
+    expect(screen.getByText(/La chispa/)).toBeInTheDocument();
     expect(
       screen.getByText(`${balance.economy.initialCapital.toLocaleString('es-ES')} 💰`),
     ).toBeInTheDocument();

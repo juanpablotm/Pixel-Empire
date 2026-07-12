@@ -18,6 +18,8 @@ export interface Genre {
   /** Ponderación de especialidades para el teamFactor (docs/03 factor E; suman 1). */
   specialtyWeights: Record<Specialty, number>;
   appearsInEra: EraId;
+  /** Nodo de investigación necesario para desbloquearlo (docs/02 §3). */
+  requiresResearch?: string;
   /** Curva guionizada de popularidad por semana (docs/04 §2); el ruido la matiza en runtime. */
   basePopularityCurve: CurvePoint[];
 }
@@ -63,6 +65,8 @@ export interface Feature {
   /** Deuda de bugs que añade al elegirla (docs/03 factor D). */
   bugRisk: number;
   appearsInEra: EraId;
+  /** Nodo de investigación necesario para desbloquearla (docs/02 §3 y docs/09 §5). */
+  requiresResearch?: string;
 }
 
 /** Rasgo de personalidad de un empleado (docs/05 §3 y docs/09 §6). */

@@ -41,3 +41,102 @@
     animation: none;
   }
 }
+
+/*
+ * Pieles de UI por era (docs/10 §8, innovación I7): la interfaz envejece con
+ * las eras. Cada piel redefine las superficies base (los tonos slate de la
+ * base flat) dentro de su ámbito, con contraste garantizado. E5 es la base
+ * neutra (sin overrides): el flat design "actual".
+ *
+ * --skin-accent la consumen los componentes de Fase 6 (transición, museo…).
+ */
+.era-skin {
+  --skin-accent: #34d399;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 900ms ease;
+}
+.era-skin > * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* E1 — La chispa: monocromo fósforo verde, sabor CRT, tipografía terminal. */
+.era-E1 {
+  --skin-accent: #4ade80;
+  font-family: 'Cascadia Mono', ui-monospace, 'Courier New', monospace;
+  position: relative;
+}
+.era-E1 :is(.bg-slate-950) { background-color: #04120a; }
+.era-E1 :is(.bg-slate-900) { background-color: #071a0e; }
+.era-E1 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #0c2915; }
+.era-E1 :is(.border-slate-800, .border-slate-700) { border-color: #1c4a2a; }
+.era-E1::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(74, 222, 128, 0.05) 0 1px, transparent 1px 3px);
+  z-index: 50;
+}
+
+/* E2 — Las consolas: color primario limitado, formas boxy. */
+.era-E2 { --skin-accent: #818cf8; }
+.era-E2 :is(.bg-slate-950) { background-color: #0a0a1c; }
+.era-E2 :is(.bg-slate-900) { background-color: #11112b; }
+.era-E2 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #1c1c44; }
+.era-E2 :is(.border-slate-800, .border-slate-700) { border-color: #34347a; }
+.era-E2 :is(.rounded-lg, .rounded-md) { border-radius: 2px; }
+
+/* E3 — El salto 3D: software beige/gris de los 90, botones con relieve. */
+.era-E3 { --skin-accent: #93c5fd; }
+.era-E3 :is(.bg-slate-950) { background-color: #22211e; }
+.era-E3 :is(.bg-slate-900) { background-color: #2c2b27; }
+.era-E3 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #3a3833; }
+.era-E3 :is(.border-slate-800, .border-slate-700) { border-color: #57534e; }
+.era-E3 button { box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.45), inset 1px 1px 0 rgba(255, 255, 255, 0.12); }
+
+/* E4 — La red: degradados glossy de la web temprana. */
+.era-E4 { --skin-accent: #22d3ee; }
+.era-E4 :is(.bg-slate-950) { background-color: #051220; }
+.era-E4 :is(.bg-slate-900) { background: linear-gradient(180deg, #0a2236 0%, #071827 100%); }
+.era-E4 :is(.bg-slate-800, .bg-slate-800\/60) { background: linear-gradient(180deg, #10344e 0%, #0b273c 100%); }
+.era-E4 :is(.border-slate-800, .border-slate-700) { border-color: #155e75; }
+
+/* E6 — Servicios y streamers: oscuro con acentos neón. */
+.era-E6 { --skin-accent: #e879f9; }
+.era-E6 :is(.bg-slate-950) { background-color: #0b0413; }
+.era-E6 :is(.bg-slate-900) { background-color: #150a24; }
+.era-E6 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #221238; }
+.era-E6 :is(.border-slate-800, .border-slate-700) { border-color: #582a8f; }
+
+/* E7 — El futuro cercano: glassmorphism translúcido, minimal. */
+.era-E7 { --skin-accent: #a5f3fc; }
+.era-E7 :is(.bg-slate-950) { background: linear-gradient(160deg, #020617 0%, #0b1026 55%, #0f0a24 100%); }
+.era-E7 :is(.bg-slate-900) { background-color: rgba(148, 163, 184, 0.07); }
+.era-E7 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: rgba(148, 163, 184, 0.13); }
+.era-E7 :is(.border-slate-800, .border-slate-700) { border-color: rgba(165, 243, 252, 0.18); }
+.era-E7 :is(.rounded-lg) { border-radius: 1rem; }
+
+/* Transición de era (docs/10 §7.6): beat a pantalla completa. */
+@keyframes era-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes era-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.era-overlay { animation: era-fade-in 400ms cubic-bezier(0, 0, 0, 1) backwards; }
+.era-overlay-line { animation: era-rise 900ms cubic-bezier(0, 0, 0, 1) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .era-overlay,
+  .era-overlay-line {
+    animation: none;
+  }
+  .era-E1::after {
+    background: none;
+  }
+}

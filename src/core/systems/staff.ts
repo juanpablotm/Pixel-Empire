@@ -294,12 +294,17 @@ function generateCandidate(
  * Genera el pool de candidatos de una semana: determinista por (semilla,
  * semana), con su propio stream del PRNG. La reputación de empleador sesga
  * calidad y coste (docs/05 §7); con rep 50 el pool es el neutro de siempre.
- * La dependencia de la era llega en Fase 6.
+ * El tamaño del pool crece con la etapa de escala (docs/02 §4).
  */
-export function generateCandidates(seed: number, week: number, employerRep = 50): Employee[] {
+export function generateCandidates(
+  seed: number,
+  week: number,
+  employerRep = 50,
+  count: number = balance.staff.candidates.poolSize,
+): Employee[] {
   const rng = makeRng(seed, CANDIDATE_STREAM + week);
   const pool: Employee[] = [];
-  for (let i = 0; i < balance.staff.candidates.poolSize; i++) {
+  for (let i = 0; i < count; i++) {
     pool.push(generateCandidate(rng, seed, week, i, employerRep));
   }
   return pool;
@@ -363,7 +368,6 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
       morale: clampStat(e.morale - teamMoraleHit),
       loyalty: clampStat(e.loyalty - teamLoyaltyHit),
     }));
-  const project = state.projects[0];
 
   // Despedir golpea la reputación como empleador (docs/05 §7 y docs/06 §2).
   let studio: GameState['studio'] = { ...state.studio, capital: state.studio.capital - severance };
@@ -374,9 +378,15 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
     studio,
     staff: remaining,
     stats: { ...state.stats, firedCount: state.stats.firedCount + 1 },
-    projects: project
-      ? [{ ...project, assignedStaff: project.assignedStaff.filter((id) => id !== employeeId) }]
-      : state.projects,
+    projects: state.projects.map((p) =>
+      p.assignedStaff.includes(employeeId)
+        ? { ...p, assignedStaff: p.assignedStaff.filter((id) => id !== employeeId) }
+        : p,
+    ),
+    research: {
+      ...state.research,
+      rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
+    },
   };
   return appendLog(
     next,
@@ -471,26 +481,68 @@ export function motivateEmployee(
   );
 }
 
-/** Acción: asignar o retirar a un empleado del proyecto en curso. */
-export function toggleAssignment(state: GameState, employeeId: string): GameState {
-  const project = state.projects[0];
+/**
+ * Acción: asignar o retirar a un empleado de un proyecto (sin id, el
+ * primero). Asignarlo lo saca de cualquier otro proyecto y de I+D: nadie
+ * está en dos sitios a la vez (docs/02 §4, multi-proyecto).
+ */
+export function toggleAssignment(
+  state: GameState,
+  employeeId: string,
+  projectId?: string,
+): GameState {
+  const project =
+    projectId === undefined
+      ? state.projects[0]
+      : state.projects.find((p) => p.id === projectId);
   if (!project) throw new Error('No hay proyecto en desarrollo');
   requireEmployee(state, employeeId);
 
   const assigned = project.assignedStaff.includes(employeeId);
-  const assignedStaff = assigned
-    ? project.assignedStaff.filter((id) => id !== employeeId)
-    : [...project.assignedStaff, employeeId];
-  return { ...state, projects: [{ ...project, assignedStaff }] };
+  return {
+    ...state,
+    projects: state.projects.map((p) => {
+      if (p.id === project.id) {
+        return {
+          ...p,
+          assignedStaff: assigned
+            ? p.assignedStaff.filter((id) => id !== employeeId)
+            : [...p.assignedStaff, employeeId],
+        };
+      }
+      return p.assignedStaff.includes(employeeId)
+        ? { ...p, assignedStaff: p.assignedStaff.filter((id) => id !== employeeId) }
+        : p;
+    }),
+    research: assigned
+      ? state.research
+      : {
+          ...state.research,
+          rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
+        },
+  };
 }
 
-/** Acción: activar/desactivar el crunch del proyecto en curso (docs/05 §6). */
-export function setCrunch(state: GameState, active: boolean): GameState {
-  const project = state.projects[0];
+/** Acción: activar/desactivar el crunch de un proyecto (docs/05 §6). */
+export function setCrunch(state: GameState, active: boolean, projectId?: string): GameState {
+  const project =
+    projectId === undefined
+      ? state.projects[0]
+      : state.projects.find((p) => p.id === projectId);
   if (!project) throw new Error('No hay proyecto en desarrollo');
+  if (
+    active &&
+    state.policies.antiCrunch &&
+    state.studio.scaleStage >= balance.policies.minStage
+  ) {
+    throw new Error('La política anti-crunch del estudio lo prohíbe (docs/02 §4)');
+  }
   if (project.crunch === active) return state;
 
-  const next: GameState = { ...state, projects: [{ ...project, crunch: active }] };
+  const next: GameState = {
+    ...state,
+    projects: state.projects.map((p) => (p.id === project.id ? { ...p, crunch: active } : p)),
+  };
   return appendLog(
     next,
     'staff',
@@ -545,26 +597,34 @@ function quitChance(employee: Employee): number {
 }
 
 /**
- * Una semana de la plantilla: los asignados al proyecto se desgastan (el
- * crunch drena rápido), el resto descansa; burnout con energía sostenidamente
- * baja; XP y niveles por semana trabajada (los Mentores aceleran a los
- * juniors); y renuncias si moral/lealtad se hunden. El fundador nunca renuncia.
+ * Una semana de la plantilla: los asignados a un proyecto o a I+D se
+ * desgastan (el crunch de SU proyecto drena rápido), el resto descansa;
+ * burnout con energía sostenidamente baja; XP y niveles por semana trabajada
+ * (los Mentores aceleran a los juniors de su mismo equipo); y renuncias si
+ * moral/lealtad se hunden. El fundador nunca renuncia.
  */
 export function advanceStaff(state: GameState, rng: Rng): GameState {
   if (state.staff.length === 0) return state;
   const b = balance.staff;
-  const project = state.projects[0];
-  const assignedIds = project ? project.assignedStaff : [];
+  // Multi-proyecto (docs/02 §4): cada empleado pertenece a lo sumo a un equipo.
+  const projectOf = new Map<string, GameState['projects'][number]>();
+  for (const project of state.projects) {
+    for (const id of project.assignedStaff) {
+      if (!projectOf.has(id)) projectOf.set(id, project);
+    }
+  }
+  const inResearch = new Set(state.research.rdStaff);
   const events: string[] = [];
 
   const worked = state.staff.map((employee) => {
     let { morale, energy, loyalty, xp, level, salary } = employee;
     let skills = employee.skills;
-    const working = project !== undefined && assignedIds.includes(employee.id);
+    const project = projectOf.get(employee.id);
+    const working = project !== undefined || inResearch.has(employee.id);
 
     if (working) {
       const sens = crunchSensitivity(employee);
-      if (project.crunch) {
+      if (project?.crunch) {
         energy -= b.crunch.energyDrain * sens;
         morale -= b.crunch.moraleDrain * sens;
         loyalty -= b.crunch.loyaltyDrain * sens;
@@ -572,12 +632,13 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
         energy -= b.work.energyDrain;
       }
 
-      // XP: los juniors con un Mentor al lado crecen más rápido (docs/05 §3).
+      // XP: los juniors con un Mentor al lado (mismo equipo) crecen más rápido
+      // (docs/05 §3); en I+D no hay mentoría de proyecto.
       const mentorBonus =
-        level <= b.xp.juniorMaxLevel
+        level <= b.xp.juniorMaxLevel && project !== undefined
           ? state.staff.reduce(
               (best, other) =>
-                other.id !== employee.id && assignedIds.includes(other.id)
+                other.id !== employee.id && project.assignedStaff.includes(other.id)
                   ? Math.max(best, getTraitMentorBonus(other))
                   : best,
               0,
@@ -635,20 +696,22 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
   const quitters = worked.filter((e) => rng.chance(quitChance(e)));
   let staff = worked;
   let projects = state.projects;
+  let research = state.research;
   let studio = state.studio;
   if (quitters.length > 0) {
     const quitIds = new Set(quitters.map((e) => e.id));
     staff = worked
       .filter((e) => !quitIds.has(e.id))
       .map((e) => ({ ...e, morale: clampStat(e.morale - b.quits.teamMoraleHit) }));
-    if (project) {
-      projects = [
-        {
-          ...project,
-          assignedStaff: project.assignedStaff.filter((id) => !quitIds.has(id)),
-        },
-      ];
-    }
+    projects = state.projects.map((p) =>
+      p.assignedStaff.some((id) => quitIds.has(id))
+        ? { ...p, assignedStaff: p.assignedStaff.filter((id) => !quitIds.has(id)) }
+        : p,
+    );
+    research = {
+      ...state.research,
+      rdStaff: state.research.rdStaff.filter((id) => !quitIds.has(id)),
+    };
     // Cada renuncia sonada araña la reputación de empleador (docs/05 §7).
     studio = withReputationDeltas(studio, {
       empleador: -balance.reputation.employer.quitHit * quitters.length,
@@ -658,7 +721,7 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
     }
   }
 
-  let next: GameState = { ...state, staff, projects, studio };
+  let next: GameState = { ...state, staff, projects, research, studio };
   for (const text of events) {
     next = appendLog(next, 'staff', text);
   }
@@ -684,37 +747,60 @@ function levelUpSkills(
 }
 
 // ---------------------------------------------------------------------------
-// Escala: Garaje → Estudio pequeño (docs/02 §4)
+// Escala: las 4 etapas, del garaje a la corporación (docs/02 §4)
 // ---------------------------------------------------------------------------
 
 /**
- * Transición de etapa por hito de capital y refresco periódico del pool de
- * candidatos. Las etapas 3–4 (consolidado, corporación) llegan en Fase 6.
+ * Transición de etapa por hitos (capital y tamaño de plantilla) y refresco
+ * periódico del pool de candidatos (su tamaño crece con la etapa). Cada
+ * transición es uno de los grandes momentos de recompensa (docs/02 §4).
  */
 export function advanceScale(state: GameState): GameState {
   const { scale, candidates } = balance.staff;
 
   const employerRep = state.studio.reputation.empleador;
+  const refresh = (s: GameState): GameState['candidates'] =>
+    generateCandidates(s.seed, s.week, employerRep, scale.poolSizeByStage[s.studio.scaleStage]);
 
-  if (state.studio.scaleStage === 1) {
-    if (state.studio.capital < scale.stage2CapitalThreshold) return state;
-    const next: GameState = {
-      ...state,
-      studio: { ...state.studio, scaleStage: 2 },
-      candidates: generateCandidates(state.seed, state.week, employerRep),
-    };
+  const stage = state.studio.scaleStage;
+
+  if (stage === 1 && state.studio.capital >= scale.stage2CapitalThreshold) {
+    const next: GameState = { ...state, studio: { ...state.studio, scaleStage: 2 } };
     return appendLog(
-      next,
+      { ...next, candidates: refresh(next) },
       'estudio',
       `El estudio sale del garaje a una oficina pequeña: ya puedes contratar (hasta ${scale.staffCapByStage[2]} personas).`,
     );
   }
 
-  if (state.week % candidates.refreshWeeks === 0) {
-    return {
-      ...state,
-      candidates: generateCandidates(state.seed, state.week, employerRep),
-    };
+  if (
+    stage === 2 &&
+    state.studio.capital >= scale.stage3.capital &&
+    state.staff.length >= scale.stage3.staff
+  ) {
+    const next: GameState = { ...state, studio: { ...state.studio, scaleStage: 3 } };
+    return appendLog(
+      { ...next, candidates: refresh(next) },
+      'estudio',
+      `Estudio consolidado: open space, varios equipos y hasta ${scale.projectCapByStage[3]} proyectos en paralelo. Ahora diriges (docs/02 §4).`,
+    );
+  }
+
+  if (
+    stage === 3 &&
+    state.studio.capital >= scale.stage4.capital &&
+    state.staff.length >= scale.stage4.staff
+  ) {
+    const next: GameState = { ...state, studio: { ...state.studio, scaleStage: 4 } };
+    return appendLog(
+      { ...next, candidates: refresh(next) },
+      'estudio',
+      `CORPORACIÓN: la planta entera es tuya. Hasta ${scale.projectCapByStage[4]} proyectos, ${scale.staffCapByStage[4]} personas y gestión por políticas. Eres el magnate.`,
+    );
+  }
+
+  if (stage >= 2 && state.week % candidates.refreshWeeks === 0) {
+    return { ...state, candidates: refresh(state) };
   }
   return state;
 }

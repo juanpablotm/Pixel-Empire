@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { getEra } from '../../data/eras';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
 import type { MonetizationConfig } from '../model/moral';
 import { computeLegacy } from './legacy';
+import { createMarketState } from './market';
 import { startProject } from './projects';
 import { aggregateReputation } from './reputation';
 import { setCrunch } from './staff';
@@ -16,11 +18,7 @@ import { setCrunch } from './staff';
  */
 
 const SEED = 1234;
-/**
- * ~2,3 años. Más allá de la semana ~120 el mercado de E1 entero se agota
- * (modas muriendo + plataformas en declive) y TODAS las filosofías sangran:
- * eso se resuelve en Fase 6 con la llegada de nuevas eras y plataformas.
- */
+/** ~2,3 años dentro de E5 (los bots no llegan a E6: sin ley de loot boxes). */
 const WEEKS = 120;
 
 /**
@@ -65,7 +63,9 @@ const GREEDY: Philosophy = {
     model: 'premium+mtx',
     aggressiveness: 0.7,
     hasLootBoxes: true,
-    hasBattlePass: true,
+    // El pase de batalla no se inventa hasta E6 (docs/02 §5) y no aporta
+    // ingresos en el modelo v1: el bot de E5 exprime con cajas + MTX.
+    hasBattlePass: false,
     dayOneDLC: false,
   },
   crunch: false,
@@ -95,9 +95,21 @@ const BALANCED: Philosophy = {
   crunch: false,
 };
 
-/** Bot: encadena juegos pequeños durante WEEKS semanas con su filosofía. */
+/**
+ * Bot: encadena juegos pequeños durante WEEKS semanas con su filosofía.
+ * Desde Fase 6 la monetización está gateada por era (docs/09 §9), así que
+ * los bots juegan en la ventana real de E5 (semana de inicio de data/eras):
+ * ahí ya existen las MTX y las loot boxes, y el mercado es el de su época.
+ * La comparación entre filosofías sigue siendo la de la Fase 4.
+ */
 function playBot(philosophy: Philosophy): GameState {
-  let state = createInitialState(SEED);
+  const startWeek = getEra('E5').startWeek;
+  let state: GameState = {
+    ...createInitialState(SEED),
+    week: startWeek,
+    era: 'E5',
+    market: createMarketState(startWeek),
+  };
   let combo = 0;
   for (let week = 0; week < WEEKS; week++) {
     if (state.gameOver) break;

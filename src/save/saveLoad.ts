@@ -1,11 +1,14 @@
 import {
   createFounder,
   createMarketState,
+  defaultPolicies,
   initialCommunityState,
   initialLegacyStats,
   initialReputation,
+  initialResearchState,
   type GameState,
 } from '../core';
+import { eraForWeek } from '../data/eras';
 import { defaultMonetization } from '../data/monetization';
 
 /**
@@ -13,7 +16,7 @@ import { defaultMonetization } from '../data/monetization';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -134,6 +137,18 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
         creatorCampaign: [],
         overPromised: false,
       })),
+    },
+  }),
+  // v6 (Fase 5) → v7 (Fase 6): eras completas (la era se recalcula por la
+  // semana: antes nunca avanzaba), investigación, políticas y premios.
+  6: (file) => ({
+    saveVersion: 7,
+    state: {
+      ...file.state,
+      era: eraForWeek(file.state.week),
+      research: initialResearchState(),
+      policies: defaultPolicies(),
+      studio: { ...file.state.studio, awards: [], awardHype: 0 },
     },
   }),
 };

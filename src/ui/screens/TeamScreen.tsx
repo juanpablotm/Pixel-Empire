@@ -1,4 +1,11 @@
-import { hiringCost, salaryTierOf, staffCap, type Employee } from '../../core';
+import {
+  hiringCost,
+  policiesUnlocked,
+  salaryTierOf,
+  staffCap,
+  type Employee,
+  type SalaryPolicy,
+} from '../../core';
 import { balance } from '../../data/balance';
 import { specialtyLabels, stageLabels, tierLabels } from '../../data/staffTexts';
 import { getTrait } from '../../data/traits';
@@ -9,9 +16,88 @@ import { EmployeeCard } from '../components/EmployeeCard';
 
 /**
  * Pantalla de equipo (docs/10 §10.6): plantilla con tarjetas de empleado y
- * pool de contratación (bloqueado en el garaje). La UI solo muestra estado
- * y despacha acciones; la lógica vive en core/systems/staff.ts.
+ * pool de contratación (bloqueado en el garaje). En la escala grande aparece
+ * la gestión por políticas (docs/02 §4 y docs/10 §14): dejas de gestionar
+ * persona a persona. La lógica vive en core/systems/staff.ts y policies.ts.
  */
+
+const SALARY_POLICIES: { id: SalaryPolicy; label: string; hint: string }[] = [
+  { id: 'austera', label: 'Austera', hint: 'Nómina más barata; la moral y la lealtad se erosionan.' },
+  { id: 'mercado', label: 'De mercado', hint: 'Ni frío ni calor: el statu quo.' },
+  { id: 'generosa', label: 'Generosa', hint: 'Nómina más cara; el equipo se queda y sonríe.' },
+];
+
+/** Vista de políticas (docs/10 §10.6: "En corporación, vista de políticas"). */
+function PoliciesPanel() {
+  const policies = useGameStore((s) => s.game.policies);
+  const setPolicies = useGameStore((s) => s.setPolicies);
+
+  return (
+    <section className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+        Políticas del estudio (se aplican solas cada semana)
+      </h3>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="w-40 shrink-0 text-sm text-slate-300">Política salarial</span>
+        {SALARY_POLICIES.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            aria-pressed={policies.salary === p.id}
+            title={p.hint}
+            onClick={() => setPolicies({ salary: p.id })}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              policies.salary === p.id
+                ? 'bg-emerald-500 text-slate-950'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+        <label className="flex items-center gap-2" title="Prohíbe el crunch en todo el estudio; el equipo respira mejor.">
+          <input
+            type="checkbox"
+            checked={policies.antiCrunch}
+            onChange={(e) => setPolicies({ antiCrunch: e.target.checked })}
+            className="accent-emerald-500"
+          />
+          Anti-crunch
+        </label>
+        <label
+          className="flex items-center gap-2"
+          title={`Cada ${balance.policies.autoTraining.intervalWeeks} semanas forma al empleado más flojo (${formatMoney(balance.staff.training.cost)}).`}
+        >
+          <input
+            type="checkbox"
+            checked={policies.autoTraining}
+            onChange={(e) => setPolicies({ autoTraining: e.target.checked })}
+            className="accent-emerald-500"
+          />
+          Formación automática
+        </label>
+        <label
+          className="flex items-center gap-2"
+          title={`Bonus automático a quien baje de ${balance.policies.autoBonus.moraleThreshold} de moral (máx. ${balance.policies.autoBonus.maxPerWeek}/semana).`}
+        >
+          <input
+            type="checkbox"
+            checked={policies.autoBonus}
+            onChange={(e) => setPolicies({ autoBonus: e.target.checked })}
+            className="accent-emerald-500"
+          />
+          Bonus automáticos
+        </label>
+      </div>
+      <p className="text-xs text-slate-500">
+        A esta escala ya no gestionas persona a persona: fijas la política y el estudio la ejecuta
+        (docs/02 §4).
+      </p>
+    </section>
+  );
+}
 
 function CandidateCard({ candidate }: { candidate: Employee }) {
   const capital = useGameStore((s) => s.game.studio.capital);
@@ -86,6 +172,7 @@ export function TeamScreen() {
   const candidates = useGameStore((s) => s.game.candidates);
   const scaleStage = useGameStore((s) => s.game.studio.scaleStage);
   const cap = useGameStore((s) => staffCap(s.game));
+  const showPolicies = useGameStore((s) => policiesUnlocked(s.game));
   const goTo = useGameStore((s) => s.goTo);
 
   return (
@@ -105,6 +192,9 @@ export function TeamScreen() {
           Volver al estudio
         </button>
       </div>
+
+      {/* Gestión por políticas en la escala grande (docs/02 §4). */}
+      {showPolicies && <PoliciesPanel />}
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Plantilla</h3>
