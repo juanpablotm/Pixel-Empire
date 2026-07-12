@@ -9,7 +9,7 @@ export function SavePanel() {
   const [message, setMessage] = useState<string | null>(null);
 
   const buttonClass =
-    'rounded-md bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-700';
+    'rounded-md bg-raised px-3 py-1.5 text-sm font-medium text-ink hover:bg-control';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -43,7 +43,7 @@ export function SavePanel() {
         ✨ Nueva partida
       </button>
       {message && (
-        <span role="status" className="text-sm text-slate-400">
+        <span role="status" className="text-sm text-ink-mute">
           {message}
         </span>
       )}

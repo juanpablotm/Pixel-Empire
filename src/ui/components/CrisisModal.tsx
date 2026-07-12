@@ -22,12 +22,12 @@ const segmentNames: Partial<Record<Segment, string>> = {
 function EffectHints({ deltas }: { deltas: Partial<Record<Segment, number>> }) {
   const entries = Object.entries(deltas) as [Segment, number][];
   if (entries.length === 0) {
-    return <span className="text-xs text-slate-500">El desenlace depende de tu reputación.</span>;
+    return <span className="text-xs text-ink-faint">El desenlace depende de tu reputación.</span>;
   }
   return (
     <span className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs">
       {entries.map(([seg, v]) => (
-        <span key={seg} className={v > 0 ? 'text-emerald-400' : 'text-red-400'}>
+        <span key={seg} className={v > 0 ? 'text-ok' : 'text-danger'}>
           {segmentNames[seg]} {v > 0 ? '▲' : '▼'}
         </span>
       ))}
@@ -49,24 +49,24 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
   const backfireThreshold = balance.community.crisis.culparBackfireSeverity;
 
   return (
-    <div className="w-full max-w-2xl rounded-lg border border-red-800 bg-slate-900 p-6 shadow-2xl">
-      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-red-400">
+    <div className="w-full max-w-2xl rounded-lg border border-danger/40 bg-panel p-6 shadow-2xl">
+      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-danger">
         🔥 Crisis en curso · severidad {severityPct} %
       </p>
-      <h2 className="text-xl font-bold text-slate-100">{def.headline}</h2>
-      <p className="mt-1 text-sm text-slate-400">
+      <h2 className="text-xl font-bold text-ink-hi">{def.headline}</h2>
+      <p className="mt-1 text-sm text-ink-mute">
         {def.causeText}
         {gameName && (
           <>
             {' '}
-            Juego señalado: <span className="text-slate-200">«{gameName}»</span>.
+            Juego señalado: <span className="text-ink">«{gameName}»</span>.
           </>
         )}
       </p>
 
       <p
         className={`mt-3 rounded-md px-3 py-2 text-sm font-semibold ${
-          weeksLeft <= 1 ? 'animate-pulse bg-red-950 text-red-300' : 'bg-slate-800 text-amber-300'
+          weeksLeft <= 1 ? 'animate-pulse bg-danger/20 text-danger-hi' : 'bg-raised text-warn'
         }`}
       >
         ⏱ {weeksLeft === 0 ? 'Última oportunidad: el desenlace se fuerza esta semana.' : `${weeksLeft} semana${weeksLeft === 1 ? '' : 's'} para responder antes de que se pudra sola.`}
@@ -85,21 +85,21 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
               type="button"
               disabled={noCash}
               onClick={() => respond(crisis.id, id)}
-              className={`flex flex-col items-start gap-1 rounded-md border border-slate-700 bg-slate-800 px-4 py-3 text-left transition-colors hover:border-slate-500 hover:bg-slate-700 ${
+              className={`flex flex-col items-start gap-1 rounded-md border border-line-hi bg-raised px-4 py-3 text-left transition-colors hover:border-line-hi hover:bg-control ${
                 noCash ? 'cursor-not-allowed opacity-50' : ''
               }`}
             >
               <span className="flex w-full items-baseline justify-between gap-3">
-                <span className="font-semibold text-slate-100">{response.name}</span>
+                <span className="font-semibold text-ink-hi">{response.name}</span>
                 {cost > 0 && (
-                  <span className={`text-sm tabular-nums ${noCash ? 'text-red-400' : 'text-amber-300'}`}>
+                  <span className={`text-sm tabular-nums ${noCash ? 'text-danger' : 'text-capital'}`}>
                     −{formatMoney(cost)}
                   </span>
                 )}
               </span>
-              <span className="text-xs text-slate-400">{response.description}</span>
+              <span className="text-xs text-ink-mute">{response.description}</span>
               {backfires && (
-                <span className="text-xs font-semibold text-red-400">
+                <span className="text-xs font-semibold text-danger">
                   ⚠ La crisis es demasiado grande: la mentira se destaparía.
                 </span>
               )}
@@ -108,7 +108,7 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
           );
         })}
       </div>
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-ink-faint">
         Tu reputación previa amortigua o amplifica el desenlace: a un estudio querido se le perdona
         antes (docs/07 §5).
       </p>
@@ -124,7 +124,7 @@ export function CrisisModal() {
   if (!crisis) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-6">
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-scrim p-6">
       <CrisisCard crisis={crisis} />
     </div>
   );

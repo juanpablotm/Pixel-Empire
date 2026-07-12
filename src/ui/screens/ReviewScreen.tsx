@@ -13,9 +13,9 @@ import { formatMoney } from '../format';
 
 const TONE_ICON: Record<FactorTone, string> = { good: '✔', ok: '~', bad: '✘' };
 const TONE_COLOR: Record<FactorTone, string> = {
-  good: 'text-emerald-400',
-  ok: 'text-amber-400',
-  bad: 'text-red-400',
+  good: 'text-ok',
+  ok: 'text-warn',
+  bad: 'text-danger',
 };
 
 export function ReviewScreen() {
@@ -28,11 +28,11 @@ export function ReviewScreen() {
   if (!game) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-slate-400">No se encuentra la reseña ({reviewGameId ?? 'ninguna'}).</p>
+        <p className="text-ink-mute">No se encuentra la reseña ({reviewGameId ?? 'ninguna'}).</p>
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-4 py-2 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
@@ -42,14 +42,14 @@ export function ReviewScreen() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-8">
-      <section className="review-pop flex flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 p-8 text-center">
-        <span className="text-sm uppercase tracking-wide text-slate-400">Reseña media</span>
+      <section className="review-pop flex flex-col items-center gap-2 rounded-lg border border-line bg-panel p-8 text-center">
+        <span className="text-sm uppercase tracking-wide text-ink-mute">Reseña media</span>
         <span className="text-6xl font-bold tabular-nums">
           {game.review}
-          <span className="text-2xl font-normal text-slate-500"> / 100</span>
+          <span className="text-2xl font-normal text-ink-faint"> / 100</span>
         </span>
-        <p className="text-lg text-slate-300">«{game.verdict}»</p>
-        <p className="text-sm text-slate-500">{game.name}</p>
+        <p className="text-lg text-ink">«{game.verdict}»</p>
+        <p className="text-sm text-ink-faint">{game.name}</p>
 
         {/* Cada público juzga distinto (docs/04 §5). */}
         <ul className="mt-3 flex flex-wrap justify-center gap-2">
@@ -59,7 +59,7 @@ export function ReviewScreen() {
             return (
               <li
                 key={segment.id}
-                className="review-line rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-300"
+                className="review-line rounded-full bg-raised px-3 py-1 text-sm text-ink"
               >
                 {segment.name} <span className="font-semibold tabular-nums">{score}</span>
               </li>
@@ -68,8 +68,8 @@ export function ReviewScreen() {
         </ul>
       </section>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Por qué esta nota
         </h3>
         <ul className="flex flex-col gap-3">
@@ -84,14 +84,14 @@ export function ReviewScreen() {
               </span>
               <div>
                 <span className={`font-medium ${TONE_COLOR[line.tone]}`}>{line.title}</span>
-                <span className="text-slate-400"> — {line.detail}</span>
+                <span className="text-ink-mute"> — {line.detail}</span>
               </div>
             </li>
           ))}
         </ul>
 
         {/* El ajuste del mercado sobre Q (docs/04 §5), para que la nota sea explicable. */}
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-slate-800 pt-3 text-sm text-slate-400">
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-3 text-sm text-ink-mute">
           <span>
             Calidad <span className="font-semibold tabular-nums">{game.quality}</span>
           </span>
@@ -99,7 +99,7 @@ export function ReviewScreen() {
             Moda{' '}
             <span
               className={`font-semibold tabular-nums ${
-                game.reviewMarket.modaBonus >= 0 ? 'text-emerald-400' : 'text-red-400'
+                game.reviewMarket.modaBonus >= 0 ? 'text-ok' : 'text-danger'
               }`}
             >
               {game.reviewMarket.modaBonus >= 0 ? '+' : ''}
@@ -110,7 +110,7 @@ export function ReviewScreen() {
             Expectativas por hype{' '}
             <span
               className={`font-semibold tabular-nums ${
-                game.reviewMarket.hypePenalty > 0 ? 'text-red-400' : 'text-slate-300'
+                game.reviewMarket.hypePenalty > 0 ? 'text-danger' : 'text-ink'
               }`}
             >
               −{game.reviewMarket.hypePenalty}
@@ -119,8 +119,8 @@ export function ReviewScreen() {
         </div>
       </section>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <div className="text-sm text-slate-400">
+      <section className="flex flex-wrap items-center justify-between gap-4 card">
+        <div className="text-sm text-ink-mute">
           {game.totalUnits > 0 ? (
             <>
               {game.totalUnits.toLocaleString('es-ES')} unidades ·{' '}
@@ -133,7 +133,7 @@ export function ReviewScreen() {
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+          className="btn btn-primary px-4 py-2"
         >
           Volver al estudio
         </button>

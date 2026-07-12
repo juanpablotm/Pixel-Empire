@@ -27,23 +27,23 @@ export function ResearchScreen() {
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">
-          Investigación <span className="ml-2 text-amber-300">💡 {points}</span>
+          Investigación <span className="ml-2 text-capital">💡 {points}</span>
         </h2>
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
       </div>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Personal en I+D (~1 💡 por persona y semana)
         </h3>
         {game.staff.length === 0 ? (
-          <p className="text-slate-500">No hay plantilla.</p>
+          <p className="text-ink-faint">No hay plantilla.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {game.staff.map((e) => {
@@ -61,8 +61,8 @@ export function ResearchScreen() {
                   }
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     inRd
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      ? 'bg-warn text-onbright'
+                      : 'bg-raised text-ink hover:bg-control'
                   }`}
                 >
                   {inRd ? '💡 ' : ''}
@@ -72,7 +72,7 @@ export function ResearchScreen() {
             })}
           </div>
         )}
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-ink-faint">
           Lanzar juegos también da puntos (los grandes, más). Quien investiga no desarrolla.
         </p>
       </section>
@@ -82,9 +82,9 @@ export function ResearchScreen() {
         if (nodes.length === 0) return null;
         const era = getEra(eraId);
         return (
-          <section key={eraId} className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-              {era.name} <span className="normal-case text-slate-500">({era.period})</span>
+          <section key={eraId} className="card">
+            <h3 className="card-title">
+              {era.name} <span className="normal-case text-ink-faint">({era.period})</span>
             </h3>
             <ul className="flex flex-col gap-2">
               {nodes.map((node) => {
@@ -98,21 +98,21 @@ export function ResearchScreen() {
                   <li
                     key={node.id}
                     className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md px-4 py-3 ${
-                      status === 'comprado' ? 'bg-emerald-950/40' : 'bg-slate-800/60'
+                      status === 'comprado' ? 'bg-ok/10' : 'bg-raised/60'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         {status === 'comprado' ? '✅ ' : ''}
                         {node.name}{' '}
-                        <span className="text-xs text-slate-500">({node.cost} 💡)</span>
+                        <span className="text-xs text-ink-faint">({node.cost} 💡)</span>
                       </p>
-                      <p className="text-sm text-slate-400">{node.description}</p>
+                      <p className="text-sm text-ink-mute">{node.description}</p>
                       {extras.length > 0 && (
-                        <p className="text-xs text-slate-500">Desbloquea: {extras.join(', ')}</p>
+                        <p className="text-xs text-ink-faint">Desbloquea: {extras.join(', ')}</p>
                       )}
                       {node.requiresNodes && node.requiresNodes.length > 0 && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-ink-faint">
                           Requiere:{' '}
                           {node.requiresNodes
                             .map((id) => researchNodes.find((n) => n.id === id)?.name ?? id)
@@ -124,16 +124,16 @@ export function ResearchScreen() {
                       <button
                         type="button"
                         onClick={() => buy(node.id)}
-                        className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-semibold text-slate-950 hover:bg-amber-400"
+                        className="rounded-md bg-warn px-3 py-1.5 text-sm font-semibold text-onbright hover:bg-warn-hi"
                       >
                         Investigar
                       </button>
                     )}
                     {status === 'sinPuntos' && (
-                      <span className="text-sm text-slate-500">Faltan 💡</span>
+                      <span className="text-sm text-ink-faint">Faltan 💡</span>
                     )}
                     {status === 'bloqueado' && (
-                      <span className="text-sm text-slate-600">🔒 Bloqueado</span>
+                      <span className="text-sm text-ink-faint">🔒 Bloqueado</span>
                     )}
                   </li>
                 );

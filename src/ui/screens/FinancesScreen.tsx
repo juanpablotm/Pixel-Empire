@@ -53,7 +53,7 @@ export function FinancesScreen() {
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
@@ -61,44 +61,44 @@ export function FinancesScreen() {
 
       {/* Estado de caja y runway */}
       <section className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Caja</p>
+        <div className="rounded-lg border border-line bg-panel p-4">
+          <p className="text-xs uppercase tracking-wide text-ink-faint">Caja</p>
           <p
             className={`mt-1 text-2xl font-bold tabular-nums ${
-              game.studio.capital < 0 ? 'text-red-400' : 'text-amber-300'
+              game.studio.capital < 0 ? 'text-danger' : 'text-capital'
             }`}
           >
             {formatMoney(game.studio.capital)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-faint">
             Costes recurrentes: {formatMoney(fixed)}/sem
             {interest > 0 && ` + ${formatMoney(interest)} de intereses`}
           </p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Runway</p>
+        <div className="rounded-lg border border-line bg-panel p-4">
+          <p className="text-xs uppercase tracking-wide text-ink-faint">Runway</p>
           {runway === null ? (
-            <p className="mt-1 text-2xl font-bold text-emerald-400">Estable</p>
+            <p className="mt-1 text-2xl font-bold text-ok">Estable</p>
           ) : (
             <p
               className={`mt-1 text-2xl font-bold tabular-nums ${
-                runway <= 8 ? 'animate-pulse text-red-400' : 'text-amber-300'
+                runway <= 8 ? 'animate-pulse text-danger' : 'text-capital'
               }`}
             >
               ~{runway} semanas
             </p>
           )}
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-faint">
             {runway === null
               ? 'El flujo de caja reciente es positivo.'
               : 'Al ritmo de gasto actual, la caja se agota.'}
           </p>
         </div>
-        <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
+        <div className="flex items-center gap-3 rounded-lg border border-line bg-panel p-4">
           <ReputationRadar reputation={game.studio.reputation} size={56} />
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Reputación</p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="text-xs uppercase tracking-wide text-ink-faint">Reputación</p>
+            <p className="mt-1 text-xs text-ink-mute">
               El banco presta según tu reputación; la comunidad compra según su cariño.
             </p>
           </div>
@@ -106,12 +106,12 @@ export function FinancesScreen() {
       </section>
 
       {/* Flujo de caja semanal (docs/10 §10.9) */}
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Flujo de caja ({chartData.length} semanas)
         </h3>
         {chartData.length < 2 ? (
-          <p className="text-sm text-slate-500">Aún no hay historial suficiente.</p>
+          <p className="text-sm text-ink-faint">Aún no hay historial suficiente.</p>
         ) : (
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -148,12 +148,12 @@ export function FinancesScreen() {
       </section>
 
       {/* Línea de crédito (docs/06 §4) */}
-      <section className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="flex flex-col gap-3 card">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Línea de crédito
         </h3>
-        <p className="text-sm text-slate-400">
-          Deuda viva: <span className="font-semibold text-slate-200">{formatMoney(game.loanPrincipal)}</span>{' '}
+        <p className="text-sm text-ink-mute">
+          Deuda viva: <span className="font-semibold text-ink">{formatMoney(game.loanPrincipal)}</span>{' '}
           · límite {formatMoney(limit)} · disponible {formatMoney(available)} · interés ~
           {Math.round(balance.economy.loans.weeklyInterest * 100)} %/semana
         </p>
@@ -165,13 +165,13 @@ export function FinancesScreen() {
             value={loanAmount}
             onChange={(e) => setLoanAmount(clampLoan(Number(e.target.value)))}
             aria-label="Importe del préstamo"
-            className="w-32 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm tabular-nums"
+            className="w-32 rounded-md border border-line-hi bg-raised px-3 py-1.5 text-sm tabular-nums"
           />
           <button
             type="button"
             disabled={loanAmount <= 0 || loanAmount > available}
             onClick={() => takeLoan(loanAmount)}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+            className="btn btn-warn disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"
           >
             🏦 Pedir préstamo
           </button>
@@ -183,38 +183,38 @@ export function FinancesScreen() {
               Math.min(loanAmount, game.loanPrincipal) > game.studio.capital
             }
             onClick={() => repayLoan(loanAmount)}
-            className="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+            className="btn btn-quiet disabled:cursor-not-allowed disabled:bg-raised disabled:text-ink-faint"
           >
             Amortizar
           </button>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-faint">
             La deuda presiona hacia la codicia. El impago sostenido acelera la bancarrota.
           </p>
         </div>
       </section>
 
       {/* Ingresos por juego */}
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Ingresos por juego
         </h3>
         {game.releasedGames.length === 0 ? (
-          <p className="text-sm text-slate-500">Todavía no hay juegos lanzados.</p>
+          <p className="text-sm text-ink-faint">Todavía no hay juegos lanzados.</p>
         ) : (
           <ul className="flex flex-col gap-2 text-sm">
             {[...game.releasedGames].reverse().map((g) => (
               <li
                 key={g.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-slate-800/60 px-3 py-2"
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-raised/60 px-3 py-2"
               >
                 <span className="font-medium">{g.name}</span>
-                <span className="text-slate-400">{formatMoney(g.totalRevenue)}</span>
+                <span className="text-ink-mute">{formatMoney(g.totalRevenue)}</span>
                 {g.mtxRevenue > 0 && (
-                  <span className="text-xs text-amber-400">
+                  <span className="text-xs text-warn">
                     MTX: {formatMoney(g.mtxRevenue)}
                   </span>
                 )}
-                <span className="ml-auto text-xs text-slate-500">
+                <span className="ml-auto text-xs text-ink-faint">
                   {g.salesActive ? 'a la venta' : 'fuera de tiendas'}
                 </span>
               </li>

@@ -4,9 +4,9 @@ import { trendDirectionArrows } from '../../data/marketTexts';
 /** Flecha de dirección del panel de tendencias: ↑ verde · → gris · ↓ rojo (docs/04 §2). */
 
 const DIRECTION_COLOR: Record<TrendDirection, string> = {
-  sube: 'text-emerald-400',
-  estable: 'text-slate-400',
-  baja: 'text-red-400',
+  sube: 'text-ok',
+  estable: 'text-ink-mute',
+  baja: 'text-danger',
 };
 
 const DIRECTION_LABEL: Record<TrendDirection, string> = {

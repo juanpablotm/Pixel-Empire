@@ -35,7 +35,7 @@ export function EraTransition() {
   ].filter((u) => u.names.length > 0);
 
   return (
-    <div className="era-overlay fixed inset-0 z-40 flex items-center justify-center bg-slate-950/95 px-6">
+    <div className="era-overlay fixed inset-0 z-40 flex items-center justify-center bg-scrim px-6">
       <div className="flex w-full max-w-2xl flex-col gap-5 text-center">
         <p
           className="era-overlay-line text-sm font-semibold uppercase tracking-[0.3em]"
@@ -47,19 +47,19 @@ export function EraTransition() {
           {era.name}
         </h2>
         <p
-          className="era-overlay-line text-lg text-slate-300"
+          className="era-overlay-line text-lg text-ink"
           style={{ animationDelay: '500ms' }}
         >
           {era.transitionHeadline}
         </p>
         <p
-          className="era-overlay-line text-sm text-slate-400"
+          className="era-overlay-line text-sm text-ink-mute"
           style={{ animationDelay: '700ms' }}
         >
           {era.transitionSummary}
         </p>
         <p
-          className="era-overlay-line text-xs italic text-slate-500"
+          className="era-overlay-line text-xs italic text-ink-faint"
           style={{ animationDelay: '800ms' }}
         >
           {eraSkins[eraId].flavor}
@@ -67,18 +67,18 @@ export function EraTransition() {
 
         {unlocks.length > 0 && (
           <div
-            className="era-overlay-line mx-auto flex w-full max-w-xl flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900 p-4 text-left"
+            className="era-overlay-line mx-auto flex w-full max-w-xl flex-col gap-2 rounded-lg border border-line bg-panel p-4 text-left"
             style={{ animationDelay: '900ms' }}
           >
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-mute">
               Novedades de la era
             </span>
             {unlocks.map((u) => (
-              <p key={u.label} className="text-sm text-slate-300">
-                <span className="text-slate-500">{u.label}:</span> {u.names.join(', ')}
+              <p key={u.label} className="text-sm text-ink">
+                <span className="text-ink-faint">{u.label}:</span> {u.names.join(', ')}
               </p>
             ))}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-faint">
               El listón de calidad del público sube: lo que ayer era un hit, hoy es del montón.
             </p>
           </div>
@@ -87,7 +87,7 @@ export function EraTransition() {
         <button
           type="button"
           onClick={dismiss}
-          className="era-overlay-line mx-auto rounded-md px-6 py-2.5 text-sm font-semibold text-slate-950"
+          className="era-overlay-line mx-auto rounded-md px-6 py-2.5 text-sm font-semibold text-onbright"
           style={{ backgroundColor: 'var(--skin-accent)', animationDelay: '1100ms' }}
         >
           Entrar en la nueva era

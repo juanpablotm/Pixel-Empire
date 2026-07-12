@@ -29,10 +29,12 @@ export function App() {
   const seed = useGameStore((s) => s.game.seed);
   const modernUi = useGameStore((s) => s.modernUi);
   const setModernUi = useGameStore((s) => s.setModernUi);
+  const colorTheme = useGameStore((s) => s.colorTheme);
+  const setColorTheme = useGameStore((s) => s.setColorTheme);
 
   return (
     <EraSkinProvider>
-      <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+      <div className="flex min-h-screen flex-col bg-app text-ink">
         <Hud />
 
         {screen === 'estudio' && <StudioScreen />}
@@ -54,14 +56,26 @@ export function App() {
         <AwardsModal />
         <GameOverOverlay />
 
-        <footer className="flex flex-wrap items-center gap-x-4 border-t border-slate-800 px-6 py-3 text-xs text-slate-500">
-          <span>Fase 6 — Eras completas y progresión · semilla {seed}</span>
-          <label className="ml-auto flex items-center gap-1.5" title="Desactiva las pieles de era (docs/10 §8)">
+        <footer className="flex flex-wrap items-center gap-x-4 border-t border-line px-6 py-3 text-xs text-ink-faint">
+          <span>Fase 7A — dirección de arte · semilla {seed}</span>
+          <label
+            className="ml-auto flex items-center gap-1.5"
+            title="Tema claro de la interfaz (con las pieles de era manda la piel)"
+          >
+            <input
+              type="checkbox"
+              checked={colorTheme === 'light'}
+              onChange={(e) => setColorTheme(e.target.checked ? 'light' : 'dark')}
+              className="accent-action-hi"
+            />
+            Modo claro
+          </label>
+          <label className="flex items-center gap-1.5" title="Desactiva las pieles de era (docs/10 §8)">
             <input
               type="checkbox"
               checked={modernUi}
               onChange={(e) => setModernUi(e.target.checked)}
-              className="accent-emerald-500"
+              className="accent-action-hi"
             />
             UI moderna siempre
           </label>

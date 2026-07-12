@@ -20,7 +20,7 @@ function polar(cx: number, cy: number, radius: number, angle: number): [number, 
 }
 
 export function ReputationRadar({ reputation, size = 40, labels = false }: Props) {
-  const pad = labels ? 30 : 2;
+  const pad = labels ? 46 : 2;
   const cx = size / 2 + pad;
   const cy = size / 2 + pad;
   const r = size / 2;
@@ -54,16 +54,26 @@ export function ReputationRadar({ reputation, size = 40, labels = false }: Props
       <title>{summary}</title>
       <polygon points={outline} fill="none" stroke="currentColor" strokeOpacity={0.25} />
       <polygon points={midline} fill="none" stroke="currentColor" strokeOpacity={0.15} />
+      {/* La constelación usa el acento de la piel de era (tokens 7A). */}
       <polygon
         points={polygon}
-        fill="rgb(52 211 153 / 0.35)"
-        stroke="rgb(52 211 153)"
+        fill="var(--skin-accent, #34d399)"
+        fillOpacity={0.35}
+        stroke="var(--skin-accent, #34d399)"
         strokeWidth={1.5}
         strokeLinejoin="round"
       />
       {points.map(({ segment, angle, value }) => {
         const [x, y] = polar(cx, cy, r * value, angle);
-        return <circle key={segment.id} cx={x} cy={y} r={size > 60 ? 3 : 1.5} fill="rgb(52 211 153)" />;
+        return (
+          <circle
+            key={segment.id}
+            cx={x}
+            cy={y}
+            r={size > 60 ? 3 : 1.5}
+            fill="var(--skin-accent, #34d399)"
+          />
+        );
       })}
       {labels &&
         points.map(({ segment, angle }) => {
@@ -75,7 +85,7 @@ export function ReputationRadar({ reputation, size = 40, labels = false }: Props
               y={y}
               textAnchor="middle"
               dominantBaseline="middle"
-              className="fill-slate-400"
+              className="fill-ink-mute"
               fontSize={11}
             >
               {segment.name} {Math.round(reputation[segment.id] ?? 50)}

@@ -34,8 +34,8 @@ function ActionButton({
       title={title}
       className={`rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         danger
-          ? 'bg-red-900/60 text-red-200 hover:bg-red-800/60'
-          : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+          ? 'bg-danger/15 text-danger-hi hover:bg-danger/25'
+          : 'bg-control text-ink hover:bg-control-hi'
       }`}
     >
       {children}
@@ -67,7 +67,7 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
   return (
     <article
       aria-label={`Empleado ${employee.name}`}
-      className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900 p-4"
+      className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-4"
     >
       <div className="flex items-start gap-3">
         <Avatar seed={employee.avatarSeed} size={48} />
@@ -75,30 +75,30 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-semibold">{employee.name}</span>
             {employee.founder && (
-              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-300">
+              <span className="rounded bg-warn/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-capital">
                 Fundador
               </span>
             )}
             {employee.burnedOut && (
-              <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-300">
+              <span className="rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-danger-hi">
                 Burnout
               </span>
             )}
             {assignedProject && (
               <span
-                className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300"
+                className="rounded bg-ok/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ok"
                 title={assignedProject.name}
               >
                 {projects.length > 1 ? `En «${assignedProject.name}»` : 'En proyecto'}
               </span>
             )}
             {inResearch && (
-              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-300">
+              <span className="rounded bg-warn/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-capital">
                 En I+D
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-mute">
             {specialtyLabels[employee.specialty]} · {tierLabels[tier]} · Nivel {employee.level}
             {employee.founder ? '' : ` · ${formatMoney(employee.salary)}/sem`}
           </p>
@@ -111,10 +111,10 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
         <StatBar label="Lealtad" value={employee.loyalty} />
       </div>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-mute">
         {(Object.entries(specialtyLabels) as [keyof typeof specialtyLabels, string][]).map(
           ([spec, label]) => (
-            <span key={spec} className={spec === employee.specialty ? 'text-slate-200' : ''}>
+            <span key={spec} className={spec === employee.specialty ? 'text-ink' : ''}>
               {label} <span className="tabular-nums">{Math.round(employee.skills[spec])}</span>
             </span>
           ),
@@ -128,7 +128,7 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
             <span
               key={id}
               title={trait.description}
-              className="cursor-help rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300"
+              className="cursor-help rounded-full bg-raised px-2 py-0.5 text-[11px] text-ink"
             >
               {trait.name}
             </span>
@@ -136,7 +136,7 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
         })}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-t border-slate-800 pt-3">
+      <div className="flex flex-wrap gap-1.5 border-t border-line pt-3">
         {project && (
           <ActionButton
             onClick={() => toggleAssignment(employee.id, project.id)}

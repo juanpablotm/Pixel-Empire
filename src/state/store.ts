@@ -74,6 +74,8 @@ export interface GameStore {
   awardsWeek: number | null;
   /** Toggle "UI moderna siempre": desactiva las pieles de era (docs/10 §8). */
   modernUi: boolean;
+  /** Tema base claro/oscuro (Fase 7A, docs/10 §2). Preferencia de UI pura. */
+  colorTheme: ColorTheme;
   /** Avanza 1 semana (1 tick) inmediatamente. */
   advanceWeek: () => void;
   /** Cambia la velocidad del bucle: 0 = pausa, 1/2/4 = multiplicador. */
@@ -90,6 +92,8 @@ export interface GameStore {
   dismissAwards: () => void;
   /** Activa/desactiva las pieles de era (docs/10 §8: "UI moderna siempre"). */
   setModernUi: (modern: boolean) => void;
+  /** Cambia el tema base claro/oscuro (persistido en localStorage). */
+  setColorTheme: (theme: ColorTheme) => void;
   /** Acciones del proyecto (delegan en core/). */
   startProject: (concept: ProjectConcept) => void;
   setFocus: (phase: DevPhaseNumber, allocation: FocusAllocation, projectId?: string) => void;
@@ -124,6 +128,31 @@ export interface GameStore {
   loadGame: () => boolean;
 }
 
+/** Tema base de la UI (Fase 7A). Oscuro por defecto: es el look de juego. */
+export type ColorTheme = 'dark' | 'light';
+
+const THEME_STORAGE_KEY = 'pixel-empire:color-theme';
+const MODERN_UI_STORAGE_KEY = 'pixel-empire:modern-ui';
+
+/** Preferencia de tema guardada, si existe y es válida. */
+function storedColorTheme(): ColorTheme {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return stored === 'light' || stored === 'dark' ? stored : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+/** Preferencia "UI moderna siempre" guardada (docs/10 §8). */
+function storedModernUi(): boolean {
+  try {
+    return localStorage.getItem(MODERN_UI_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 /** Semilla por defecto para partidas nuevas (fuera de core; no es lógica de juego). */
 const defaultSeed = (): number => Date.now() >>> 0;
 
@@ -141,7 +170,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   activeProjectId: null,
   eraTransition: null,
   awardsWeek: null,
-  modernUi: false,
+  modernUi: storedModernUi(),
+  colorTheme: storedColorTheme(),
 
   advanceWeek: () => {
     const before = get().game;
@@ -219,7 +249,23 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   dismissAwards: () => set({ awardsWeek: null }),
 
-  setModernUi: (modern) => set({ modernUi: modern }),
+  setModernUi: (modern) => {
+    try {
+      localStorage.setItem(MODERN_UI_STORAGE_KEY, String(modern));
+    } catch {
+      // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
+    }
+    set({ modernUi: modern });
+  },
+
+  setColorTheme: (theme) => {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
+    }
+    set({ colorTheme: theme });
+  },
 
   startProject: (concept) => {
     set((s) => {

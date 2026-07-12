@@ -28,9 +28,9 @@ export function MoralScale() {
       <span aria-hidden className={drift < -0.15 ? 'drop-shadow-[0_0_4px_rgba(251,191,36,0.9)]' : ''}>
         💰
       </span>
-      <div className="relative h-2 w-24 overflow-hidden rounded-full bg-gradient-to-r from-amber-500/70 via-slate-600 to-emerald-500/70">
+      <div className="relative h-2 w-24 overflow-hidden rounded-full bg-gradient-to-r from-capital/70 via-control-hi to-action-hi/70">
         <div
-          className="absolute top-1/2 h-3 w-1 -translate-y-1/2 rounded-full bg-white shadow transition-all duration-500"
+          className="absolute top-1/2 h-3 w-1 -translate-y-1/2 rounded-full bg-ink-hi shadow transition-all duration-500"
           style={{ left: `calc(${percent}% - 2px)` }}
         />
       </div>

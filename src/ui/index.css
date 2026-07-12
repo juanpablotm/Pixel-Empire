@@ -1,8 +1,10 @@
 @import 'tailwindcss';
+@import './theme/tokens.css';
 
 /*
- * Animaciones baseline de la Fase 1 (docs/10 §4): solo transform/opacity,
- * desacopladas del tick del núcleo, y respetando prefers-reduced-motion.
+ * Animaciones baseline (docs/10 §4): solo transform/opacity, desacopladas del
+ * tick del núcleo, con los tokens de movimiento de ui/theme/tokens.css y
+ * respetando prefers-reduced-motion.
  */
 
 @keyframes review-line-in {
@@ -28,11 +30,11 @@
 }
 
 .review-line {
-  animation: review-line-in 220ms cubic-bezier(0, 0, 0, 1) backwards;
+  animation: review-line-in var(--motion-base) var(--ease-decel) backwards;
 }
 
 .review-pop {
-  animation: review-pop-in 400ms cubic-bezier(0, 0, 0, 1) backwards;
+  animation: review-pop-in var(--motion-slow) var(--ease-decel) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -43,19 +45,44 @@
 }
 
 /*
- * Pieles de UI por era (docs/10 §8, innovación I7): la interfaz envejece con
- * las eras. Cada piel redefine las superficies base (los tonos slate de la
- * base flat) dentro de su ámbito, con contraste garantizado. E5 es la base
- * neutra (sin overrides): el flat design "actual".
+ * Escenario hero de la vista principal (Fase 7A): telón con gradiente de la
+ * piel de era + rejilla pixel sutil. En la 7B la Oficina Viva ocupará este
+ * escenario; el contenedor y su jerarquía ya quedan reservados aquí.
+ */
+.hero-stage {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-panel);
+  background-image:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      color-mix(in oklab, var(--skin-accent) 14%, transparent) 0%,
+      transparent 60%
+    ),
+    linear-gradient(color-mix(in oklab, var(--text-strong) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--text-strong) 4%, transparent) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    28px 28px,
+    28px 28px;
+}
+
+/*
+ * Pieles de UI por era (docs/10 §8, innovación I7): cada piel redefine los
+ * tokens semánticos de tokens.css dentro de su ámbito (nada de sobreescribir
+ * clases Tailwind). Contraste garantizado; E5 es la base flat sin overrides.
+ * Van DESPUÉS de [data-theme] en la cascada: la piel de era gana al tema
+ * claro/oscuro (el toggle luce con "UI moderna siempre").
  *
- * --skin-accent la consumen los componentes de Fase 6 (transición, museo…).
+ * --skin-accent la consumen los componentes de Fase 6 (transición, museo…)
+ * y el telón del hero.
  */
 .era-skin {
   --skin-accent: #34d399;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: background-color 900ms ease;
+  transition: background-color var(--motion-dramatic) ease;
 }
 .era-skin > * {
   flex: 1;
@@ -66,13 +93,20 @@
 /* E1 — La chispa: monocromo fósforo verde, sabor CRT, tipografía terminal. */
 .era-E1 {
   --skin-accent: #4ade80;
-  font-family: 'Cascadia Mono', ui-monospace, 'Courier New', monospace;
+  --surface-app: #04120a;
+  --surface-panel: #071a0e;
+  --surface-raised: #0c2915;
+  --surface-control: #123a1e;
+  --surface-control-hi: #185029;
+  --border-line: #1c4a2a;
+  --border-line-hi: #2c6b3e;
+  --text-strong: #d3fadf;
+  --text-body: #a9e8bf;
+  --text-mute: #6fbf8c;
+  --text-faint: #4d8f66;
+  font-family: var(--font-brand);
   position: relative;
 }
-.era-E1 :is(.bg-slate-950) { background-color: #04120a; }
-.era-E1 :is(.bg-slate-900) { background-color: #071a0e; }
-.era-E1 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #0c2915; }
-.era-E1 :is(.border-slate-800, .border-slate-700) { border-color: #1c4a2a; }
 .era-E1::after {
   content: '';
   position: fixed;
@@ -83,42 +117,74 @@
 }
 
 /* E2 — Las consolas: color primario limitado, formas boxy. */
-.era-E2 { --skin-accent: #818cf8; }
-.era-E2 :is(.bg-slate-950) { background-color: #0a0a1c; }
-.era-E2 :is(.bg-slate-900) { background-color: #11112b; }
-.era-E2 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #1c1c44; }
-.era-E2 :is(.border-slate-800, .border-slate-700) { border-color: #34347a; }
-.era-E2 :is(.rounded-lg, .rounded-md) { border-radius: 2px; }
+.era-E2 {
+  --skin-accent: #818cf8;
+  --surface-app: #0a0a1c;
+  --surface-panel: #11112b;
+  --surface-raised: #1c1c44;
+  --surface-control: #26265c;
+  --surface-control-hi: #313178;
+  --border-line: #34347a;
+  --border-line-hi: #4a4aa8;
+  --radius-card: 2px;
+  --radius-control: 2px;
+}
 
 /* E3 — El salto 3D: software beige/gris de los 90, botones con relieve. */
-.era-E3 { --skin-accent: #93c5fd; }
-.era-E3 :is(.bg-slate-950) { background-color: #22211e; }
-.era-E3 :is(.bg-slate-900) { background-color: #2c2b27; }
-.era-E3 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #3a3833; }
-.era-E3 :is(.border-slate-800, .border-slate-700) { border-color: #57534e; }
-.era-E3 button { box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.45), inset 1px 1px 0 rgba(255, 255, 255, 0.12); }
+.era-E3 {
+  --skin-accent: #93c5fd;
+  --surface-app: #22211e;
+  --surface-panel: #2c2b27;
+  --surface-raised: #3a3833;
+  --surface-control: #47443e;
+  --surface-control-hi: #55524a;
+  --border-line: #57534e;
+  --border-line-hi: #6f6a62;
+}
+.era-E3 button {
+  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.45), inset 1px 1px 0 rgba(255, 255, 255, 0.12);
+}
 
 /* E4 — La red: degradados glossy de la web temprana. */
-.era-E4 { --skin-accent: #22d3ee; }
-.era-E4 :is(.bg-slate-950) { background-color: #051220; }
-.era-E4 :is(.bg-slate-900) { background: linear-gradient(180deg, #0a2236 0%, #071827 100%); }
-.era-E4 :is(.bg-slate-800, .bg-slate-800\/60) { background: linear-gradient(180deg, #10344e 0%, #0b273c 100%); }
-.era-E4 :is(.border-slate-800, .border-slate-700) { border-color: #155e75; }
+.era-E4 {
+  --skin-accent: #22d3ee;
+  --surface-app: #051220;
+  --surface-panel: #0b273c;
+  --surface-raised: #10344e;
+  --surface-control: #144360;
+  --surface-control-hi: #195378;
+  --border-line: #155e75;
+  --border-line-hi: #1f7fa0;
+}
+.era-E4 .card {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 55%);
+}
 
 /* E6 — Servicios y streamers: oscuro con acentos neón. */
-.era-E6 { --skin-accent: #e879f9; }
-.era-E6 :is(.bg-slate-950) { background-color: #0b0413; }
-.era-E6 :is(.bg-slate-900) { background-color: #150a24; }
-.era-E6 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: #221238; }
-.era-E6 :is(.border-slate-800, .border-slate-700) { border-color: #582a8f; }
+.era-E6 {
+  --skin-accent: #e879f9;
+  --surface-app: #0b0413;
+  --surface-panel: #150a24;
+  --surface-raised: #221238;
+  --surface-control: #2e1a4a;
+  --surface-control-hi: #3b2360;
+  --border-line: #582a8f;
+  --border-line-hi: #7a3dc4;
+}
 
 /* E7 — El futuro cercano: glassmorphism translúcido, minimal. */
-.era-E7 { --skin-accent: #a5f3fc; }
-.era-E7 :is(.bg-slate-950) { background: linear-gradient(160deg, #020617 0%, #0b1026 55%, #0f0a24 100%); }
-.era-E7 :is(.bg-slate-900) { background-color: rgba(148, 163, 184, 0.07); }
-.era-E7 :is(.bg-slate-800, .bg-slate-800\/60) { background-color: rgba(148, 163, 184, 0.13); }
-.era-E7 :is(.border-slate-800, .border-slate-700) { border-color: rgba(165, 243, 252, 0.18); }
-.era-E7 :is(.rounded-lg) { border-radius: 1rem; }
+.era-E7 {
+  --skin-accent: #a5f3fc;
+  --surface-app: transparent;
+  --surface-panel: rgba(148, 163, 184, 0.07);
+  --surface-raised: rgba(148, 163, 184, 0.13);
+  --surface-control: rgba(148, 163, 184, 0.2);
+  --surface-control-hi: rgba(148, 163, 184, 0.27);
+  --border-line: rgba(165, 243, 252, 0.18);
+  --border-line-hi: rgba(165, 243, 252, 0.32);
+  --radius-card: 1rem;
+  background: linear-gradient(160deg, #020617 0%, #0b1026 55%, #0f0a24 100%);
+}
 
 /* Transición de era (docs/10 §7.6): beat a pantalla completa. */
 @keyframes era-fade-in {
@@ -129,8 +195,8 @@
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.era-overlay { animation: era-fade-in 400ms cubic-bezier(0, 0, 0, 1) backwards; }
-.era-overlay-line { animation: era-rise 900ms cubic-bezier(0, 0, 0, 1) backwards; }
+.era-overlay { animation: era-fade-in var(--motion-slow) var(--ease-decel) backwards; }
+.era-overlay-line { animation: era-rise var(--motion-dramatic) var(--ease-decel) backwards; }
 @media (prefers-reduced-motion: reduce) {
   .era-overlay,
   .era-overlay-line {

@@ -59,8 +59,8 @@ function OptionButton({
       onClick={onClick}
       className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
         selected
-          ? 'bg-emerald-500 text-slate-950'
-          : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          ? 'bg-action-hi text-onbright'
+          : 'bg-raised text-ink hover:bg-control'
       } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
     >
       {children}
@@ -71,7 +71,7 @@ function OptionButton({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+      <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">{label}</span>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
@@ -122,10 +122,10 @@ export function ConceptionScreen() {
 
   const priceTone =
     priceMult >= pricing.abusiveMultiplier
-      ? { text: 'abusivo: más margen, público enfadado', color: 'text-red-400' }
+      ? { text: 'abusivo: más margen, público enfadado', color: 'text-danger' }
       : priceMult <= pricing.generousMultiplier
-        ? { text: 'generoso: menos margen, más cariño', color: 'text-emerald-400' }
-        : { text: 'justo', color: 'text-slate-400' };
+        ? { text: 'generoso: menos margen, más cariño', color: 'text-ok' }
+        : { text: 'justo', color: 'text-ink-mute' };
 
   const onStart = () => {
     start({
@@ -154,13 +154,13 @@ export function ConceptionScreen() {
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
         >
           Cancelar
         </button>
       </div>
 
-      <section className="flex flex-col gap-5 rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <section className="flex flex-col gap-5 card">
         <Field label="Tema">
           {themesShown.map((t) => (
             <OptionButton key={t.id} selected={themeId === t.id} onClick={() => setThemeId(t.id)}>
@@ -218,7 +218,7 @@ export function ConceptionScreen() {
 
         {/* Precio: palanca moral (docs/06 §2) */}
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
             Precio {isF2p && '(gratis: los ingresos salen de las MTX)'}
           </span>
           <div className="flex items-center gap-4">
@@ -230,11 +230,11 @@ export function ConceptionScreen() {
               disabled={isF2p}
               onChange={(e) => setPriceMult(Number(e.target.value) / 100)}
               aria-label="Precio de venta"
-              className="flex-1 accent-emerald-500 disabled:opacity-40"
+              className="flex-1 accent-action-hi disabled:opacity-40"
             />
             <span className="w-32 text-right text-sm tabular-nums">
               {isF2p ? 'Gratis' : `${formatMoney(price)}`}
-              <span className="ml-1 text-xs text-slate-500">(rec. {formatMoney(recommended)})</span>
+              <span className="ml-1 text-xs text-ink-faint">(rec. {formatMoney(recommended)})</span>
             </span>
           </div>
           {!isF2p && <p className={`text-xs ${priceTone.color}`}>Precio {priceTone.text}.</p>}
@@ -255,7 +255,7 @@ export function ConceptionScreen() {
         </Field>
 
         {modelDef.supportsMtx && (
-          <div className="flex flex-col gap-3 rounded-md border border-amber-900/50 bg-amber-950/20 p-3">
+          <div className="flex flex-col gap-3 rounded-md border border-warn/30 bg-warn/10 p-3">
             <div className="flex items-center gap-4">
               <span className="w-48 shrink-0 text-sm">Agresividad de la tienda</span>
               <input
@@ -265,9 +265,9 @@ export function ConceptionScreen() {
                 value={Math.round(aggressiveness * 100)}
                 onChange={(e) => setAggressiveness(Number(e.target.value) / 100)}
                 aria-label="Agresividad de monetización"
-                className="flex-1 accent-amber-500"
+                className="flex-1 accent-warn"
               />
-              <span className="w-12 text-right text-sm tabular-nums text-slate-400">
+              <span className="w-12 text-right text-sm tabular-nums text-ink-mute">
                 {Math.round(aggressiveness * 100)} %
               </span>
             </div>
@@ -279,7 +279,7 @@ export function ConceptionScreen() {
                     checked={hasLootBoxes && !banned}
                     disabled={banned}
                     onChange={(e) => setHasLootBoxes(e.target.checked)}
-                    className="accent-amber-500"
+                    className="accent-warn"
                   />
                   Loot boxes {banned && '(prohibidas por ley)'}
                 </label>
@@ -290,13 +290,13 @@ export function ConceptionScreen() {
                     type="checkbox"
                     checked={hasBattlePass}
                     onChange={(e) => setHasBattlePass(e.target.checked)}
-                    className="accent-amber-500"
+                    className="accent-warn"
                   />
                   Pase de batalla
                 </label>
               )}
             </div>
-            <p className="text-xs text-amber-300/80">
+            <p className="text-xs text-capital/80">
               Más ingresos por jugador… y los hardcore afilan las antorchas. La codicia se paga.
             </p>
           </div>
@@ -308,16 +308,16 @@ export function ConceptionScreen() {
               type="checkbox"
               checked={dayOneDLC}
               onChange={(e) => setDayOneDLC(e.target.checked)}
-              className="accent-amber-500"
+              className="accent-warn"
             />
-            DLC day-one <span className="text-xs text-slate-500">(ingreso extra; huele a juego recortado)</span>
+            DLC day-one <span className="text-xs text-ink-faint">(ingreso extra; huele a juego recortado)</span>
           </label>
         )}
 
         <div className="flex flex-col gap-2">
           <label
             htmlFor="game-name"
-            className="text-sm font-semibold uppercase tracking-wide text-slate-400"
+            className="text-sm font-semibold uppercase tracking-wide text-ink-mute"
           >
             Nombre del juego
           </label>
@@ -327,14 +327,14 @@ export function ConceptionScreen() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="El próximo bombazo…"
-            className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-md border border-line-hi bg-raised px-3 py-2 text-ink-hi placeholder:text-ink-faint focus:border-action-hi focus:outline-none"
           />
         </div>
       </section>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <section className="flex flex-wrap items-center justify-between gap-4 card">
         <FitMeter band={fitBand(fit)} />
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-ink-mute">
           ~{estimate.weeks} semanas · ~{formatMoney(estimate.cost)} + features ·{' '}
           {isF2p ? 'gratis (MTX)' : `precio ${formatMoney(price)}`}
         </div>
@@ -342,7 +342,7 @@ export function ConceptionScreen() {
           type="button"
           disabled={!canStart}
           onClick={onStart}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+          className="btn btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"
         >
           Empezar desarrollo
         </button>

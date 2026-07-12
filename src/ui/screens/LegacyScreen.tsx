@@ -16,10 +16,10 @@ import { formatMoney, formatWeek } from '../format';
 const AXES = ['riqueza', 'prestigio', 'impacto', 'obras', 'etica'] as const;
 
 const axisColor: Record<(typeof AXES)[number], string> = {
-  riqueza: 'bg-amber-400',
-  prestigio: 'bg-sky-400',
+  riqueza: 'bg-warn-hi',
+  prestigio: 'bg-info',
   impacto: 'bg-fuchsia-400',
-  obras: 'bg-emerald-400',
+  obras: 'bg-ok',
   etica: 'bg-teal-300',
 };
 
@@ -47,7 +47,7 @@ export function LegacyScreen() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8">
       <header className="text-center">
-        <p className="text-sm uppercase tracking-widest text-slate-500">
+        <p className="text-sm uppercase tracking-widest text-ink-faint">
           {over
             ? over.reason === 'bancarrota'
               ? `Bancarrota · ${formatWeek(over.week)}`
@@ -55,24 +55,24 @@ export function LegacyScreen() {
             : 'El legado hasta hoy'}
         </p>
         <h2 className="mt-2 text-3xl font-black">🏛️ El Museo del Legado</h2>
-        <p className="mx-auto mt-3 max-w-md text-lg text-slate-300">{legacy.verdict}</p>
+        <p className="mx-auto mt-3 max-w-md text-lg text-ink">{legacy.verdict}</p>
       </header>
 
       {/* El retrato moral (docs/06 §6): el perfil multi-dimensional. */}
-      <section className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900 p-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="flex flex-col gap-4 rounded-lg border border-line bg-panel p-6">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Retrato del estudio
         </h3>
         {AXES.map((axis) => (
           <div key={axis} className="flex items-center gap-4">
-            <span className="w-36 shrink-0 text-sm text-slate-300">{legacyAxisLabels[axis]}</span>
-            <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-800">
+            <span className="w-36 shrink-0 text-sm text-ink">{legacyAxisLabels[axis]}</span>
+            <div className="h-3 flex-1 overflow-hidden rounded-full bg-raised">
               <div
                 className={`h-full rounded-full ${axisColor[axis]} transition-all duration-700`}
                 style={{ width: `${legacy[axis]}%` }}
               />
             </div>
-            <span className="w-10 text-right text-sm tabular-nums text-slate-400">
+            <span className="w-10 text-right text-sm tabular-nums text-ink-mute">
               {Math.round(legacy[axis])}
             </span>
           </div>
@@ -80,22 +80,22 @@ export function LegacyScreen() {
       </section>
 
       {/* La pared de premios (docs/06 §7). */}
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="rounded-lg border border-line bg-panel p-6">
+        <h3 className="card-title">
           Pared de premios
         </h3>
         {game.studio.awards.length === 0 ? (
-          <p className="text-slate-500">Ninguna estatuilla… todavía.</p>
+          <p className="text-ink-faint">Ninguna estatuilla… todavía.</p>
         ) : (
           <ul className="flex flex-wrap gap-2">
             {game.studio.awards.map((award, i) => (
               <li
                 key={`${award.week}-${award.categoryId}-${i}`}
-                className="rounded-md border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-sm"
+                className="rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm"
                 title={`${getAwardCategory(award.categoryId).name} · ${award.year}`}
               >
                 🏆 {getAwardCategory(award.categoryId).name} {award.year}
-                <span className="ml-2 text-xs text-slate-400">«{award.gameName}»</span>
+                <span className="ml-2 text-xs text-ink-mute">«{award.gameName}»</span>
               </li>
             ))}
           </ul>
@@ -103,16 +103,16 @@ export function LegacyScreen() {
       </section>
 
       {/* Las estanterías: portadas procedurales de todos los juegos (docs/10 §9). */}
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="rounded-lg border border-line bg-panel p-6">
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-ink-mute">
           La colección ({game.releasedGames.length} juegos)
         </h3>
         {shelves.length === 0 ? (
-          <p className="text-slate-500">Las vitrinas están vacías: nunca lanzaste un juego.</p>
+          <p className="text-ink-faint">Las vitrinas están vacías: nunca lanzaste un juego.</p>
         ) : (
           <div className="flex flex-col gap-6">
             {shelves.map((shelf, i) => (
-              <div key={i} className="border-b-4 border-slate-800 pb-2">
+              <div key={i} className="border-b-4 border-line pb-2">
                 <div className="flex flex-wrap items-end gap-4">
                   {shelf.map((g) => (
                     <button
@@ -133,23 +133,23 @@ export function LegacyScreen() {
       </section>
 
       {/* Línea de tiempo de hitos (docs/10 §7.7). */}
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="rounded-lg border border-line bg-panel p-6">
+        <h3 className="card-title">
           Línea de tiempo
         </h3>
         <ul className="flex flex-col gap-1.5 text-sm">
           {erasLived.map((era) => (
             <li key={era.id} className="flex gap-3">
-              <span className="w-28 shrink-0 tabular-nums text-slate-500">{era.period}</span>
-              <span className="text-slate-300">
+              <span className="w-28 shrink-0 tabular-nums text-ink-faint">{era.period}</span>
+              <span className="text-ink">
                 🌍 {era.name}
                 {era.id === game.era ? ' (tu era final)' : ''}
               </span>
             </li>
           ))}
           <li className="flex gap-3">
-            <span className="w-28 shrink-0 tabular-nums text-slate-500">Total</span>
-            <span className="text-slate-300">
+            <span className="w-28 shrink-0 tabular-nums text-ink-faint">Total</span>
+            <span className="text-ink">
               {Math.floor((game.week - 1) / 52)} años, {game.staff.length} personas al cierre
             </span>
           </li>
@@ -157,21 +157,21 @@ export function LegacyScreen() {
       </section>
 
       <section className="grid grid-cols-2 gap-3 text-center text-sm sm:grid-cols-4">
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+        <div className="rounded-lg border border-line bg-panel p-3">
           <p className="text-lg font-bold tabular-nums">{game.releasedGames.length}</p>
-          <p className="text-xs text-slate-500">juegos lanzados</p>
+          <p className="text-xs text-ink-faint">juegos lanzados</p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+        <div className="rounded-lg border border-line bg-panel p-3">
           <p className="text-lg font-bold tabular-nums">{legacy.masterpieces}</p>
-          <p className="text-xs text-slate-500">obras maestras (90+)</p>
+          <p className="text-xs text-ink-faint">obras maestras (90+)</p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+        <div className="rounded-lg border border-line bg-panel p-3">
           <p className="text-lg font-bold tabular-nums">{formatMoney(game.stats.peakCapital)}</p>
-          <p className="text-xs text-slate-500">capital máximo</p>
+          <p className="text-xs text-ink-faint">capital máximo</p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+        <div className="rounded-lg border border-line bg-panel p-3">
           <p className="text-lg font-bold tabular-nums">{game.stats.scandalCount}</p>
-          <p className="text-xs text-slate-500">escándalos</p>
+          <p className="text-xs text-ink-faint">escándalos</p>
         </div>
       </section>
 
@@ -180,7 +180,7 @@ export function LegacyScreen() {
           <button
             type="button"
             onClick={() => goTo('estudio')}
-            className="rounded-md bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+            className="rounded-md bg-raised px-4 py-2 text-sm text-ink hover:bg-control"
           >
             Volver al estudio
           </button>
@@ -188,7 +188,7 @@ export function LegacyScreen() {
         <button
           type="button"
           onClick={() => newGame()}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+          className="btn btn-primary px-4 py-2"
         >
           ✨ Nueva partida
         </button>

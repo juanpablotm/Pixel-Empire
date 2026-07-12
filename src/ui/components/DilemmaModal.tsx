@@ -68,13 +68,13 @@ export function DilemmaModal() {
   const spec = dilemmaSpecs[dilemma.kind];
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-6">
-      <div className="w-full max-w-xl rounded-lg border border-amber-700 bg-slate-900 p-6 shadow-2xl">
-        <p className="mb-1 text-xs font-bold uppercase tracking-widest text-amber-400">
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-scrim p-6">
+      <div className="w-full max-w-xl rounded-lg border border-warn/60 bg-panel p-6 shadow-2xl">
+        <p className="mb-1 text-xs font-bold uppercase tracking-widest text-warn">
           Dilema de pre-lanzamiento · «{projectName}»
         </p>
-        <h2 className="text-xl font-bold text-slate-100">{spec.title}</h2>
-        <p className="mt-2 text-sm text-slate-400">{spec.body}</p>
+        <h2 className="text-xl font-bold text-ink-hi">{spec.title}</h2>
+        <p className="mt-2 text-sm text-ink-mute">{spec.body}</p>
 
         <div className="mt-4 flex flex-col gap-2">
           {spec.choices.map((c) => (
@@ -84,12 +84,12 @@ export function DilemmaModal() {
               onClick={() => resolve(dilemma.kind, c.choice)}
               className={`flex flex-col items-start gap-1 rounded-md border px-4 py-3 text-left transition-colors ${
                 c.tone === 'integrity'
-                  ? 'border-emerald-800 bg-emerald-950/40 hover:border-emerald-600'
-                  : 'border-amber-800 bg-amber-950/30 hover:border-amber-600'
+                  ? 'border-ok/40 bg-ok/10 hover:border-action'
+                  : 'border-warn/40 bg-warn/10 hover:border-warn'
               }`}
             >
-              <span className="font-semibold text-slate-100">{c.name}</span>
-              <span className="text-xs text-slate-400">{c.detail}</span>
+              <span className="font-semibold text-ink-hi">{c.name}</span>
+              <span className="text-xs text-ink-mute">{c.detail}</span>
             </button>
           ))}
         </div>

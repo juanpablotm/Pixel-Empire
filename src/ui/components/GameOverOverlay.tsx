@@ -20,20 +20,20 @@ export function GameOverOverlay() {
     <div
       role="alertdialog"
       aria-label="Fin de la partida"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim px-6"
     >
       <div
         className={`flex max-w-md flex-col items-center gap-4 rounded-lg border p-8 text-center ${
-          bankrupt ? 'border-red-900' : 'border-slate-700'
-        } bg-slate-900`}
+          bankrupt ? 'border-danger/30' : 'border-line-hi'
+        } bg-panel`}
       >
         <span className="text-4xl" aria-hidden>
           {bankrupt ? '📉' : '🏛️'}
         </span>
-        <h2 className={`text-2xl font-bold ${bankrupt ? 'text-red-400' : 'text-slate-200'}`}>
+        <h2 className={`text-2xl font-bold ${bankrupt ? 'text-danger' : 'text-ink'}`}>
           {bankrupt ? 'Bancarrota' : 'El estudio cierra'}
         </h2>
-        <p className="text-slate-300">
+        <p className="text-ink">
           {bankrupt
             ? `La caja aguantó en rojo hasta la ${formatWeek(gameOver.week).toLowerCase()}. El estudio cierra tras ${
                 releasedCount === 1 ? 'un juego lanzado' : `${releasedCount} juegos lanzados`
@@ -46,14 +46,14 @@ export function GameOverOverlay() {
           <button
             type="button"
             onClick={() => goTo('legado')}
-            className="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            className="rounded-md bg-control px-4 py-2 text-sm font-medium text-ink hover:bg-control-hi"
           >
             🏛️ Ver legado
           </button>
           <button
             type="button"
             onClick={() => newGame()}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+            className="btn btn-primary px-4 py-2"
           >
             ✨ Nueva partida
           </button>

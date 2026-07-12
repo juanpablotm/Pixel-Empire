@@ -9,9 +9,9 @@ import type { ReleasedGame, StreamResult, StreamTier } from '../../core';
  */
 
 const tierBadge: Record<StreamTier, { label: string; className: string }> = {
-  exito: { label: '🔥 Explosión', className: 'bg-emerald-900/70 text-emerald-300' },
-  tibio: { label: '😐 Tibio', className: 'bg-slate-800 text-slate-400' },
-  desastre: { label: '💀 Contraproducente', className: 'bg-red-900/70 text-red-300' },
+  exito: { label: '🔥 Explosión', className: 'bg-ok/20 text-ok' },
+  tibio: { label: '😐 Tibio', className: 'bg-raised text-ink-mute' },
+  desastre: { label: '💀 Contraproducente', className: 'bg-danger/20 text-danger-hi' },
 };
 
 /** Selección determinista de líneas de chat: sin RNG en la UI (docs/08). */
@@ -24,7 +24,7 @@ function chatFor(stream: StreamResult, index: number): string[] {
 }
 
 function factorTone(value: number): string {
-  return value >= 0.75 ? 'text-emerald-400' : value >= 0.5 ? 'text-amber-300' : 'text-red-400';
+  return value >= 0.75 ? 'text-ok' : value >= 0.5 ? 'text-warn' : 'text-danger';
 }
 
 function StreamCard({ stream, index }: { stream: StreamResult; index: number }) {
@@ -32,16 +32,16 @@ function StreamCard({ stream, index }: { stream: StreamResult; index: number }) 
   const badge = tierBadge[stream.tier];
 
   return (
-    <div className="relative flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950/60 p-4">
+    <div className="relative flex flex-col gap-2 rounded-lg border border-line bg-scrim p-4">
       {stream.liveBug && (
-        <span className="absolute -right-2 -top-2 rotate-6 rounded bg-red-600 px-2 py-0.5 text-xs font-black tracking-widest text-white shadow-lg">
+        <span className="absolute -right-2 -top-2 rotate-6 rounded bg-danger-hi px-2 py-0.5 text-xs font-black tracking-widest text-oncolor shadow-lg">
           CLIP&apos;D 📎
         </span>
       )}
       <div className="flex items-baseline justify-between gap-2">
         <div>
-          <p className="font-semibold text-slate-100">{creator.name}</p>
-          <p className="text-xs text-slate-500">{archetypeLabels[creator.archetype]}</p>
+          <p className="font-semibold text-ink-hi">{creator.name}</p>
+          <p className="text-xs text-ink-faint">{archetypeLabels[creator.archetype]}</p>
         </div>
         <span className={`rounded px-2 py-0.5 text-xs font-semibold ${badge.className}`}>
           {badge.label}
@@ -49,7 +49,7 @@ function StreamCard({ stream, index }: { stream: StreamResult; index: number }) 
       </div>
 
       {/* resultadoCreador = fit × calidad × bugs (docs/07 §3), legible. */}
-      <p className="flex flex-wrap gap-x-3 text-xs tabular-nums text-slate-400">
+      <p className="flex flex-wrap gap-x-3 text-xs tabular-nums text-ink-mute">
         <span className={factorTone(stream.fit)}>fit {Math.round(stream.fit * 100)} %</span>
         <span className={factorTone(stream.qualityFactor)}>
           calidad {Math.round(stream.qualityFactor * 100)} %
@@ -57,14 +57,14 @@ function StreamCard({ stream, index }: { stream: StreamResult; index: number }) 
         <span className={factorTone(stream.bugFactor)}>
           estabilidad {Math.round(stream.bugFactor * 100)} %
         </span>
-        <span className="text-slate-300">→ resultado {Math.round(stream.outcome * 100)} %</span>
+        <span className="text-ink">→ resultado {Math.round(stream.outcome * 100)} %</span>
       </p>
 
       {/* Chat en vivo simulado (docs/10 §7.2). */}
-      <ul className="flex flex-col gap-0.5 rounded bg-slate-900 px-3 py-2 text-xs">
+      <ul className="flex flex-col gap-0.5 rounded bg-panel px-3 py-2 text-xs">
         {chatFor(stream, index).map((line, i) => (
-          <li key={i} className={stream.liveBug && liveBugChatLines.includes(line) ? 'text-red-300' : 'text-slate-400'}>
-            <span className="mr-1 font-semibold text-slate-600">chat:</span>
+          <li key={i} className={stream.liveBug && liveBugChatLines.includes(line) ? 'text-danger-hi' : 'text-ink-mute'}>
+            <span className="mr-1 font-semibold text-ink-faint">chat:</span>
             {line}
           </li>
         ))}
@@ -77,7 +77,7 @@ export function StreamPanel({ game }: { game: ReleasedGame }) {
   const streams = game.streams ?? [];
   if (streams.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-faint">
         «{game.name}» se lanzó sin campaña de creadores: nadie lo jugó en directo.
       </p>
     );

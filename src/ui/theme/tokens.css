@@ -1,0 +1,312 @@
+/*
+ * Tokens de diseño de Pixel Empire (Fase 7A, docs/10 §2 y §11 + brand/README.md).
+ *
+ * Tres capas:
+ *   1. Paleta de marca (constantes): dorado Capital, verde integridad, tinta, hueso.
+ *   2. Tokens semánticos de runtime (variables que flipan con [data-theme] y que
+ *      las pieles de era sobreescriben en ui/index.css).
+ *   3. Bloque `@theme inline` que los expone como utilidades Tailwind
+ *      (bg-panel, text-ink-mute, border-line, bg-action…).
+ *
+ * Regla: ningún componente usa colores sueltos; los hex viven solo aquí y en
+ * las pieles de era. El dorado queda RESERVADO al eje Capital/codicia
+ * (docs/10 §2 [DECIDIDO]): marca, contador de capital y balanza — nunca
+ * botones genéricos.
+ */
+
+:root {
+  /* ── 1. Paleta de marca (brand/README.md) ─────────────────────────────── */
+  --brand-gold: #e8b44a;
+  --brand-gold-deep: #c9871f;
+  --brand-green: #3fa66a;
+  --brand-green-deep: #2e9c5b;
+  --brand-ink: #12151c;
+  --brand-ink-soft: #1a1e27;
+  --brand-bone: #f2efe6;
+  --brand-bone-warm: #f7f5ec;
+  --brand-gray: #93a0b5;
+  --brand-gray-deep: #5e6675;
+
+  /* ── 2. Tokens semánticos — tema OSCURO (por defecto: look de juego) ──── */
+  /* Superficies: tinta de marca, no slate genérico. */
+  --surface-app: #0f1218;
+  --surface-panel: #171b23;
+  --surface-raised: #212734;
+  --surface-control: #2b3242;
+  --surface-control-hi: #364054;
+  --surface-scrim: rgba(6, 8, 12, 0.65);
+  --border-line: #262d3a;
+  --border-line-hi: #3b4557;
+
+  /* Texto: hueso cálido sobre tinta (identidad, no blanco puro). */
+  --text-strong: #f2efe6;
+  --text-body: #cdd2d8;
+  --text-mute: #93a0b5;
+  --text-faint: #667082;
+  --text-oncolor: #f7f5ec;
+
+  /* Acentos. Acción = verde integridad (docs/10 §2). */
+  --accent-action: #23854c;
+  --accent-action-hi: #2e9c5b;
+  --accent-ok: #4fb377;
+  --accent-warn: #d9a83c;
+  --accent-warn-hi: #e3b95e;
+  --accent-danger: #e05252;
+  --accent-danger-hi: #eb6a6a;
+  --accent-info: #5f9ee8;
+  --accent-capital: #e8b44a;
+
+  --ring-focus: #4fb377;
+  /* Sombra plana (flat): sólida y corta, sin blur difuso. */
+  --shadow-flat: 0 2px 0 rgba(4, 6, 10, 0.45);
+  --shadow-flat-raised: 0 3px 0 rgba(4, 6, 10, 0.55);
+
+  /* ── Forma y tipografía ───────────────────────────────────────────────── */
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --font-ui:
+    'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-brand:
+    'Cascadia Mono', ui-monospace, 'Cascadia Code', Consolas, 'Courier New',
+    monospace;
+
+  /* ── Movimiento (docs/10 §4.2) ────────────────────────────────────────── */
+  --motion-instant: 80ms;
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 400ms;
+  --motion-dramatic: 900ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decel: cubic-bezier(0, 0, 0, 1);
+  --ease-accel: cubic-bezier(0.3, 0, 1, 1);
+}
+
+/* ── 2b. Tema CLARO: hueso de marca. Las pieles de era (index.css) van
+       después en la cascada y ganan; el claro luce con la base flat (E5 /
+       "UI moderna siempre"). ─────────────────────────────────────────────── */
+[data-theme='light'] {
+  --surface-app: #eae6da;
+  --surface-panel: #f7f5ec;
+  --surface-raised: #eceadd;
+  --surface-control: #dfdaca;
+  --surface-control-hi: #d3cdb9;
+  --surface-scrim: rgba(26, 30, 39, 0.5);
+  --border-line: #d8d3c3;
+  --border-line-hi: #b4ad99;
+
+  --text-strong: #1a1e27;
+  --text-body: #2d323d;
+  --text-mute: #5e6675;
+  --text-faint: #8a90a0;
+  --text-oncolor: #f7f5ec;
+
+  --accent-action: #1f7a44;
+  --accent-action-hi: #2e9c5b;
+  --accent-ok: #257d4c;
+  --accent-warn: #9a6a10;
+  --accent-warn-hi: #7d5509;
+  --accent-danger: #c03a3e;
+  --accent-danger-hi: #a92f33;
+  --accent-info: #2d69b8;
+  --accent-capital: #b57b17;
+
+  --ring-focus: #1f7a44;
+  --shadow-flat: 0 2px 0 rgba(26, 30, 39, 0.12);
+  --shadow-flat-raised: 0 3px 0 rgba(26, 30, 39, 0.16);
+}
+
+/* ── 3. Utilidades Tailwind dirigidas por tokens ──────────────────────────
+   `inline` hace que las utilidades emitan var(--…), así los cambios de tema
+   y de piel de era se resuelven en runtime por elemento. */
+@theme inline {
+  --color-app: var(--surface-app);
+  --color-panel: var(--surface-panel);
+  --color-raised: var(--surface-raised);
+  --color-control: var(--surface-control);
+  --color-control-hi: var(--surface-control-hi);
+  --color-scrim: var(--surface-scrim);
+  --color-line: var(--border-line);
+  --color-line-hi: var(--border-line-hi);
+
+  --color-ink-hi: var(--text-strong);
+  --color-ink: var(--text-body);
+  --color-ink-mute: var(--text-mute);
+  --color-ink-faint: var(--text-faint);
+  --color-oncolor: var(--text-oncolor);
+  /* Tinta oscura constante para texto sobre acentos brillantes (ámbar/verde). */
+  --color-onbright: var(--brand-ink);
+
+  --color-action: var(--accent-action);
+  --color-action-hi: var(--accent-action-hi);
+  --color-ok: var(--accent-ok);
+  --color-warn: var(--accent-warn);
+  --color-warn-hi: var(--accent-warn-hi);
+  --color-danger: var(--accent-danger);
+  --color-danger-hi: var(--accent-danger-hi);
+  --color-info: var(--accent-info);
+  --color-capital: var(--accent-capital);
+  --color-skin-accent: var(--skin-accent);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-brand);
+
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-card);
+}
+
+/* ── 4. Componentes base compartidos (docs/10 §11) ───────────────────────── */
+@layer components {
+  /* Tarjeta: la superficie estándar de contenido. */
+  .card {
+    border: 1px solid var(--border-line);
+    border-radius: var(--radius-card);
+    background-color: var(--surface-panel);
+    box-shadow: var(--shadow-flat);
+    padding: 1.25rem;
+  }
+
+  /* Título de sección: mono de marca, en versalitas — sabor terminal/dev. */
+  .card-title {
+    margin-bottom: 0.75rem;
+    font-family: var(--font-brand);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+  }
+
+  /* Botones. La variante da color; las utilidades pueden ajustar tamaño. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: var(--radius-control);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      transform var(--motion-instant) var(--ease-standard),
+      box-shadow var(--motion-instant) var(--ease-standard);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--ring-focus);
+    outline-offset: 2px;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: none;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background-color: var(--accent-action);
+    color: var(--text-oncolor);
+    box-shadow: var(--shadow-flat);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--accent-action-hi);
+  }
+
+  .btn-quiet {
+    background-color: var(--surface-control);
+    color: var(--text-body);
+    box-shadow: var(--shadow-flat);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    background-color: var(--surface-control-hi);
+  }
+
+  .btn-warn {
+    background-color: var(--accent-warn);
+    color: var(--brand-ink);
+    box-shadow: var(--shadow-flat);
+  }
+  .btn-warn:hover:not(:disabled) {
+    background-color: var(--accent-warn-hi);
+  }
+
+  .btn-danger {
+    background-color: var(--accent-danger);
+    color: var(--text-oncolor);
+    box-shadow: var(--shadow-flat);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background-color: var(--accent-danger-hi);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    border: 1px solid var(--border-line);
+    color: var(--text-mute);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--surface-raised);
+    color: var(--text-body);
+  }
+
+  /* Chips: etiquetas de estado (era, etapa, alertas…). */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: var(--radius-control);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border-line);
+    padding: 0.125rem 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-body);
+  }
+  .chip-danger {
+    background-color: color-mix(in oklab, var(--accent-danger) 18%, transparent);
+    border-color: color-mix(in oklab, var(--accent-danger) 45%, transparent);
+    color: var(--accent-danger-hi);
+    font-weight: 600;
+  }
+  .chip-capital {
+    background-color: color-mix(in oklab, var(--accent-capital) 14%, transparent);
+    border-color: color-mix(in oklab, var(--accent-capital) 40%, transparent);
+    color: var(--accent-capital);
+  }
+
+  /* Tooltip ligero por CSS ([data-tip]); `title` sigue como fallback. */
+  .tip {
+    position: relative;
+  }
+  .tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 6px);
+    transform: translateX(-50%) translateY(-2px);
+    z-index: 60;
+    width: max-content;
+    max-width: 16rem;
+    border: 1px solid var(--border-line-hi);
+    border-radius: var(--radius-control);
+    background-color: var(--surface-raised);
+    box-shadow: var(--shadow-flat);
+    padding: 0.3rem 0.55rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-body);
+    text-transform: none;
+    letter-spacing: normal;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity var(--motion-fast) var(--ease-standard),
+      transform var(--motion-fast) var(--ease-standard);
+  }
+  .tip:hover::after,
+  .tip:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

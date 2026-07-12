@@ -6,9 +6,9 @@ import type { FitBand } from '../../core';
  */
 
 const BAND_INFO: Record<FitBand, { label: string; color: string; segments: number }> = {
-  verde: { label: 'Encaje prometedor', color: 'bg-emerald-500', segments: 3 },
-  ambar: { label: 'Encaje dudoso', color: 'bg-amber-500', segments: 2 },
-  rojo: { label: 'Mal encaje', color: 'bg-red-500', segments: 1 },
+  verde: { label: 'Encaje prometedor', color: 'bg-action-hi', segments: 3 },
+  ambar: { label: 'Encaje dudoso', color: 'bg-warn', segments: 2 },
+  rojo: { label: 'Mal encaje', color: 'bg-danger', segments: 1 },
 };
 
 export function FitMeter({ band }: { band: FitBand }) {
@@ -20,7 +20,7 @@ export function FitMeter({ band }: { band: FitBand }) {
           <div
             key={i}
             className={`h-3 w-8 rounded-sm transition-colors duration-300 ${
-              i < info.segments ? info.color : 'bg-slate-700'
+              i < info.segments ? info.color : 'bg-control'
             }`}
           />
         ))}

@@ -33,12 +33,12 @@ function PoliciesPanel() {
   const setPolicies = useGameStore((s) => s.setPolicies);
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+    <section className="flex flex-col gap-4 card">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
         Políticas del estudio (se aplican solas cada semana)
       </h3>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-40 shrink-0 text-sm text-slate-300">Política salarial</span>
+        <span className="w-40 shrink-0 text-sm text-ink">Política salarial</span>
         {SALARY_POLICIES.map((p) => (
           <button
             key={p.id}
@@ -48,8 +48,8 @@ function PoliciesPanel() {
             onClick={() => setPolicies({ salary: p.id })}
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               policies.salary === p.id
-                ? 'bg-emerald-500 text-slate-950'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-action-hi text-onbright'
+                : 'bg-raised text-ink hover:bg-control'
             }`}
           >
             {p.label}
@@ -62,7 +62,7 @@ function PoliciesPanel() {
             type="checkbox"
             checked={policies.antiCrunch}
             onChange={(e) => setPolicies({ antiCrunch: e.target.checked })}
-            className="accent-emerald-500"
+            className="accent-action-hi"
           />
           Anti-crunch
         </label>
@@ -74,7 +74,7 @@ function PoliciesPanel() {
             type="checkbox"
             checked={policies.autoTraining}
             onChange={(e) => setPolicies({ autoTraining: e.target.checked })}
-            className="accent-emerald-500"
+            className="accent-action-hi"
           />
           Formación automática
         </label>
@@ -86,12 +86,12 @@ function PoliciesPanel() {
             type="checkbox"
             checked={policies.autoBonus}
             onChange={(e) => setPolicies({ autoBonus: e.target.checked })}
-            className="accent-emerald-500"
+            className="accent-action-hi"
           />
           Bonus automáticos
         </label>
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-ink-faint">
         A esta escala ya no gestionas persona a persona: fijas la política y el estudio la ejecuta
         (docs/02 §4).
       </p>
@@ -111,23 +111,23 @@ function CandidateCard({ candidate }: { candidate: Employee }) {
   return (
     <article
       aria-label={`Candidato ${candidate.name}`}
-      className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4"
+      className="flex flex-col gap-3 rounded-lg border border-line bg-panel/60 p-4"
     >
       <div className="flex items-start gap-3">
         <Avatar seed={candidate.avatarSeed} size={48} />
         <div className="min-w-0 flex-1">
           <span className="font-semibold">{candidate.name}</span>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-mute">
             {specialtyLabels[candidate.specialty]} · {tierLabels[salaryTierOf(candidate)]} · Nivel{' '}
             {candidate.level}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-mute">
         {(Object.entries(specialtyLabels) as [keyof typeof specialtyLabels, string][]).map(
           ([spec, label]) => (
-            <span key={spec} className={spec === candidate.specialty ? 'text-slate-200' : ''}>
+            <span key={spec} className={spec === candidate.specialty ? 'text-ink' : ''}>
               {label} <span className="tabular-nums">{Math.round(candidate.skills[spec])}</span>
             </span>
           ),
@@ -141,7 +141,7 @@ function CandidateCard({ candidate }: { candidate: Employee }) {
             <span
               key={id}
               title={trait.description}
-              className="cursor-help rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300"
+              className="cursor-help rounded-full bg-raised px-2 py-0.5 text-[11px] text-ink"
             >
               {trait.name}
             </span>
@@ -149,8 +149,8 @@ function CandidateCard({ candidate }: { candidate: Employee }) {
         })}
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-slate-800 pt-3 text-sm">
-        <span className="text-slate-400">
+      <div className="flex items-center justify-between gap-2 border-t border-line pt-3 text-sm">
+        <span className="text-ink-mute">
           {formatMoney(candidate.salary)}/sem · contratar: {formatMoney(cost)}
         </span>
         <button
@@ -158,7 +158,7 @@ function CandidateCard({ candidate }: { candidate: Employee }) {
           onClick={() => hire(candidate.id)}
           disabled={full || capital < cost}
           title={full ? 'La oficina está llena' : undefined}
-          className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+          className="rounded-md bg-action px-3 py-1.5 text-xs font-medium text-oncolor hover:bg-action-hi disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"
         >
           Contratar
         </button>
@@ -180,14 +180,14 @@ export function TeamScreen() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">
           Equipo{' '}
-          <span className="text-sm font-normal text-slate-400">
+          <span className="text-sm font-normal text-ink-mute">
             {stageLabels[scaleStage]} · {staff.length}/{cap}
           </span>
         </h2>
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
@@ -197,7 +197,7 @@ export function TeamScreen() {
       {showPolicies && <PoliciesPanel />}
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Plantilla</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">Plantilla</h3>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {staff.map((employee) => (
             <EmployeeCard key={employee.id} employee={employee} />
@@ -206,17 +206,17 @@ export function TeamScreen() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Candidatos
         </h3>
         {scaleStage === 1 ? (
-          <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-line-hi bg-panel/40 p-4 text-sm text-ink-mute">
             En el garaje no cabe nadie más. Reúne{' '}
             {formatMoney(balance.staff.scale.stage2CapitalThreshold)} para mudarte a una oficina
             pequeña y empezar a contratar.
           </p>
         ) : candidates.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-line-hi bg-panel/40 p-4 text-sm text-ink-mute">
             No queda nadie en el pool. Nuevos candidatos cada{' '}
             {balance.staff.candidates.refreshWeeks} semanas.
           </p>
@@ -227,7 +227,7 @@ export function TeamScreen() {
                 <CandidateCard key={candidate.id} candidate={candidate} />
               ))}
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-faint">
               El pool se renueva cada {balance.staff.candidates.refreshWeeks} semanas. Coste de
               contratación: {balance.staff.hiringCostWeeks} semanas de salario.
             </p>

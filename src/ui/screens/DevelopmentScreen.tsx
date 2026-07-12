@@ -24,23 +24,23 @@ import { HypeGauge } from '../components/HypeGauge';
  */
 
 function bugLabel(level: number): { text: string; color: string } {
-  if (level <= 0.05) return { text: 'Impecable', color: 'text-emerald-400' };
-  if (level < 0.3) return { text: 'Algunos bugs', color: 'text-amber-400' };
-  return { text: 'Plaga de bugs', color: 'text-red-400' };
+  if (level <= 0.05) return { text: 'Impecable', color: 'text-ok' };
+  if (level < 0.3) return { text: 'Algunos bugs', color: 'text-warn' };
+  return { text: 'Plaga de bugs', color: 'text-danger' };
 }
 
 /** Lectura legible del balance actual frente al ideal del género. */
 function balanceLabel(diff: number): { text: string; color: string } {
-  if (diff < 0.08) return { text: 'cerca del ideal', color: 'text-emerald-400' };
-  if (diff < 0.18) return { text: 'algo desviado', color: 'text-amber-400' };
-  return { text: 'lejos del ideal', color: 'text-red-400' };
+  if (diff < 0.08) return { text: 'cerca del ideal', color: 'text-ok' };
+  if (diff < 0.18) return { text: 'algo desviado', color: 'text-warn' };
+  return { text: 'lejos del ideal', color: 'text-danger' };
 }
 
 /** Lectura legible de un factor multiplicador (1 = neutro). */
 function factorColor(value: number): string {
-  if (value >= 1.0) return 'text-emerald-400';
-  if (value >= 0.85) return 'text-amber-400';
-  return 'text-red-400';
+  if (value >= 1.0) return 'text-ok';
+  if (value >= 0.85) return 'text-warn';
+  return 'text-danger';
 }
 
 export function DevelopmentScreen() {
@@ -61,11 +61,11 @@ export function DevelopmentScreen() {
   if (!project) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-slate-400">No hay ningún proyecto en desarrollo.</p>
+        <p className="text-ink-mute">No hay ningún proyecto en desarrollo.</p>
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-4 py-2 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
@@ -102,7 +102,7 @@ export function DevelopmentScreen() {
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
@@ -119,8 +119,8 @@ export function DevelopmentScreen() {
               onClick={() => selectProject(p.id)}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 p.id === project.id
-                  ? 'bg-emerald-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-action-hi text-onbright'
+                  : 'bg-raised text-ink hover:bg-control'
               }`}
             >
               {p.name}
@@ -130,7 +130,7 @@ export function DevelopmentScreen() {
       )}
 
       {/* Fases y progreso */}
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <section className="card">
         <div className="mb-3 flex gap-2">
           {devPhases.map((p) => (
             <span
@@ -138,33 +138,33 @@ export function DevelopmentScreen() {
               aria-current={p.phase === project.phase ? 'step' : undefined}
               className={`rounded-full px-3 py-1 text-xs font-medium ${
                 p.phase === project.phase
-                  ? 'bg-emerald-500 text-slate-950'
+                  ? 'bg-action-hi text-onbright'
                   : p.phase < project.phase
-                    ? 'bg-slate-700 text-slate-300'
-                    : 'bg-slate-800 text-slate-500'
+                    ? 'bg-control text-ink'
+                    : 'bg-raised text-ink-faint'
               }`}
             >
               {p.phase}. {p.name}
             </span>
           ))}
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+        <div className="h-2 overflow-hidden rounded-full bg-raised">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+            className="h-full rounded-full bg-action-hi transition-all duration-500"
             style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
           />
         </div>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm text-ink-mute">
           Semana {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)} · deja correr el
           tiempo para avanzar
         </p>
         {/* Manómetro de Hype (docs/04 §4): crece desde Producción, más con la moda. */}
-        <div className="mt-4 border-t border-slate-800 pt-4">
+        <div className="mt-4 border-t border-line pt-4">
           <HypeGauge hype={project.hype} />
         </div>
         {/* Marketing como coste (docs/06 §4): campañas que compran hype. */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-800 pt-4">
-          <span className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
+          <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
             Marketing
           </span>
           {balance.economy.marketing.levels.map((campaign, level) => {
@@ -186,8 +186,8 @@ export function DevelopmentScreen() {
                 onClick={() => launchMarketing(level, project.id)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   used
-                    ? 'bg-slate-800 text-slate-500'
-                    : 'bg-amber-600 text-white hover:bg-amber-500'
+                    ? 'bg-raised text-ink-faint'
+                    : 'bg-warn text-onbright hover:bg-warn-hi'
                 } ${used || tooEarly || noCash ? 'cursor-not-allowed opacity-60' : ''}`}
               >
                 {used ? '✔ ' : '📣 '}Nivel {level + 1} · {formatMoney(campaign.cost)}
@@ -197,33 +197,33 @@ export function DevelopmentScreen() {
           <button
             type="button"
             onClick={() => goTo('creadores')}
-            className="rounded-md bg-fuchsia-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-fuchsia-600"
+            className="rounded-md bg-fuchsia-700 px-3 py-1.5 text-sm font-medium text-oncolor hover:bg-fuchsia-600"
           >
             🔑 Campaña de creadores
           </button>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-faint">
             El hype vende de salida… y endurece las reseñas si el juego no cumple.
           </p>
         </div>
       </section>
 
       {/* Equipo asignado: el Factor E legible (docs/03 factor E, docs/10 §10.6) */}
-      <section className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <section className="flex flex-col gap-3 card">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
             Equipo asignado
           </h3>
           <button
             type="button"
             onClick={() => goTo('equipo')}
-            className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
+            className="rounded bg-raised px-2 py-1 text-xs text-ink hover:bg-control"
           >
             Gestionar equipo
           </button>
         </div>
 
         {team.length === 0 ? (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-danger">
             Nadie trabaja en el proyecto: no avanzará hasta que asignes a alguien.
           </p>
         ) : (
@@ -233,14 +233,14 @@ export function DevelopmentScreen() {
                 <span
                   key={e.id}
                   title={`${e.name}${e.burnedOut ? ' (burnout)' : ''}`}
-                  className="flex items-center gap-1.5 rounded-full bg-slate-800 py-0.5 pl-0.5 pr-2 text-xs text-slate-300"
+                  className="flex items-center gap-1.5 rounded-full bg-raised py-0.5 pl-0.5 pr-2 text-xs text-ink"
                 >
                   <Avatar seed={e.avatarSeed} size={20} />
                   {e.name}
                   {e.burnedOut && <span aria-hidden>🔥</span>}
                 </span>
               ))}
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-ink-faint">
                 output ×{output.toFixed(2)} por semana
               </span>
             </div>
@@ -273,7 +273,7 @@ export function DevelopmentScreen() {
           </>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-slate-800 pt-3">
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
           <button
             type="button"
             aria-pressed={project.crunch}
@@ -282,8 +282,8 @@ export function DevelopmentScreen() {
             onClick={() => setCrunch(!project.crunch, project.id)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               project.crunch
-                ? 'bg-red-600 text-white hover:bg-red-500'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-danger-hi text-oncolor hover:bg-danger-hi'
+                : 'bg-raised text-ink hover:bg-control'
             } ${antiCrunch && !project.crunch ? 'cursor-not-allowed opacity-50' : ''}`}
           >
             {project.crunch
@@ -292,7 +292,7 @@ export function DevelopmentScreen() {
                 ? 'Crunch prohibido (política)'
                 : 'Activar crunch'}
           </button>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-faint">
             El crunch acelera el desarrollo a costa de moral, energía y lealtad; los quemados
             rinden la mitad.
           </p>
@@ -300,8 +300,8 @@ export function DevelopmentScreen() {
       </section>
 
       {/* Reparto de esfuerzo de la fase actual */}
-      <section className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="flex flex-col gap-4 card">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Reparto de esfuerzo — fase de {phaseSpec.name}
         </h3>
         {phaseSpec.aspects.map((aspect) => {
@@ -316,15 +316,15 @@ export function DevelopmentScreen() {
                 value={Math.round(share * 100)}
                 onChange={(e) => onSlider(aspect.id, Number(e.target.value))}
                 aria-label={`Esfuerzo en ${aspect.name}`}
-                className="flex-1 accent-emerald-500"
+                className="flex-1 accent-action-hi"
               />
-              <span className="w-12 text-right text-sm tabular-nums text-slate-400">
+              <span className="w-12 text-right text-sm tabular-nums text-ink-mute">
                 {Math.round(share * 100)} %
               </span>
             </label>
           );
         })}
-        <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-slate-800 pt-3 text-sm">
+        <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-3 text-sm">
           {dReal !== null && balanceInfo ? (
             <span>
               Diseño {Math.round(dReal * 100)} % / Técnica {Math.round((1 - dReal) * 100)} % —{' '}
@@ -333,7 +333,7 @@ export function DevelopmentScreen() {
               <span className={balanceInfo.color}>{balanceInfo.text}</span>
             </span>
           ) : (
-            <span className="text-slate-500">
+            <span className="text-ink-faint">
               El balance Diseño/Técnica se medirá con las primeras semanas de trabajo.
             </span>
           )}
@@ -344,8 +344,8 @@ export function DevelopmentScreen() {
       </section>
 
       {/* Features (solo durante el Concepto) */}
-      <section className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="flex flex-col gap-3 card">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Features {project.phase !== 1 && '(cerradas al salir del Concepto)'}
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -361,16 +361,16 @@ export function DevelopmentScreen() {
                 onClick={() => toggleFeature(feature.id, project.id)}
                 className={`rounded-lg border p-3 text-left transition-colors ${
                   chosen
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-slate-700 bg-slate-800/60 hover:border-slate-500'
+                    ? 'border-action-hi bg-ok/10'
+                    : 'border-line-hi bg-raised/60 hover:border-line-hi'
                 } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{feature.name}</span>
                   {chosen && <span aria-hidden>✔</span>}
                 </div>
-                <p className="mt-1 text-xs text-slate-400">{feature.description}</p>
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-ink-mute">{feature.description}</p>
+                <p className="mt-2 text-xs text-ink-faint">
                   +{feature.qualityValue} calidad · +{feature.timeCostWeeks} sem ·{' '}
                   {feature.bugRisk >= 0.15
                     ? 'riesgo de bugs alto'

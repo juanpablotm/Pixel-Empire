@@ -6,16 +6,16 @@ import type { CommunityPost } from '../../core';
  */
 
 const moodStyles: Record<CommunityPost['mood'], string> = {
-  positivo: 'border-emerald-800/60 bg-emerald-950/40 text-emerald-100',
-  negativo: 'border-red-800/60 bg-red-950/40 text-red-100',
-  neutro: 'border-slate-800 bg-slate-900/60 text-slate-300',
+  positivo: 'border-ok/40 bg-ok/10 text-ink',
+  negativo: 'border-danger/40 bg-danger/10 text-ink',
+  neutro: 'border-line bg-panel/60 text-ink',
 };
 
 export function CommunityFeed({ posts, limit = 12 }: { posts: readonly CommunityPost[]; limit?: number }) {
   const visible = [...posts].reverse().slice(0, limit);
 
   if (visible.length === 0) {
-    return <p className="text-sm text-slate-500">El foro está en silencio. De momento.</p>;
+    return <p className="text-sm text-ink-faint">El foro está en silencio. De momento.</p>;
   }
 
   return (

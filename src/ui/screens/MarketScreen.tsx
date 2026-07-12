@@ -22,26 +22,26 @@ import { TrendArrow } from '../components/TrendArrow';
  */
 
 const STAGE_COLOR: Record<TrendStage, string> = {
-  naciendo: 'bg-sky-500/15 text-sky-300',
-  creciendo: 'bg-emerald-500/15 text-emerald-300',
+  naciendo: 'bg-info/15 text-info',
+  creciendo: 'bg-ok/15 text-ok',
   pico: 'bg-fuchsia-500/15 text-fuchsia-300',
-  estable: 'bg-slate-700 text-slate-300',
-  declive: 'bg-amber-500/15 text-amber-300',
-  muerto: 'bg-red-500/15 text-red-300',
+  estable: 'bg-control text-ink',
+  declive: 'bg-warn/15 text-capital',
+  muerto: 'bg-danger/15 text-danger-hi',
 };
 
 function TrendRow({ name, trend }: { name: string; trend: TrendState }) {
   return (
-    <li className="flex items-center gap-3 rounded-md bg-slate-800/60 px-3 py-2">
+    <li className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2">
       <TrendArrow direction={trend.direction} />
       <span className="w-36 shrink-0 font-medium">{name}</span>
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-control">
         <div
-          className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+          className="h-full rounded-full bg-action-hi transition-all duration-500"
           style={{ width: `${Math.round(trend.pop * 100)}%` }}
         />
       </div>
-      <span className="w-10 text-right text-xs tabular-nums text-slate-400">
+      <span className="w-10 text-right text-xs tabular-nums text-ink-mute">
         {Math.round(trend.pop * 100)} %
       </span>
       <span className={`w-24 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${STAGE_COLOR[trend.stage]}`}>
@@ -63,17 +63,17 @@ function SaturationList({ market }: { market: MarketState }) {
     .sort((a, b) => b.sat - a.sat);
 
   if (entries.length === 0) {
-    return <p className="text-slate-500">Ningún nicho saturado: el mercado tiene hambre.</p>;
+    return <p className="text-ink-faint">Ningún nicho saturado: el mercado tiene hambre.</p>;
   }
 
   return (
     <ul className="flex flex-col gap-2 text-sm">
       {entries.map((e) => (
-        <li key={e.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-slate-800/60 px-3 py-2">
+        <li key={e.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-raised/60 px-3 py-2">
           <span className="font-medium">
             {getGenre(e.genreId).name} de {getTheme(e.themeId).name}
           </span>
-          <span className={e.modifier < 1 ? 'text-amber-400' : 'text-slate-400'}>
+          <span className={e.modifier < 1 ? 'text-warn' : 'text-ink-mute'}>
             {e.modifier < 1
               ? `ventas ×${e.modifier.toFixed(2)} por saturación`
               : 'saturándose; de momento sin efecto'}
@@ -103,14 +103,14 @@ export function MarketScreen() {
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
         >
           Volver al estudio
         </button>
       </div>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Géneros
         </h3>
         <ul className="flex flex-col gap-2 text-sm">
@@ -121,8 +121,8 @@ export function MarketScreen() {
         </ul>
       </section>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Temas
         </h3>
         <ul className="flex flex-col gap-2 text-sm">
@@ -133,8 +133,8 @@ export function MarketScreen() {
         </ul>
       </section>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Plataformas
         </h3>
         <ul className="flex flex-col gap-2 text-sm">
@@ -143,31 +143,31 @@ export function MarketScreen() {
             if (!state) return null;
             const dead = state.stage === 'descatalogada' || state.stage === 'anunciada';
             return (
-              <li key={p.id} className="flex items-center gap-3 rounded-md bg-slate-800/60 px-3 py-2">
+              <li key={p.id} className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2">
                 <span className="w-36 shrink-0 font-medium">{p.name}</span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-control">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${dead ? 'bg-slate-500' : 'bg-sky-500'}`}
+                    className={`h-full rounded-full transition-all duration-500 ${dead ? 'bg-control-hi' : 'bg-info'}`}
                     style={{ width: `${Math.round((state.installedBase / maxBase) * 100)}%` }}
                   />
                 </div>
-                <span className="w-24 text-right text-xs tabular-nums text-slate-400">
+                <span className="w-24 text-right text-xs tabular-nums text-ink-mute">
                   {state.installedBase.toLocaleString('es-ES')} uds/sem
                 </span>
-                <span className={`w-28 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${dead ? 'bg-red-500/15 text-red-300' : 'bg-slate-700 text-slate-300'}`}>
+                <span className={`w-28 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${dead ? 'bg-danger/15 text-danger-hi' : 'bg-control text-ink'}`}>
                   {platformStageLabels[state.stage]}
                 </span>
               </li>
             );
           })}
         </ul>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-ink-faint">
           La base instalada marca el techo de ventas semanales de cada plataforma (semana {week}).
         </p>
       </section>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <section className="card">
+        <h3 className="card-title">
           Saturación
         </h3>
         <SaturationList market={market} />

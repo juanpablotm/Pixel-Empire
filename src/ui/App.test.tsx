@@ -14,6 +14,7 @@ function resetStore() {
     speed: 0,
     screen: 'estudio',
     reviewGameId: null,
+    colorTheme: 'dark',
   });
 }
 
@@ -213,6 +214,15 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
 
     fireEvent.click(within(dialog).getByRole('button', { name: '✨ Nueva partida' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('el toggle claro/oscuro estampa data-theme en la raíz (Fase 7A)', () => {
+    const { container } = render(<App />);
+    const root = container.querySelector('.era-skin');
+    expect(root).toHaveAttribute('data-theme', 'dark');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Modo claro' }));
+    expect(root).toHaveAttribute('data-theme', 'light');
   });
 
   it('guardar y cargar funcionan desde la pantalla del estudio', () => {

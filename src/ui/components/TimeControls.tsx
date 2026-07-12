@@ -8,7 +8,10 @@ const LABELS: Record<Speed, string> = {
   4: '▶▶▶ x4',
 };
 
-/** Controles de tiempo (docs/02 §1): Pausa / x1 / x2 / x4 + paso manual. */
+/**
+ * Controles de tiempo (docs/02 §1) como control segmentado: Pausa / x1 / x2 /
+ * x4 + paso manual. El estado activo usa el verde de acción (tokens 7A).
+ */
 export function TimeControls() {
   const speed = useGameStore((s) => s.speed);
   const setSpeed = useGameStore((s) => s.setSpeed);
@@ -16,26 +19,24 @@ export function TimeControls() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {SPEEDS.map((s) => (
-        <button
-          key={s}
-          type="button"
-          aria-pressed={speed === s}
-          onClick={() => setSpeed(s)}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            speed === s
-              ? 'bg-emerald-500 text-slate-950'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          {LABELS[s]}
-        </button>
-      ))}
-      <button
-        type="button"
-        onClick={advanceWeek}
-        className="rounded-md bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-700"
-      >
+      <div className="flex overflow-hidden rounded-md border border-line bg-raised shadow-[var(--shadow-flat)]">
+        {SPEEDS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={speed === s}
+            onClick={() => setSpeed(s)}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+              speed === s
+                ? 'bg-action-hi text-onbright'
+                : 'text-ink-mute hover:bg-control hover:text-ink'
+            }`}
+          >
+            {LABELS[s]}
+          </button>
+        ))}
+      </div>
+      <button type="button" onClick={advanceWeek} className="btn btn-quiet">
         +1 semana
       </button>
     </div>
