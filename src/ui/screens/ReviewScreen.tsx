@@ -116,7 +116,7 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
       </section>
 
       {act >= 3 && (
-        <section className="review-pop card">
+        <section className="review-pop card" data-tour="review-breakdown">
           <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-ink-mute">
             Por qué esta nota
           </h3>

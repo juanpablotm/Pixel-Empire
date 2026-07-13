@@ -253,6 +253,10 @@ export function applyDemoFromQuery(): boolean {
       speed: 0,
       reviewGameId,
       activeProjectId: 'demo-proj',
+      // Los escaparates son partidas en marcha, nunca el título (Fase 7F).
+      appMode: 'game',
+      sessionActive: true,
+      tutorialStep: null,
     });
 
   if (demo === 'studio') {
@@ -275,6 +279,22 @@ export function applyDemoFromQuery(): boolean {
   if (demo === 'era') {
     seed(studioDemo(), 'estudio', null);
     useGameStore.setState({ eraTransition: era ?? 'E5' });
+    return true;
+  }
+  // El tutorial guiado (7F) en una partida recién fundada; `&step=N` salta
+  // directo a un paso del guion (ui/onboarding/steps.ts) para capturarlo.
+  if (demo === 'tutorial') {
+    const stepParam = Number(params.get('step') ?? '0');
+    useGameStore.setState({
+      game: createInitialState(DEMO_SEED),
+      screen: 'estudio',
+      speed: 0,
+      reviewGameId: null,
+      activeProjectId: null,
+      appMode: 'game',
+      sessionActive: true,
+      tutorialStep: Number.isInteger(stepParam) && stepParam >= 0 ? stepParam : 0,
+    });
     return true;
   }
   return false;

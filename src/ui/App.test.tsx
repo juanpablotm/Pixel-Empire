@@ -12,6 +12,10 @@ function resetStore() {
   useGameStore.setState({
     game: createInitialState(SEED),
     speed: 0,
+    // Los tests de partida entran directos al juego; el título tiene los suyos.
+    appMode: 'game',
+    sessionActive: true,
+    tutorialStep: null,
     screen: 'estudio',
     reviewGameId: null,
     eraTransition: null,
@@ -292,6 +296,51 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     // Clic para descartar.
     fireEvent.click(toast.closest('button') as HTMLElement);
     expect(screen.queryByText(/Empieza el desarrollo de «Toast Quest»/)).not.toBeInTheDocument();
+  });
+
+  it('la app arranca en el título; Nueva partida entra al juego con el tutorial (Fase 7F)', () => {
+    useGameStore.setState({ appMode: 'title', sessionActive: false });
+    render(<App />);
+
+    // La marca de brand/ y el menú con identidad (docs/13 7F).
+    expect(screen.getByRole('heading', { name: /pixel empire/ })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Emblema Pixel Empire' })).toBeInTheDocument();
+    // Sin guardado en este navegador, Cargar se ofrece pero deshabilitado.
+    expect(screen.getByRole('button', { name: '📂 Cargar partida' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: '✨ Nueva partida' }));
+    expect(screen.getByText('Semana 1 · 1980')).toBeInTheDocument();
+
+    // Primera partida del navegador: el tutorial autoarranca (docs/10 §13)...
+    expect(useGameStore.getState().tutorialStep).toBe(0);
+    expect(screen.getByText('Bienvenido al garaje')).toBeInTheDocument();
+
+    // ...y es saltable; una vez saltado no vuelve a autoarrancar.
+    fireEvent.click(screen.getByRole('button', { name: 'Saltar tutorial' }));
+    expect(useGameStore.getState().tutorialStep).toBeNull();
+    expect(localStorage.getItem('pixel-empire:onboarding-done')).toBe('true');
+  });
+
+  it('el tutorial avanza al hacer la acción real sobre la UI, no al leer (Fase 7F)', () => {
+    useGameStore.setState({ tutorialStep: 1 }); // paso "nuevo-juego"
+    render(<App />);
+    expect(screen.getByText('Todo empieza con una idea')).toBeInTheDocument();
+
+    // La guía no bloquea: el clic cae en el botón REAL del estudio y el paso
+    // avanza porque el estado cambió, no por un "siguiente".
+    fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
+    expect(useGameStore.getState().tutorialStep).toBe(2);
+    expect(screen.getByText('El Fit es tu brújula')).toBeInTheDocument();
+  });
+
+  it('Volver al título pausa la partida y Continuar la retoma (Fase 7F)', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
+    fireEvent.click(screen.getByRole('button', { name: '🏠 Volver al título' }));
+
+    expect(useGameStore.getState().speed).toBe(0);
+    fireEvent.click(screen.getByRole('button', { name: '▶ Continuar' }));
+    expect(screen.getByText('Semana 2 · 1980')).toBeInTheDocument();
   });
 
   it('guardar y cargar funcionan desde la pantalla del estudio', () => {

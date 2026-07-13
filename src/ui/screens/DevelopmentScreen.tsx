@@ -13,6 +13,7 @@ import { getGenre } from '../../data/genres';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
 import { Avatar } from '../components/Avatar';
+import { EmptyState } from '../components/EmptyState';
 import { HypeGauge } from '../components/HypeGauge';
 
 /**
@@ -60,12 +61,19 @@ export function DevelopmentScreen() {
 
   if (!project) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-ink-mute">No hay ningún proyecto en desarrollo.</p>
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
+        <EmptyState
+          icon="🎮"
+          actionLabel="💡 Nuevo juego"
+          onAction={() => goTo('concepcion')}
+        >
+          La mesa de desarrollo está libre: en cuanto concibas un juego, aquí vivirán
+          sus fases, su reparto de esfuerzo y sus bugs.
+        </EmptyState>
         <button
           type="button"
           onClick={() => goTo('estudio')}
-          className="rounded-md bg-raised px-4 py-2 text-sm text-ink hover:bg-control"
+          className="btn btn-ghost"
         >
           Volver al estudio
         </button>
@@ -300,7 +308,7 @@ export function DevelopmentScreen() {
       </section>
 
       {/* Reparto de esfuerzo de la fase actual */}
-      <section className="flex flex-col gap-4 card">
+      <section className="flex flex-col gap-4 card" data-tour="focus-sliders">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Reparto de esfuerzo — fase de {phaseSpec.name}
         </h3>

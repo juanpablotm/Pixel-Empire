@@ -17,6 +17,7 @@ import {
 import { balance } from '../../data/balance';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
+import { EmptyState } from '../components/EmptyState';
 import { RollingNumber } from '../components/Motion';
 import { ReputationRadar } from '../components/ReputationRadar';
 
@@ -112,7 +113,10 @@ export function FinancesScreen() {
           Flujo de caja ({chartData.length} semanas)
         </h3>
         {chartData.length < 2 ? (
-          <p className="text-sm text-ink-faint">Aún no hay historial suficiente.</p>
+          <EmptyState icon="📈" compact>
+            A la caja le falta historia: deja correr un par de semanas y este gráfico
+            cobrará vida con tus ingresos y gastos.
+          </EmptyState>
         ) : (
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -200,7 +204,10 @@ export function FinancesScreen() {
           Ingresos por juego
         </h3>
         {game.releasedGames.length === 0 ? (
-          <p className="text-sm text-ink-faint">Todavía no hay juegos lanzados.</p>
+          <EmptyState icon="💿">
+            Cada lanzamiento listará aquí sus unidades y sus ingresos. El primer
+            superventas está por hacerse.
+          </EmptyState>
         ) : (
           <ul className="flex flex-col gap-2 text-sm">
             {[...game.releasedGames].reverse().map((g) => (

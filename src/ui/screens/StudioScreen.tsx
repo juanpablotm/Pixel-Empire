@@ -6,6 +6,7 @@ import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { formatMoney } from '../format';
 import { CommunityFeed } from '../components/CommunityFeed';
+import { EmptyState } from '../components/EmptyState';
 import { StaggerGroup, StaggerItem } from '../components/Motion';
 import { OfficeScene } from '../components/OfficeScene';
 import { ReputationRadar } from '../components/ReputationRadar';
@@ -30,11 +31,13 @@ function hottest(trends: Record<string, { pop: number }>): string | null {
 
 export function StudioScreen() {
   const releasedGames = useGameStore((s) => s.game.releasedGames);
+  const firstProject = useGameStore((s) => s.game.projects[0] ?? null);
   const market = useGameStore((s) => s.game.market);
   const community = useGameStore((s) => s.game.community);
   const log = useGameStore((s) => s.game.log);
   const goTo = useGameStore((s) => s.goTo);
   const openReview = useGameStore((s) => s.openReview);
+  const advanceWeek = useGameStore((s) => s.advanceWeek);
 
   const hotGenre = hottest(market.genres);
   const hotTheme = hottest(market.themes);
@@ -86,7 +89,16 @@ export function StudioScreen() {
         <section className="card">
           <h2 className="card-title">Juegos lanzados</h2>
           {releasedGames.length === 0 ? (
-            <p className="text-ink-faint">Todavía ninguno.</p>
+            <EmptyState icon="🕹️">
+              {firstProject !== null ? (
+                <>
+                  La estantería espera su primer juego: «{firstProject.name}» está en el
+                  horno y estrenará el hueco.
+                </>
+              ) : (
+                'La estantería espera tu primer lanzamiento. Concibe un juego en el escenario de arriba y ponle nombre.'
+              )}
+            </EmptyState>
           ) : (
             <StaggerGroup tag="ul" className="flex flex-col gap-2">
               {[...releasedGames].reverse().map((game) => (
@@ -157,7 +169,10 @@ export function StudioScreen() {
         <section className="card flex-1">
           <h2 className="card-title">Historial</h2>
           {log.length === 0 ? (
-            <p className="text-ink-faint">Sin novedades por ahora.</p>
+            <EmptyState icon="📜" compact actionLabel="Avanzar semana" onAction={advanceWeek}>
+              El diario del estudio está en blanco: cada semana que avances escribirá aquí
+              su línea.
+            </EmptyState>
           ) : (
             <ul className="flex flex-col gap-2 text-sm">
               {[...log].reverse().map((entry, i) => (
@@ -210,6 +225,7 @@ function HeroStage() {
             </p>
             <button
               type="button"
+              data-tour="new-game"
               onClick={() => goTo('concepcion')}
               className="btn btn-primary px-6 py-3 text-base"
             >

@@ -198,3 +198,12 @@ export function loadFromLocalStorage(key = SAVE_STORAGE_KEY): GameState | null {
   const json = localStorage.getItem(key);
   return json === null ? null : deserializeSave(json);
 }
+
+/** true si existe un guardado en este navegador (sin deserializarlo). */
+export function hasSave(key = SAVE_STORAGE_KEY): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}

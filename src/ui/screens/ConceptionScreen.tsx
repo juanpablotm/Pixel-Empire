@@ -333,13 +333,16 @@ export function ConceptionScreen() {
       </section>
 
       <section className="flex flex-wrap items-center justify-between gap-4 card">
-        <FitMeter band={fitBand(fit)} />
+        <div data-tour="fit-meter">
+          <FitMeter band={fitBand(fit)} />
+        </div>
         <div className="text-sm text-ink-mute">
           ~{estimate.weeks} semanas · ~{formatMoney(estimate.cost)} + features ·{' '}
           {isF2p ? 'gratis (MTX)' : `precio ${formatMoney(price)}`}
         </div>
         <button
           type="button"
+          data-tour="start-dev"
           disabled={!canStart}
           onClick={onStart}
           className="btn btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"

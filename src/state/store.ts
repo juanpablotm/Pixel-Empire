@@ -45,6 +45,9 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
  * overlays de era/premios y preferencia de piel) y navegación.
  */
 
+/** Frente de la app (Fase 7F, docs/13 7F): pantalla de título o partida. */
+export type AppMode = 'title' | 'game';
+
 /** Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). */
 export type Screen =
   | 'estudio'
@@ -62,6 +65,16 @@ export interface GameStore {
   game: GameState;
   /** Velocidad de simulación actual (0 = pausa). */
   speed: Speed;
+  /** Frente visible (Fase 7F): título o partida. Presentación pura. */
+  appMode: AppMode;
+  /** true si hay una partida viva en la sesión (habilita "Continuar" en el título). */
+  sessionActive: boolean;
+  /**
+   * Paso actual del tutorial guiado (índice en ui/onboarding/steps.ts);
+   * null = apagado. Capa de GUÍA (Fase 7F): observa el estado real y resalta
+   * acciones reales, nunca crea lógica de juego.
+   */
+  tutorialStep: number | null;
   /** Pantalla visible. */
   screen: Screen;
   /** Juego cuya reseña se muestra en la pantalla de reseña. */
@@ -127,6 +140,16 @@ export interface GameStore {
   resolveDilemma: (kind: DilemmaKind, choice: DilemmaChoice) => void;
   /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
   retire: () => void;
+  /** Entra a la partida desde el título (Fase 7F). */
+  enterGame: () => void;
+  /** Vuelve al título (pausa; la partida sigue viva en memoria). */
+  enterTitle: () => void;
+  /** Arranca el tutorial guiado desde el primer paso (Fase 7F). */
+  startTutorial: () => void;
+  /** Avanza un paso; lo despacha la capa de guía al cumplirse la acción real. */
+  advanceTutorial: () => void;
+  /** Cierra el tutorial (completado o saltado): no vuelve a autoarrancar. */
+  endTutorial: () => void;
   /** Empieza una partida nueva (pausada). */
   newGame: (seed?: number) => void;
   /** Guarda la partida en localStorage. */
@@ -141,6 +164,27 @@ export type ColorTheme = 'dark' | 'light';
 const THEME_STORAGE_KEY = 'pixel-empire:color-theme';
 const MODERN_UI_STORAGE_KEY = 'pixel-empire:modern-ui';
 const REDUCE_MOTION_STORAGE_KEY = 'pixel-empire:reduce-motion';
+const ONBOARDING_STORAGE_KEY = 'pixel-empire:onboarding-done';
+
+/**
+ * true si el tutorial ya se completó o saltó en este navegador (Fase 7F):
+ * al experto no se le vuelve a autoarrancar (docs/10 §13).
+ */
+export function onboardingCompleted(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingDone(): void {
+  try {
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+  } catch {
+    // Sin almacenamiento: el tutorial podrá volver a ofrecerse otra sesión.
+  }
+}
 
 /** Preferencia de tema guardada, si existe y es válida. */
 function storedColorTheme(): ColorTheme {
@@ -182,6 +226,9 @@ const gameLoop = createGameLoop(
 export const useGameStore = create<GameStore>()((set, get) => ({
   game: createInitialState(defaultSeed()),
   speed: 0,
+  appMode: 'title',
+  sessionActive: false,
+  tutorialStep: null,
   screen: 'estudio',
   reviewGameId: null,
   activeProjectId: null,
@@ -375,6 +422,23 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     set((s) => ({ game: retireStudio(s.game), speed: 0, screen: 'legado' }));
   },
 
+  enterGame: () => set({ appMode: 'game', sessionActive: true }),
+
+  enterTitle: () => {
+    gameLoop.setSpeed(0);
+    set({ appMode: 'title', speed: 0 });
+  },
+
+  startTutorial: () => set({ tutorialStep: 0 }),
+
+  advanceTutorial: () =>
+    set((s) => (s.tutorialStep === null ? {} : { tutorialStep: s.tutorialStep + 1 })),
+
+  endTutorial: () => {
+    markOnboardingDone();
+    set({ tutorialStep: null });
+  },
+
   newGame: (seed = defaultSeed()) => {
     gameLoop.setSpeed(0);
     set({
@@ -385,6 +449,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       activeProjectId: null,
       eraTransition: null,
       awardsWeek: null,
+      tutorialStep: null,
     });
   },
 
@@ -405,6 +470,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         activeProjectId: loaded.projects[0]?.id ?? null,
         eraTransition: null,
         awardsWeek: null,
+        tutorialStep: null,
       });
       return true;
     } catch {

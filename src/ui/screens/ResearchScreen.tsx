@@ -5,6 +5,7 @@ import { researchNodes, researchNodeUnlocks } from '../../data/research';
 import { features } from '../../data/features';
 import { genres } from '../../data/genres';
 import { useGameStore } from '../../state/store';
+import { EmptyState } from '../components/EmptyState';
 import { RollingNumber } from '../components/Motion';
 
 /**
@@ -50,7 +51,10 @@ export function ResearchScreen() {
           Personal en I+D (~1 💡 por persona y semana)
         </h3>
         {game.staff.length === 0 ? (
-          <p className="text-ink-faint">No hay plantilla.</p>
+          <EmptyState icon="🧪" compact actionLabel="Ver equipo" onAction={() => goTo('equipo')}>
+            El laboratorio está vacío: trae gente al estudio y asígnala a I+D para
+            generar 💡 cada semana.
+          </EmptyState>
         ) : (
           <div className="flex flex-wrap gap-2">
             {game.staff.map((e) => {

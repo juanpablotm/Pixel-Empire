@@ -18,7 +18,7 @@ export function TimeControls() {
   const advanceWeek = useGameStore((s) => s.advanceWeek);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2" data-tour="time-controls">
       <div className="flex overflow-hidden rounded-md border border-line bg-raised shadow-[var(--shadow-flat)]">
         {SPEEDS.map((s) => (
           <button

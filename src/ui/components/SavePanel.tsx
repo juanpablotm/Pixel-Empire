@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useGameStore } from '../../state/store';
 
-/** Guardar / cargar / nueva partida (docs/08 §7). Solo despacha acciones del store. */
+/** Guardar / cargar / nueva partida / título (docs/08 §7). Solo despacha acciones del store. */
 export function SavePanel() {
   const saveGame = useGameStore((s) => s.saveGame);
   const loadGame = useGameStore((s) => s.loadGame);
   const newGame = useGameStore((s) => s.newGame);
+  const enterTitle = useGameStore((s) => s.enterTitle);
   const [message, setMessage] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -46,6 +47,14 @@ export function SavePanel() {
         }}
       >
         ✨ Nueva partida
+      </button>
+      <button
+        type="button"
+        className={buttonClass}
+        title="Pausa y vuelve al menú principal; la partida sigue viva (Continuar)"
+        onClick={enterTitle}
+      >
+        🏠 Volver al título
       </button>
       {message && (
         // key: el shake de error (docs/10 §6) se repite en cada intento fallido.

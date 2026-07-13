@@ -31,7 +31,12 @@ export function CommunityFeed({
     .slice(0, limit);
 
   if (visible.length === 0) {
-    return <p className="text-sm text-ink-faint">El foro está en silencio. De momento.</p>;
+    return (
+      <p className="text-sm text-ink-faint">
+        🐦 En Chirp todavía nadie habla de ti. Lanza un juego y dales tema de
+        conversación.
+      </p>
+    );
   }
 
   return (

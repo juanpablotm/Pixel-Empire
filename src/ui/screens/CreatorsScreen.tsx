@@ -3,6 +3,7 @@ import { archetypeLabels, type CreatorDef } from '../../data/creators';
 import { balance } from '../../data/balance';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
+import { EmptyState } from '../components/EmptyState';
 import { HypeGauge } from '../components/HypeGauge';
 import { StreamPanel } from '../components/StreamPanel';
 
@@ -157,10 +158,10 @@ export function CreatorsScreen() {
             </p>
           </div>
         ) : (
-          <p className="text-ink-mute">
-            No hay proyecto en desarrollo: las claves se reparten durante la campaña de un
-            lanzamiento (desde la fase de Producción).
-          </p>
+          <EmptyState icon="📣">
+            Sin campaña activa: cuando un proyecto entre en la fase de Producción,
+            repartirás aquí sus claves entre los creadores para encender el hype.
+          </EmptyState>
         )}
       </section>
 

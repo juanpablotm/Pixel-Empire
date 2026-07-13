@@ -123,6 +123,91 @@
 }
 
 /*
+ * Pantalla de título (Fase 7F, docs/13 7F): telón con el glow de la marca y
+ * la rejilla pixel del hero; la corona se ensambla bloque a bloque y el menú
+ * "sube" escalonado. Solo transform/opacity; con movimiento reducido todo
+ * aparece ya colocado (los componentes además omiten las clases).
+ */
+.title-screen {
+  background-color: var(--surface-app);
+  background-image:
+    radial-gradient(
+      60% 45% at 50% 32%,
+      color-mix(in oklab, var(--skin-accent) 16%, transparent) 0%,
+      transparent 70%
+    ),
+    linear-gradient(color-mix(in oklab, var(--text-strong) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--text-strong) 4%, transparent) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    28px 28px,
+    28px 28px;
+}
+
+.title-crown {
+  filter: drop-shadow(0 0 26px color-mix(in oklab, var(--accent-capital) 40%, transparent));
+}
+
+@keyframes title-pixel-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+.title-pixel {
+  animation: title-pixel-in var(--motion-slow) var(--ease-decel) backwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Reutiliza el "rise" del overlay de era: mismo gesto de entrada. */
+.title-rise {
+  animation: era-rise var(--motion-dramatic) var(--ease-decel) backwards;
+}
+
+[data-motion='reduced'] .title-pixel,
+[data-motion='reduced'] .title-rise {
+  animation: none;
+}
+
+/*
+ * Foco del tutorial (Fase 7F): el "agujero" sobre el control real es un
+ * box-shadow gigante (telón) alrededor de un marco que NO captura punteros;
+ * el clic cae en el control de verdad. El desplazamiento entre anclas es una
+ * transición CSS; el anillo que invita a pulsar late solo con
+ * transform/opacity y se apaga con "Reducir animaciones".
+ */
+.tour-spotlight {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid var(--accent-action-hi);
+  border-radius: calc(var(--radius-control) + 4px);
+  box-shadow: 0 0 0 9999px var(--surface-scrim);
+  transition:
+    top var(--motion-base) var(--ease-standard),
+    left var(--motion-base) var(--ease-standard),
+    width var(--motion-base) var(--ease-standard),
+    height var(--motion-base) var(--ease-standard);
+}
+@keyframes tour-ring {
+  0% { opacity: 0.9; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(1.06); }
+}
+.tour-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 2px solid var(--accent-action-hi);
+  border-radius: inherit;
+  animation: tour-ring 1.6s var(--ease-decel) infinite;
+}
+[data-motion='reduced'] .tour-spotlight {
+  transition: none;
+}
+[data-motion='reduced'] .tour-spotlight::after {
+  animation: none;
+  opacity: 0.4;
+}
+
+/*
  * Pieles de UI por era (docs/10 §8, innovación I7): cada piel redefine los
  * tokens semánticos de tokens.css dentro de su ámbito (nada de sobreescribir
  * clases Tailwind). Contraste garantizado; E5 es la base flat sin overrides.

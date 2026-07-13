@@ -1,4 +1,5 @@
 import { useGameStore } from '../state/store';
+import { TutorialGuide } from './onboarding/TutorialGuide';
 import { AwardsModal } from './components/AwardsModal';
 import { CrisisModal } from './components/CrisisModal';
 import { DilemmaModal } from './components/DilemmaModal';
@@ -18,17 +19,21 @@ import { ResearchScreen } from './screens/ResearchScreen';
 import { ReviewScreen } from './screens/ReviewScreen';
 import { StudioScreen } from './screens/StudioScreen';
 import { TeamScreen } from './screens/TeamScreen';
+import { TitleScreen } from './screens/TitleScreen';
 import { EraSkinProvider } from './theme/EraSkinProvider';
 
 /**
- * Raíz de la UI de las Fases 1–6: HUD persistente + la pantalla activa
- * (docs/10 §10.1–10.10) + los overlays (crisis, dilemas, transición de era,
- * gala de premios, game over), todo envuelto en la piel de la era actual
- * (docs/10 §8). Desde la 7D la navegación transiciona con ScreenFade y los
- * eventos notifican con toasts. Solo lee estado con selectores finos y
- * despacha acciones (docs/08 §6).
+ * Raíz de la UI: pantalla de título (Fase 7F) o la partida — HUD persistente
+ * + la pantalla activa (docs/10 §10.1–10.10) + los overlays (crisis, dilemas,
+ * transición de era, gala de premios, game over), todo envuelto en la piel de
+ * la era actual (docs/10 §8). Desde la 7D la navegación transiciona con
+ * ScreenFade y los eventos notifican con toasts; desde la 7F la capa de guía
+ * del tutorial acompaña la primera partida. El cambio título ↔ partida es un
+ * remontaje por rama (entrada animada, sin AnimatePresence). Solo lee estado
+ * con selectores finos y despacha acciones (docs/08 §6).
  */
 export function App() {
+  const appMode = useGameStore((s) => s.appMode);
   const screen = useGameStore((s) => s.screen);
   const seed = useGameStore((s) => s.game.seed);
   const modernUi = useGameStore((s) => s.modernUi);
@@ -37,6 +42,14 @@ export function App() {
   const setColorTheme = useGameStore((s) => s.setColorTheme);
   const reduceMotion = useGameStore((s) => s.reduceMotion);
   const setReduceMotion = useGameStore((s) => s.setReduceMotion);
+
+  if (appMode === 'title') {
+    return (
+      <EraSkinProvider>
+        <TitleScreen />
+      </EraSkinProvider>
+    );
+  }
 
   return (
     <EraSkinProvider>
@@ -70,8 +83,11 @@ export function App() {
         <AwardsModal />
         <GameOverOverlay />
 
+        {/* La guía del tutorial (Fase 7F): resalta controles reales, nunca bloquea. */}
+        <TutorialGuide />
+
         <footer className="flex flex-wrap items-center gap-x-4 border-t border-line px-6 py-3 text-xs text-ink-faint">
-          <span>Fase 7E — pieles de era · semilla {seed}</span>
+          <span>Fase 7F — título y onboarding · semilla {seed}</span>
           <label
             className="ml-auto flex items-center gap-1.5"
             title="Tema claro de la interfaz (con las pieles de era manda la piel)"
