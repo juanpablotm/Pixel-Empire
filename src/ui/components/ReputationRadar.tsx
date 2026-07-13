@@ -1,10 +1,13 @@
 import type { ReputationVector } from '../../core';
 import { segments } from '../../data/segments';
+import { useEasedValues } from '../motion';
 
 /**
  * Reputación como constelación (docs/10 §3, innovación I3): radar SVG de los
  * 6 segmentos (docs/06 §1). De un vistazo se ve a quién amas y a quién
- * traicionas. Solo presentación: los valores vienen del estado.
+ * traicionas. Solo presentación: los valores vienen del estado; cuando
+ * cambian, la constelación se DEFORMA suavemente hacia su nueva silueta
+ * (tween rAF de ui/motion.ts, desacoplado del tick).
  */
 
 interface Props {
@@ -26,9 +29,10 @@ export function ReputationRadar({ reputation, size = 40, labels = false }: Props
   const r = size / 2;
   const total = size + pad * 2;
 
+  const eased = useEasedValues(segments.map((segment) => reputation[segment.id] ?? 50));
   const points = segments.map((segment, i) => {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / segments.length;
-    const value = (reputation[segment.id] ?? 50) / 100;
+    const value = (eased[i] ?? 50) / 100;
     return { segment, angle, value };
   });
 
@@ -49,7 +53,7 @@ export function ReputationRadar({ reputation, size = 40, labels = false }: Props
       viewBox={`0 0 ${total} ${total}`}
       role="img"
       aria-label={`Reputación por segmento — ${summary}`}
-      className="shrink-0"
+      className="review-pop shrink-0"
     >
       <title>{summary}</title>
       <polygon points={outline} fill="none" stroke="currentColor" strokeOpacity={0.25} />

@@ -56,6 +56,8 @@ documentos de diseño numerados (`00`–`12`) están en la carpeta **`docs/`**. 
 | 10 | `docs/10-ui-ux.md` | Pantallas, flujos, sistema de diseño, animación, assets procedurales |
 | 11 | `docs/11-roadmap-fases.md` | Plan de construcción por fases con criterios de aceptación |
 | 12 | `docs/12-decisiones-cerradas.md` | Registro de cierre de decisiones (baseline v1) |
+| 13 | `docs/13-plan-visual-fase7.md` | Plan detallado de la Fase 7 (rework visual, 7A–7G) |
+| 14 | `docs/14-guia-arte-isometrico.md` | ⚠️ OPCIONAL/FUTURO: upgrade isométrico (no es la dirección actual; la vigente es flat) |
 
 ---
 

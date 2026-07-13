@@ -35,6 +35,48 @@ function EffectHints({ deltas }: { deltas: Partial<Record<Segment, number>> }) {
   );
 }
 
+/** El reloj de la crisis (docs/10 §10.8): anillo rojo que mengua con el plazo. */
+function CrisisClock({ crisis, weeksLeft }: { crisis: ActiveCrisis; weeksLeft: number }) {
+  const total = Math.max(1, crisis.deadlineWeek - crisis.startWeek);
+  const frac = Math.max(0, Math.min(1, weeksLeft / total));
+  const r = 20;
+  const c = 2 * Math.PI * r;
+  const urgent = weeksLeft <= 1;
+
+  return (
+    <svg width="64" height="64" viewBox="0 0 56 56" aria-hidden className="shrink-0">
+      <circle cx="28" cy="28" r={r} fill="var(--surface-raised)" stroke="var(--border-line)" strokeWidth="6" />
+      <circle
+        cx="28"
+        cy="28"
+        r={r}
+        fill="none"
+        stroke={urgent ? 'var(--accent-danger-hi)' : 'var(--accent-danger)'}
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - frac)}
+        transform="rotate(-90 28 28)"
+        className={urgent ? 'office-alarm' : undefined}
+        style={{ transition: 'stroke-dashoffset var(--motion-dramatic) var(--ease-standard)' }}
+      />
+      <text
+        x="28"
+        y="27"
+        textAnchor="middle"
+        fontSize="15"
+        fontWeight="700"
+        fill={urgent ? 'var(--accent-danger-hi)' : 'var(--text-strong)'}
+      >
+        {weeksLeft}
+      </text>
+      <text x="28" y="38" textAnchor="middle" fontSize="7.5" fill="var(--text-mute)">
+        sem
+      </text>
+    </svg>
+  );
+}
+
 function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
   const week = useGameStore((s) => s.game.week);
   const capital = useGameStore((s) => s.game.studio.capital);
@@ -49,20 +91,25 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
   const backfireThreshold = balance.community.crisis.culparBackfireSeverity;
 
   return (
-    <div className="w-full max-w-2xl rounded-lg border border-danger/40 bg-panel p-6 shadow-2xl">
-      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-danger">
-        🔥 Crisis en curso · severidad {severityPct} %
-      </p>
-      <h2 className="text-xl font-bold text-ink-hi">{def.headline}</h2>
-      <p className="mt-1 text-sm text-ink-mute">
-        {def.causeText}
-        {gameName && (
-          <>
-            {' '}
-            Juego señalado: <span className="text-ink">«{gameName}»</span>.
-          </>
-        )}
-      </p>
+    <div className="crisis-card w-full max-w-2xl rounded-lg border border-danger/40 bg-panel p-6 shadow-2xl">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-danger">
+            🔥 Crisis en curso · severidad {severityPct} %
+          </p>
+          <h2 className="text-xl font-bold text-ink-hi">{def.headline}</h2>
+          <p className="mt-1 text-sm text-ink-mute">
+            {def.causeText}
+            {gameName && (
+              <>
+                {' '}
+                Juego señalado: <span className="text-ink">«{gameName}»</span>.
+              </>
+            )}
+          </p>
+        </div>
+        <CrisisClock crisis={crisis} weeksLeft={weeksLeft} />
+      </div>
 
       <p
         className={`mt-3 rounded-md px-3 py-2 text-sm font-semibold ${
@@ -73,7 +120,7 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
       </p>
 
       <div className="mt-4 flex flex-col gap-2">
-        {def.responses.map((id) => {
+        {def.responses.map((id, i) => {
           const response = getCrisisResponse(id);
           const cost = Math.round(response.costFactor * crisis.severity);
           const noCash = cost > 0 && capital < cost;
@@ -85,9 +132,10 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
               type="button"
               disabled={noCash}
               onClick={() => respond(crisis.id, id)}
-              className={`flex flex-col items-start gap-1 rounded-md border border-line-hi bg-raised px-4 py-3 text-left transition-colors hover:border-line-hi hover:bg-control ${
+              className={`review-line flex flex-col items-start gap-1 rounded-md border border-line-hi bg-raised px-4 py-3 text-left transition-colors hover:border-line-hi hover:bg-control ${
                 noCash ? 'cursor-not-allowed opacity-50' : ''
               }`}
+              style={{ animationDelay: `${400 + i * 110}ms` }}
             >
               <span className="flex w-full items-baseline justify-between gap-3">
                 <span className="font-semibold text-ink-hi">{response.name}</span>
@@ -125,6 +173,15 @@ export function CrisisModal() {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-scrim p-6">
+      {/* la sala entera late en rojo mientras la crisis siga abierta */}
+      <div
+        aria-hidden
+        className="crisis-scrim pointer-events-none fixed inset-0"
+        style={{
+          background:
+            'radial-gradient(90% 90% at 50% 50%, transparent 40%, color-mix(in oklab, var(--accent-danger) 55%, transparent) 100%)',
+        }}
+      />
       <CrisisCard crisis={crisis} />
     </div>
   );

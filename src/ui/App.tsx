@@ -5,6 +5,7 @@ import { DilemmaModal } from './components/DilemmaModal';
 import { EraTransition } from './components/EraTransition';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { Hud } from './components/Hud';
+import { MoralTint } from './components/MoralScale';
 import { ConceptionScreen } from './screens/ConceptionScreen';
 import { CreatorsScreen } from './screens/CreatorsScreen';
 import { DevelopmentScreen } from './screens/DevelopmentScreen';
@@ -48,6 +49,9 @@ export function App() {
         {screen === 'finanzas' && <FinancesScreen />}
         {screen === 'legado' && <LegacyScreen />}
 
+        {/* La conciencia tiñe la interfaz (docs/10 §7.4): bajo los modales. */}
+        <MoralTint />
+
         {/* La capa social interrumpe cuando toca decidir (docs/07 §4–§5). */}
         <DilemmaModal />
         <CrisisModal />
@@ -57,7 +61,7 @@ export function App() {
         <GameOverOverlay />
 
         <footer className="flex flex-wrap items-center gap-x-4 border-t border-line px-6 py-3 text-xs text-ink-faint">
-          <span>Fase 7A — dirección de arte · semilla {seed}</span>
+          <span>Fase 7B+7C — oficina viva y momentos señal · semilla {seed}</span>
           <label
             className="ml-auto flex items-center gap-1.5"
             title="Tema claro de la interfaz (con las pieles de era manda la piel)"

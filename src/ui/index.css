@@ -186,6 +186,159 @@
   background: linear-gradient(160deg, #020617 0%, #0b1026 55%, #0f0a24 100%);
 }
 
+/*
+ * La Oficina Viva (Fase 7B, docs/10 §5): micro-vida y burbujas. Todo
+ * transform/opacity, todo CSS, nada dentro del tick (docs/08). Los delays
+ * negativos por semilla los pone el componente; aquí viven los bucles.
+ * `--office-play` pausa el "trabajo" (teclear, orbes) cuando el juego está
+ * en pausa; la vida ambiental (café, plantas, humo) sigue respirando.
+ */
+
+.office .office-type,
+.office .office-sip,
+.office .office-idea,
+.office .office-stretch,
+.office .office-cheer,
+.office .office-panic,
+.office .office-smoke,
+.office .office-steam,
+.office .office-float,
+.office .office-alarm,
+.office .office-wash,
+.office .office-led,
+.office .office-confetti,
+.office .office-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes office-type {
+  from { transform: translateY(0); }
+  to { transform: translateY(-1.6px); }
+}
+.office-type {
+  animation: office-type 0.3s ease-in-out infinite alternate;
+  animation-play-state: var(--office-play, running);
+}
+
+@keyframes office-bubble {
+  0% { opacity: 0; transform: translateY(0) scale(0.7); }
+  12% { opacity: 0.95; }
+  75% { opacity: 0.55; }
+  100% { opacity: 0; transform: translateY(-74px) scale(1.1); }
+}
+.office-bubble {
+  animation: office-bubble 3.2s linear infinite;
+  animation-play-state: var(--office-play, running);
+}
+
+.office-paused {
+  --office-play: paused;
+}
+
+@keyframes office-sip {
+  0%, 80%, 100% { transform: translate(0, 0) rotate(0deg); }
+  86%, 93% { transform: translate(26px, -14px) rotate(-16deg); }
+}
+.office-sip { animation: office-sip 9s var(--ease-standard) infinite; }
+
+@keyframes office-steam {
+  0% { opacity: 0; transform: translateY(1px); }
+  35% { opacity: 0.45; }
+  100% { opacity: 0; transform: translateY(-7px); }
+}
+.office-steam { animation: office-steam 2.8s ease-out infinite; }
+
+@keyframes office-idea {
+  0%, 54% { opacity: 0; transform: translateY(3px) scale(0.6); }
+  60% { opacity: 1; transform: translateY(0) scale(1.08); }
+  64%, 78% { opacity: 1; transform: translateY(0) scale(1); }
+  86%, 100% { opacity: 0; transform: translateY(-3px) scale(0.8); }
+}
+.office-idea { animation: office-idea 11s var(--ease-standard) infinite; }
+
+@keyframes office-stretch {
+  0%, 86%, 100% { transform: translateY(0) rotate(0deg); }
+  90%, 96% { transform: translateY(-2.5px) rotate(-6deg); }
+}
+.office-stretch {
+  animation: office-stretch 13s var(--ease-standard) infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes office-cheer {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.office-cheer { animation: office-cheer 0.9s var(--ease-standard) infinite; }
+
+@keyframes office-panic {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1.4px); }
+  75% { transform: translateX(1.4px); }
+}
+.office-panic { animation: office-panic 0.4s linear infinite; }
+
+@keyframes office-alarm {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.office-alarm { animation: office-alarm 1.1s ease-in-out infinite; }
+
+@keyframes office-wash {
+  0%, 100% { opacity: 0.05; }
+  50% { opacity: 0.16; }
+}
+.office-wash { animation: office-wash 1.6s ease-in-out infinite; }
+
+@keyframes office-smoke {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  25% { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(-24px) scale(1.5); }
+}
+.office-smoke { animation: office-smoke 2.6s ease-out infinite; }
+
+@keyframes office-led {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.95; }
+}
+.office-led { animation: office-led 1.4s ease-in-out infinite; }
+
+@keyframes office-float {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+.office-float { animation: office-float 1.4s ease-in-out infinite; }
+
+@keyframes office-confetti {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  82% { opacity: 1; }
+  100% { transform: translateY(280px) rotate(480deg); opacity: 0; }
+}
+.office-confetti { animation: office-confetti 2.8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .office-type,
+  .office-sip,
+  .office-idea,
+  .office-stretch,
+  .office-cheer,
+  .office-panic,
+  .office-smoke,
+  .office-steam,
+  .office-led,
+  .office-float,
+  .office-alarm,
+  .office-wash {
+    animation: none;
+  }
+  .office-wash { opacity: 0.1; }
+  .office-bubble,
+  .office-confetti {
+    display: none;
+  }
+}
+
 /* Transición de era (docs/10 §7.6): beat a pantalla completa. */
 @keyframes era-fade-in {
   from { opacity: 0; }
@@ -204,5 +357,183 @@
   }
   .era-E1::after {
     background: none;
+  }
+}
+
+/*
+ * Momentos señal (Fase 7C, docs/10 §7): gala de reseña, balanza, manómetro,
+ * feed, directo del streamer y crisis. Solo transform/opacity; los tiempos
+ * salen de los tokens de movimiento (docs/10 §4.2).
+ */
+
+/* — Gala de reseña (§7.1) — */
+@keyframes gala-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+.gala-dot { animation: gala-dot 0.9s ease-in-out infinite; }
+
+@keyframes gala-chip-in {
+  from { opacity: 0; transform: rotateX(85deg); }
+  to { opacity: 1; transform: rotateX(0deg); }
+}
+.gala-chip {
+  animation: gala-chip-in var(--motion-slow) var(--ease-decel) backwards;
+  transform-origin: bottom center;
+}
+
+@keyframes gala-verdict-in {
+  0% { opacity: 0; transform: scale(0.8); }
+  70% { transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.gala-verdict { animation: gala-verdict-in var(--motion-slow) var(--ease-decel) backwards; }
+
+@keyframes gala-confetti {
+  0% { transform: translateY(-8vh) rotate(0deg); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(104vh) rotate(540deg); opacity: 0; }
+}
+.gala-confetti {
+  animation: gala-confetti 3.4s var(--ease-accel) forwards;
+}
+
+/* — Balanza "El Precio" (§7.4) — */
+/* El origen de rotación va inline en unidades del viewBox (sin fill-box). */
+.moral-beam {
+  transition: transform var(--motion-dramatic) var(--ease-standard);
+}
+.moral-tint {
+  transition: opacity var(--motion-dramatic) ease;
+}
+
+/* — Manómetro de Hype (§7.5) — */
+.hype-needle {
+  transition: transform var(--motion-slow) var(--ease-standard);
+}
+@keyframes hype-tremble {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(1.6deg); }
+}
+.hype-tremble {
+  animation: hype-tremble 0.18s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+/* — Feed de la comunidad (§7.3) — */
+@keyframes feed-post-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.feed-post { animation: feed-post-in var(--motion-base) var(--ease-decel) backwards; }
+
+@keyframes feed-rage {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
+}
+.feed-rage { animation: feed-rage 1.3s ease-in-out infinite; }
+
+/* — El Directo del streamer (§7.2) — */
+@keyframes stream-chat-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stream-chat-line { animation: stream-chat-in var(--motion-base) var(--ease-decel) backwards; }
+
+@keyframes stream-live-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.stream-live-dot { animation: stream-live-dot 1.2s ease-in-out infinite; }
+
+@keyframes stream-play {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-2px) scaleY(1.35); }
+}
+.stream-play {
+  animation: stream-play 0.7s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+@keyframes stream-static {
+  0% { opacity: 0.5; transform: translateX(0); }
+  25% { opacity: 0.8; transform: translateX(-2px); }
+  50% { opacity: 0.4; transform: translateX(2px); }
+  75% { opacity: 0.9; transform: translateX(-1px); }
+  100% { opacity: 0.5; transform: translateX(0); }
+}
+.stream-static { animation: stream-static 0.24s steps(2, end) infinite; }
+
+@keyframes stream-clip-slam {
+  0% { opacity: 0; transform: scale(2.4) rotate(14deg); }
+  70% { opacity: 1; transform: scale(0.92) rotate(-7deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-6deg); }
+}
+.stream-clip {
+  animation: stream-clip-slam var(--motion-slow) var(--ease-accel) backwards;
+  animation-delay: 2.4s;
+}
+
+@keyframes stream-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.stream-fill {
+  animation: stream-fill 2.2s var(--ease-decel) backwards;
+  transform-origin: left center;
+}
+
+/* — Gestión de crisis (§10.8) — */
+@keyframes crisis-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.crisis-card {
+  animation:
+    review-pop-in var(--motion-slow) var(--ease-decel) backwards,
+    crisis-shake 0.5s var(--ease-standard) var(--motion-slow) backwards;
+}
+
+@keyframes crisis-scrim-pulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.22; }
+}
+.crisis-scrim { animation: crisis-scrim-pulse 1.8s ease-in-out infinite; }
+
+.crisis-clock-hand {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: office-panic 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gala-dot,
+  .gala-chip,
+  .gala-verdict,
+  .moral-beam,
+  .hype-tremble,
+  .feed-post,
+  .feed-rage,
+  .stream-chat-line,
+  .stream-live-dot,
+  .stream-play,
+  .stream-static,
+  .stream-clip,
+  .stream-fill,
+  .crisis-card,
+  .crisis-scrim,
+  .crisis-clock-hand {
+    animation: none;
+    transition: none;
+  }
+  .gala-confetti {
+    display: none;
+  }
+  .feed-rage {
+    opacity: 0.5;
   }
 }

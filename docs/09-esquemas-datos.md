@@ -50,7 +50,7 @@ interface ReleasedGame {
 interface Employee {
   id: string;
   name: string;
-  avatarSeed: string;           // para avatar procedural (doc 10)
+  avatarSeed: string;           // avatar procedural (tarjetas RRHH y escena de oficina por código, doc 10)
   specialty: Specialty;         // 'diseno'|'tecnica'|'arte'|'audio'|'marketing'
   skills: Record<Specialty, number>;   // 0..100 cada una
   traits: string[];             // 1..3 ids de rasgos

@@ -19,14 +19,33 @@ function hashSeed(seed: string): number {
   return h >>> 0;
 }
 
-export function Avatar({ seed, size = 48 }: { seed: string; size?: number }) {
+/** Rasgos visuales de una semilla. Compartido con la Oficina Viva (docs/10 §5)
+ * para que la figura en la escena y la tarjeta de RRHH sean la misma persona. */
+export interface AvatarLook {
+  skin: string;
+  hair: string;
+  shirt: string;
+  bg: string;
+  hairStyle: number;
+  hasGlasses: boolean;
+  hash: number;
+}
+
+export function avatarLook(seed: string): AvatarLook {
   const h = hashSeed(seed);
-  const skin = SKIN_TONES[h % SKIN_TONES.length];
-  const hair = HAIR_COLORS[(h >> 3) % HAIR_COLORS.length];
-  const shirt = SHIRT_COLORS[(h >> 6) % SHIRT_COLORS.length];
-  const bg = BG_COLORS[(h >> 9) % BG_COLORS.length];
-  const hairStyle = (h >> 12) % 4;
-  const hasGlasses = (h >> 14) % 3 === 0;
+  return {
+    skin: SKIN_TONES[h % SKIN_TONES.length],
+    hair: HAIR_COLORS[(h >> 3) % HAIR_COLORS.length],
+    shirt: SHIRT_COLORS[(h >> 6) % SHIRT_COLORS.length],
+    bg: BG_COLORS[(h >> 9) % BG_COLORS.length],
+    hairStyle: (h >> 12) % 4,
+    hasGlasses: (h >> 14) % 3 === 0,
+    hash: h,
+  };
+}
+
+export function Avatar({ seed, size = 48 }: { seed: string; size?: number }) {
+  const { skin, hair, shirt, bg, hairStyle, hasGlasses } = avatarLook(seed);
 
   return (
     <svg

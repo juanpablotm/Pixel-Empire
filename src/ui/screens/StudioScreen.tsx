@@ -6,10 +6,10 @@ import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { formatMoney } from '../format';
 import { CommunityFeed } from '../components/CommunityFeed';
+import { OfficeScene } from '../components/OfficeScene';
 import { ReputationRadar } from '../components/ReputationRadar';
 import { SavePanel } from '../components/SavePanel';
 import { SentimentMeter } from '../components/SentimentMeter';
-import { CROWN_PATH } from '../theme/BrandMark';
 import { skinFor } from '../theme/eraSkins';
 
 /**
@@ -143,7 +143,13 @@ export function StudioScreen() {
           <h2 className="card-title">Comunidad</h2>
           <SentimentMeter sentiment={community.sentiment} />
           <div className="mt-4 max-h-80 overflow-y-auto border-t border-line pt-3">
-            <CommunityFeed posts={community.feed} />
+            <CommunityFeed
+              posts={community.feed}
+              urgent={
+                community.bombs.length > 0 ||
+                community.crises.some((c) => c.status === 'abierta')
+              }
+            />
           </div>
         </section>
         <section className="card flex-1">
@@ -169,9 +175,9 @@ export function StudioScreen() {
 }
 
 /**
- * El escenario del estudio (Fase 7A): área hero protagonista. En la 7B la
- * Oficina Viva ocupará este telón; hoy lo visten el gradiente de la piel de
- * era, la rejilla pixel y la corona como marca de agua.
+ * El escenario del estudio (Fase 7B, docs/10 §5): la Oficina Viva ocupa el
+ * telón hero. Encima, como HUD diegético, la marquesina del proyecto en
+ * curso con su progreso; en silencio, la llamada a inventar el próximo éxito.
  */
 function HeroStage() {
   const projects = useGameStore((s) => s.game.projects);
@@ -184,86 +190,75 @@ function HeroStage() {
 
   return (
     <section className="hero-stage card relative flex min-h-[26rem] flex-col overflow-hidden">
-      {/* La corona como marca de agua en contorno, teñida por la piel de era. */}
-      <svg
-        viewBox="-1 -1 50 38"
-        aria-hidden
-        className="pointer-events-none absolute right-8 top-10 w-48 opacity-[0.08]"
-      >
-        <path
-          d={CROWN_PATH}
-          fill="none"
-          stroke="var(--skin-accent, #34d399)"
-          strokeWidth={1.25}
-          strokeLinejoin="round"
-        />
-      </svg>
-      <div className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="card-title mb-0">
           El estudio{cap > 1 ? ` · proyectos ${projects.length}/${cap}` : ''}
         </h2>
         <span className="text-xs italic text-ink-faint">{skinFor(era, modernUi).flavor}</span>
       </div>
 
-      {idle ? (
-        <div className="relative flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
-          <p className="max-w-sm text-lg text-ink-mute">
-            El estudio está en silencio. Toca inventar el próximo éxito.
-          </p>
-          <button
-            type="button"
-            onClick={() => goTo('concepcion')}
-            className="btn btn-primary px-6 py-3 text-base"
-          >
-            💡 Nuevo juego
-          </button>
-        </div>
-      ) : (
-        <div className="relative mt-auto flex flex-col gap-4 pt-8">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className="rounded-lg border border-line bg-panel/60 p-4 shadow-[var(--shadow-flat)]"
+      {/* La escena sangra hasta los bordes de la tarjeta: es el foco (docs/13 7B). */}
+      <div className="relative -mx-5 -mb-5 mt-3 flex flex-1 flex-col justify-end">
+        <OfficeScene />
+
+        {idle ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center">
+            <p className="max-w-sm rounded-lg border border-line bg-panel/90 px-4 py-2 text-lg text-ink-mute shadow-[var(--shadow-flat)]">
+              El estudio está en silencio. Toca inventar el próximo éxito.
+            </p>
+            <button
+              type="button"
+              onClick={() => goTo('concepcion')}
+              className="btn btn-primary px-6 py-3 text-base"
             >
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <span className="font-mono text-2xl font-bold tracking-tight text-ink-hi">
+              💡 Nuevo juego
+            </button>
+          </div>
+        ) : (
+          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-3">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-line bg-panel/85 px-4 py-2.5 shadow-[var(--shadow-flat)] backdrop-blur-sm"
+              >
+                <span className="font-mono text-lg font-bold tracking-tight text-ink-hi">
                   {project.name}
                 </span>
-                <span className="text-sm text-ink-mute">
+                <span className="text-xs text-ink-mute">
                   Fase de {getDevPhase(project.phase).name} · semana{' '}
                   {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)} ·{' '}
                   {project.assignedStaff.length} 👥
                 </span>
+                <div className="h-2 min-w-24 flex-1 overflow-hidden rounded-full bg-raised">
+                  <div
+                    className="h-full rounded-full bg-action-hi transition-all duration-500"
+                    style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectProject(project.id);
+                    goTo('desarrollo');
+                  }}
+                  className="btn btn-primary px-3 py-1.5 text-xs"
+                >
+                  Ver desarrollo
+                </button>
               </div>
-              <div className="mt-3 h-3 overflow-hidden rounded-full bg-raised">
-                <div
-                  className="h-full rounded-full bg-action-hi transition-all duration-500"
-                  style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
-                />
-              </div>
+            ))}
+            {projects.length < cap && (
               <button
                 type="button"
-                onClick={() => {
-                  selectProject(project.id);
-                  goTo('desarrollo');
-                }}
-                className="btn btn-primary mt-3"
+                onClick={() => goTo('concepcion')}
+                className="btn btn-ghost self-start border-line bg-panel/85"
               >
-                Ver desarrollo
+                💡 Nuevo juego
               </button>
-            </div>
-          ))}
-          {projects.length < cap && (
-            <button
-              type="button"
-              onClick={() => goTo('concepcion')}
-              className="btn btn-ghost self-start"
-            >
-              💡 Nuevo juego
-            </button>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

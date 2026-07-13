@@ -6,9 +6,12 @@ Define la experiencia, el aspecto y **cómo se mueve** el juego: pantallas, fluj
 el jugador siempre entiende qué pasa y por qué.
 
 > **Tesis visual:** todo el aspecto y la animación se generan con **código** (SVG, CSS, canvas,
-> librerías npm). Sin pipeline de arte externo (ni Photoshop, ni IA, ni assets de pago) salvo un puñado
-> de piezas "hero" opcionales en la Fase 7. GDT mismo se hizo con tecnología web; su nivel visual es
-> nuestro **piso**, no nuestro techo.
+> librerías npm) — sin pipeline de arte externo, salvo un puñado de piezas "hero" opcionales (Fase 7).
+> El listón **no** es "una web funcional": es un **juego pulido y jugable**, con un foco visual fuerte,
+> los momentos señal y movimiento. GDT se hizo con tecnología web; su nivel de **acabado** es la referencia.
+>
+> *(Un upgrade opcional futuro a oficina isométrica ilustrada queda documentado en `14`; NO es la
+> dirección actual.)*
 
 ---
 
@@ -25,13 +28,13 @@ el jugador siempre entiende qué pasa y por qué.
 
 ## 2. Estilo visual `[DECIDIDO]`
 
-- **Flat / minimalista moderno:** superficies limpias, tarjetas con esquinas suaves, espacio en blanco
-  generoso, tipografía clara, color usado con intención (estado > decoración).
+- **Flat / minimalista moderno, con acabado de juego.** Superficies limpias, tarjetas con esquinas
+  suaves, buen espacio, tipografía clara, color con intención (estado > decoración). Lo que separa
+  "juego" de "web" son el **foco visual central** (§5), los **momentos señal** (§7) y el **movimiento** (§4).
 - **Paleta semántica:** neutros de base + verde (bueno/integridad), ámbar (precaución), rojo
-  (malo/codicia/crisis), azul (información), y un **dorado** especial reservado al eje "Capital/codicia".
-  Modo claro y oscuro.
-- **Sin pixel art como base.** El "sabor de época" lo dan los datos **y la piel diegética de la UI**
-  (§8), no sprites dibujados a mano.
+  (malo/codicia/crisis), azul (información), y un **dorado** reservado al eje "Capital/codicia". Modo claro y oscuro.
+- **Sin pixel art ni 3D.** El "sabor de época" lo dan los datos y la **piel diegética de la UI** que
+  envejece por era (§8), no sprites dibujados a mano.
 - **Motion con propósito** (todo el detalle en §4–§7).
 
 ---
@@ -43,7 +46,7 @@ convertimos nuestros **sistemas únicos** en lenguaje visual. Estas son las apue
 
 | # | Innovación | Qué hace y a qué sistema sirve |
 |---|-----------|--------------------------------|
-| I1 | **La Oficina Viva** | El diorama de la oficina *refleja el estado del equipo*: moral, crunch, éxito y crisis se ven (cafés que se acumulan, luz nocturna, confeti, plantas que se marchitan). Hace visible lo abstracto de `05`. |
+| I1 | **La Oficina Viva** | Una **escena de estudio por código** (SVG/DOM, flat — no isométrica) *refleja el estado del equipo*: moral, crunch, éxito y crisis se ven (cafés que se acumulan, luz nocturna, confeti, plantas que se marchitan). Hace visible lo abstracto de `05`. |
 | I2 | **La Balanza "El Precio"** | Medidor dual persistente Reputación⚖️Capital que *se inclina* con cada palanca moral y tiñe sutilmente la interfaz (calidez vs dorado frío). El eje de `06`, hecho conciencia visual. |
 | I3 | **Reputación como constelación** | La reputación segmentada (`06`) se muestra como un **radar/aura** de públicos, no como un número. Ves de un vistazo a quién amas y a quién traicionas. |
 | I4 | **El Directo del streamer** | Un panel tipo Twitch donde un creador *juega tu juego en vivo* con **chat que reacciona en tiempo real**. El "bug en directo" (`07`) es un beat animado y dramático. |
@@ -89,8 +92,10 @@ easing:    standard cubic-bezier(.2,0,0,1) · decel cubic-bezier(0,0,0,1)
 
 ## 5. La Oficina Viva `[DECIDIDO · innovación]` (I1)
 
-El corazón visual del juego y homenaje/superación de la oficina de GDT. Es una escena **SVG/DOM**
-(no pixel art) con escritorios y **avatares procedurales** (los de `05`/`09`) que trabajan.
+El corazón visual del juego: una **escena de estudio generada por código** (SVG/DOM, flat) con tu(s)
+**avatar(es) procedurales** (`09`) trabajando, que refleja el estado del equipo. No es isométrica ni
+raster: se compone con formas vectoriales. Es el foco que distingue "juego" de "dashboard", así que hay
+que hacerla **con cariño y detalle** (luz, micro-vida, props), no como un icono más.
 
 ### 5.1 Micro-vida (idle)
 Cada empleado tiene micro-animaciones en bucle desfasadas por semilla: teclear, sorber café, estirarse,
@@ -211,20 +216,22 @@ y desactivable ("UI moderna siempre") en opciones. La transición entre pieles o
 
 ## 9. Estrategia de assets `[DECIDIDO]` (ver también README)
 
-Un tycoon flat necesita **muy pocos** assets raster. Estrategia por capas:
+Un juego flat necesita **muy pocos** assets raster: casi todo son tarjetas, paneles, medidores, la
+escena de oficina por código y gráficos. Estrategia por capas:
 
 | Tipo de asset | Solución | IA/raster |
 |---------------|----------|-----------|
 | **Iconos** (géneros, plataformas, features, estados) | Librería `lucide-react` | No |
-| **Avatares de empleados** | Procedurales por semilla (DiceBear o capas SVG propias) | No |
-| **Oficina y mobiliario** | Escena SVG/DOM por capas, temada por era | No |
+| **Avatares de empleados** (tarjetas de RRHH) | Procedurales por semilla (DiceBear o capas SVG propias) | No |
+| **Escena de oficina** (sala, avatares, props) | Compuesta por código (SVG/DOM), temada por era | No |
 | **Portadas de los juegos creados** | Compositivas: plantilla + paleta por género + tipografía del título + motivo por tema | No |
 | **Logos de plataformas ficticias** | SVG simples hechos a mano/CSS | No |
 | **Gráficos** (ventas, hype, moral) | Recharts en runtime | No |
 | **Arte "hero"** (splash de eras, ilustraciones de eventos) | Pocas piezas; generación por IA con guía de estilo unificada | Sí (pocas) |
 
-El grueso es vector/procedural → consistencia total, peso mínimo, coste cero. La IA se reserva para el
-puñado de piezas hero (Fase 7; ver `11`), y es **prescindible** (se pueden sustituir por ilustración SVG/CSS).
+Todo es vector/procedural (peso mínimo, coste cero, consistencia total). La IA se reserva para el
+puñado de piezas hero **opcionales** (splash de eras, ilustraciones de eventos) en 7G. Un upgrade
+isométrico futuro queda documentado en `14` (opcional, no es la dirección actual).
 
 ---
 
@@ -276,7 +283,7 @@ El **Museo del Legado** (§7.7).
 Base: `StatBar`, `TrendArrow`, `Card`, `MeterFit`, `ChoiceCard`, `EmployeeCard`, `CreatorCard`,
 `ReviewBreakdown`, `TimeControls`, `MoneyFlowChart`, `CrisisModal`, `Toast`, `Tooltip`.
 
-Nuevos (para las innovaciones): `OfficeDiorama` (§5), `FloatingBubbleLayer` (§5.4),
+Nuevos (para las innovaciones): `OfficeScene` (§5), `FloatingBubbleLayer` (§5.4),
 `ReviewRevealSequence` (§7.1), `StreamPanel` + `LiveChat` (§7.2), `CommunityFeed` (§7.3),
 `MoralScale` ("El Precio", §7.4), `ReputationRadar` (§I3), `HypeGauge` (§7.5), `EraSkinProvider` (§8),
 `EraTransition` (§7.6), `ConfettiLayer`, `LegacyMuseum` (§7.7).

@@ -9,10 +9,11 @@ export function SentimentMeter({ sentiment }: { sentiment: number }) {
   const emoji = pct >= 62 ? '😊' : pct <= 38 ? '😡' : '😐';
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="review-pop flex flex-col gap-1">
       <div className="flex items-baseline justify-between text-sm">
         <span className="font-semibold uppercase tracking-wide text-ink-mute">
-          {emoji} Sentimiento
+          <span className={pct <= 38 ? 'inline-block animate-pulse' : 'inline-block'}>{emoji}</span>{' '}
+          Sentimiento
         </span>
         <span className="tabular-nums text-ink">{pct}/100</span>
       </div>

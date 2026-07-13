@@ -83,6 +83,10 @@ y las palancas de codicia (como el crunch) queman a ese mismo equipo.
   peores hábitos. Humor, nostalgia y algo de conciencia.
 - **Período simulado:** desde los primeros ordenadores personales (~1980) hasta un futuro cercano,
   atravesando todas las eras de hardware y modelos de negocio.
+- **Identidad visual:** **flat / minimalista moderno, pero con acabado de juego** — una escena de
+  oficina generada por código como foco visual, rodeada de una UI limpia, con movimiento y momentos
+  señal. El listón es un juego **pulido y jugable**, no un panel de administración. Detalle en `10`.
+  (Un upgrade isométrico ilustrado queda como opción futura en `14`, no es la dirección actual.)
 
 ## 7. Público objetivo
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — Guía de trabajo para Claude Code
+# AGENTS.md — Guía de trabajo para Codex
 
 Proyecto: **Pixel Empire: Game Studio Tycoon**. Simulador de gestión de un estudio de
 videojuegos inspirado en *Game Dev Tycoon*, cuyo eje es el dilema **Reputación ↔ Capital**.
@@ -78,15 +78,13 @@ Para cada fase del roadmap (`11`):
    aceptación (CA) del documento.
 4. **No avanzar** a la siguiente fase hasta que los CA se cumplan y los tests estén verdes.
 
-### Fase actual: **Fase 6 — Eras completas y progresión larga (de la nada a megacorporación)** (ver `11`)
-Objetivo: el Pilar 5 a plena escala. Sistema `02` §4–5 completo. Las 7 eras con sus
-desbloqueos, transiciones y subida del listón de calidad; las 4 etapas de escala hasta
-Corporación (múltiples equipos/proyectos, gestión por políticas); árbol de investigación
-completo (`02` §3); premios/reconocimiento anual (`06` §7); balance de duración de partida
-(`02` §6). Antes de codificar, leer `02`, `09` (esquemas) y `08` (arquitectura).
-
-Fases 1–5 completadas y aprobadas: bucle núcleo (`02`/`03`), personal (`05`), mercado vivo
-(`04`), dilema moral (`06`), comunidad y streamers (`07`).
+### Fase actual: **Fase 3 — Mercado y modas vivas (el mundo respira)** (ver `11`)
+Objetivo: el mercado deja de ser estático. Sistema `04`. Curvas de popularidad de géneros/temas
+evolucionando por tick con panel de tendencias; saturación por lanzamientos similares; hype
+(versión base) con doble filo en ventas/reseñas; ciclos de vida de plataformas + base instalada
+→ tamaño de mercado; reseñas por segmento (introduce el vector de segmentos que `06`
+necesitará); curva de ventas con pico + cola larga, recalculada por tick. Antes de codificar,
+leer `04`, `09` (esquemas) y `08` (arquitectura).
 
 ## 6. Comandos
 
