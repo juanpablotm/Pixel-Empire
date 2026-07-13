@@ -42,11 +42,11 @@
   --text-strong: #f2efe6;
   --text-body: #cdd2d8;
   --text-mute: #93a0b5;
-  --text-faint: #667082;
+  --text-faint: #8a94a4;
   --text-oncolor: #f7f5ec;
 
   /* Acentos. Acción = verde integridad (docs/10 §2). */
-  --accent-action: #23854c;
+  --accent-action: #1e7a45;
   --accent-action-hi: #2e9c5b;
   --accent-ok: #4fb377;
   --accent-warn: #d9a83c;
@@ -97,7 +97,7 @@
   --text-strong: #1a1e27;
   --text-body: #2d323d;
   --text-mute: #5e6675;
-  --text-faint: #8a90a0;
+  --text-faint: #666d80;
   --text-oncolor: #f7f5ec;
 
   --accent-action: #1f7a44;

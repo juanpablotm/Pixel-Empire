@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { getEra } from '../../data/eras';
 import { creators } from '../../data/creators';
 import { features } from '../../data/features';
@@ -11,8 +12,10 @@ import { eraSkins } from '../theme/eraSkins';
 /**
  * La Transición de Era (docs/10 §7.6, innovación I7): beat a pantalla
  * completa que resume qué cambia con la nueva era. Las novedades se derivan
- * del contenido (`appearsInEra`), no de listas duplicadas (docs/09 §7). La
- * piel de la UI ya cambió al entrar aquí (EraSkinProvider).
+ * del contenido (`appearsInEra`), no de listas duplicadas (docs/09 §7).
+ * Mientras el beat está abierto la UI conserva la piel de la era vieja;
+ * al pulsar "Entrar en la nueva era" la piel se transforma (Fase 7E,
+ * EraSkinProvider + data-skin-morph).
  */
 
 function newInEra<T extends { appearsInEra: string }>(items: readonly T[], era: string): T[] {
@@ -35,15 +38,25 @@ export function EraTransition() {
   ].filter((u) => u.names.length > 0);
 
   return (
-    <div className="era-overlay fixed inset-0 z-40 flex items-center justify-center bg-scrim px-6">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Nueva era: ${era.name}`}
+      className="era-overlay fixed inset-0 z-40 flex items-center justify-center px-6"
+      // El acento de la era ENTRANTE (la piel aún es la vieja durante el beat).
+      style={{ '--skin-accent': eraSkins[eraId].beatAccent } as CSSProperties}
+    >
       <div className="flex w-full max-w-2xl flex-col gap-5 text-center">
         <p
           className="era-overlay-line text-sm font-semibold uppercase tracking-[0.3em]"
           style={{ color: 'var(--skin-accent)', animationDelay: '100ms' }}
         >
-          El mundo cambia · {era.period}
+          Nueva era · {era.period}
         </p>
-        <h2 className="era-overlay-line text-4xl font-black" style={{ animationDelay: '300ms' }}>
+        <h2
+          className="era-overlay-line text-4xl font-black text-ink-hi"
+          style={{ animationDelay: '300ms' }}
+        >
           {era.name}
         </h2>
         <p
@@ -62,7 +75,7 @@ export function EraTransition() {
           className="era-overlay-line text-xs italic text-ink-faint"
           style={{ animationDelay: '800ms' }}
         >
-          {eraSkins[eraId].flavor}
+          La interfaz de tu estudio también cambia — {eraSkins[eraId].flavor}
         </p>
 
         {unlocks.length > 0 && (

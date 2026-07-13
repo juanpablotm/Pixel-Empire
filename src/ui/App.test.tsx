@@ -14,6 +14,9 @@ function resetStore() {
     speed: 0,
     screen: 'estudio',
     reviewGameId: null,
+    eraTransition: null,
+    awardsWeek: null,
+    modernUi: false,
     colorTheme: 'dark',
     reduceMotion: false,
   });
@@ -224,6 +227,40 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Modo claro' }));
     expect(root).toHaveAttribute('data-theme', 'light');
+  });
+
+  it('la piel de la UI sigue a la era y "UI moderna siempre" fuerza la flat E5 (Fase 7E, docs/10 §8)', () => {
+    const base = createInitialState(SEED);
+    useGameStore.setState({ game: { ...base, era: 'E6' } });
+    const { container } = render(<App />);
+    const root = container.querySelector('.era-skin');
+    expect(root).toHaveClass('era-E6');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'UI moderna siempre' }));
+    expect(root).toHaveClass('era-E5');
+    expect(localStorage.getItem('pixel-empire:modern-ui')).toBe('true');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'UI moderna siempre' }));
+    expect(root).toHaveClass('era-E6');
+  });
+
+  it('el beat de era anuncia sobre la piel vieja y la transforma al entrar (Fase 7E, docs/10 §7.6)', () => {
+    const base = createInitialState(SEED);
+    // El tick ya cambió de era (E1→E2) y dejó el beat pendiente (store).
+    useGameStore.setState({ game: { ...base, era: 'E2' }, eraTransition: 'E2' });
+    const { container } = render(<App />);
+
+    // Acto 1: el overlay anuncia la nueva era, pero la piel sigue siendo E1.
+    const root = container.querySelector('.era-skin');
+    expect(root).toHaveClass('era-E1');
+    const dialog = screen.getByRole('dialog', { name: 'Nueva era: Las consolas' });
+    expect(within(dialog).getByText(/Nueva era ·/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/empieza la era de los cartuchos/)).toBeInTheDocument();
+
+    // Acto 2: al entrar, el overlay se cierra y la piel se transforma a E2.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Entrar en la nueva era' }));
+    expect(screen.queryByRole('dialog', { name: /Nueva era/ })).not.toBeInTheDocument();
+    expect(root).toHaveClass('era-E2');
   });
 
   it('el toggle "Reducir animaciones" estampa data-motion y persiste (Fase 7D, docs/10 §4.3)', () => {

@@ -71,7 +71,7 @@ export function App() {
         <GameOverOverlay />
 
         <footer className="flex flex-wrap items-center gap-x-4 border-t border-line px-6 py-3 text-xs text-ink-faint">
-          <span>Fase 7D — capa de movimiento · semilla {seed}</span>
+          <span>Fase 7E — pieles de era · semilla {seed}</span>
           <label
             className="ml-auto flex items-center gap-1.5"
             title="Tema claro de la interfaz (con las pieles de era manda la piel)"

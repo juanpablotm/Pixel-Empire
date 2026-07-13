@@ -158,7 +158,7 @@
   --text-strong: #d3fadf;
   --text-body: #a9e8bf;
   --text-mute: #6fbf8c;
-  --text-faint: #4d8f66;
+  --text-faint: #58a374;
   font-family: var(--font-brand);
   position: relative;
 }
@@ -171,74 +171,196 @@
   z-index: 50;
 }
 
-/* E2 — Las consolas: color primario limitado, formas boxy. */
+/* E2 — Las consolas: color primario limitado (azul + rojo), formas boxy y
+   8-bit insinuado: esquinas a hueso, bordes gruesos y sombra dura desplazada
+   (sin ser pixel art literal). */
 .era-E2 {
-  --skin-accent: #818cf8;
+  --skin-accent: #f87171;
   --surface-app: #0a0a1c;
   --surface-panel: #11112b;
   --surface-raised: #1c1c44;
   --surface-control: #26265c;
   --surface-control-hi: #313178;
-  --border-line: #34347a;
-  --border-line-hi: #4a4aa8;
-  --radius-card: 2px;
-  --radius-control: 2px;
+  --border-line: #3d3d8f;
+  --border-line-hi: #5757c2;
+  --radius-card: 0;
+  --radius-control: 0;
+  --shadow-flat: 3px 3px 0 rgba(3, 3, 20, 0.85);
+  --shadow-flat-raised: 4px 4px 0 rgba(3, 3, 20, 0.85);
+}
+.era-E2 .card,
+.era-E2 .chip {
+  border-width: 2px;
+}
+.era-E2 .card-title {
+  color: var(--skin-accent);
+  letter-spacing: 0.18em;
 }
 
-/* E3 — El salto 3D: software beige/gris de los 90, botones con relieve. */
+/* E3 — El salto 3D: software beige/gris CLARO de los 90, botones con relieve
+   y barras de título gruesas (gradiente azul de ventana). Piel clara: todos
+   los tokens de texto/acento se redefinen para AA sobre beige. */
 .era-E3 {
-  --skin-accent: #93c5fd;
-  --surface-app: #22211e;
-  --surface-panel: #2c2b27;
-  --surface-raised: #3a3833;
-  --surface-control: #47443e;
-  --surface-control-hi: #55524a;
-  --border-line: #57534e;
-  --border-line-hi: #6f6a62;
+  --skin-accent: #1f4e9c;
+  --surface-app: #b6b2a2;
+  --surface-panel: #d8d4c6;
+  --surface-raised: #e4e0d3;
+  --surface-control: #c8c4b4;
+  --surface-control-hi: #bab6a5;
+  --surface-scrim: rgba(38, 36, 28, 0.55);
+  --border-line: #8f8b7c;
+  --border-line-hi: #6c685b;
+  --text-strong: #1c1b15;
+  --text-body: #2e2c24;
+  --text-mute: #555246;
+  --text-faint: #4a4438;
+  --accent-action: #1f7a44;
+  --accent-action-hi: #2e9c5b;
+  --accent-ok: #185430;
+  --accent-warn: #6f5008;
+  --accent-warn-hi: #5a4006;
+  --accent-danger: #a3242a;
+  --accent-danger-hi: #8b1e23;
+  --accent-info: #23539c;
+  --accent-capital: #7a5206;
+  --ring-focus: #1f7a44;
+  --shadow-flat: 0 2px 0 rgba(40, 38, 30, 0.25);
+  --shadow-flat-raised: 0 3px 0 rgba(40, 38, 30, 0.3);
+  --radius-card: 0;
+  --radius-control: 0;
+  font-family: Tahoma, 'Segoe UI', system-ui, sans-serif;
 }
-.era-E3 button {
-  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.45), inset 1px 1px 0 rgba(255, 255, 255, 0.12);
+/* Barra de título gruesa de "ventana" 90s: sangra hasta el borde de la
+   tarjeta (compensa su padding de 1.25rem). */
+.era-E3 .card-title {
+  margin: -1.25rem -1.25rem 0.85rem;
+  padding: 0.4rem 0.9rem;
+  background-color: #274b8e;
+  background-image: linear-gradient(90deg, #1e3f7d 0%, #3a68b4 100%);
+  color: #f4f6fb;
+  letter-spacing: 0.08em;
+}
+.era-E3 .btn {
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.28), inset 2px 2px 0 rgba(255, 255, 255, 0.55);
+}
+.era-E3 .btn:active:not(:disabled) {
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.28), inset -2px -2px 0 rgba(255, 255, 255, 0.55);
 }
 
-/* E4 — La red: degradados glossy de la web temprana. */
+/* E4 — La red: web temprana clara con degradados glossy, botones "gel" y
+   esquinas brillantes. Piel clara: tokens redefinidos para AA sobre celeste. */
 .era-E4 {
-  --skin-accent: #22d3ee;
-  --surface-app: #051220;
-  --surface-panel: #0b273c;
-  --surface-raised: #10344e;
-  --surface-control: #144360;
-  --surface-control-hi: #195378;
-  --border-line: #155e75;
-  --border-line-hi: #1f7fa0;
+  --skin-accent: #1a5fb4;
+  --surface-app: transparent;
+  --surface-panel: #eaf3fb;
+  --surface-raised: #dcebf7;
+  --surface-control: #cbdff0;
+  --surface-control-hi: #b9d3e9;
+  --surface-scrim: rgba(16, 42, 66, 0.55);
+  --border-line: #9dbeda;
+  --border-line-hi: #6f9cc4;
+  --text-strong: #10263c;
+  --text-body: #23415c;
+  --text-mute: #47637f;
+  --text-faint: #46617c;
+  --accent-action: #1c7a43;
+  --accent-action-hi: #2e9c5b;
+  --accent-ok: #185430;
+  --accent-warn: #6f5008;
+  --accent-warn-hi: #5a4006;
+  --accent-danger: #a3242a;
+  --accent-danger-hi: #8b1e23;
+  --accent-info: #1a5fb4;
+  --accent-capital: #7a5206;
+  --ring-focus: #1a5fb4;
+  --shadow-flat: 0 2px 0 rgba(23, 52, 80, 0.18);
+  --shadow-flat-raised: 0 3px 0 rgba(23, 52, 80, 0.22);
+  --radius-card: 0.9rem;
+  --radius-control: 0.9rem;
+  background: linear-gradient(180deg, #9cc2e5 0%, #cfe2f3 340px, #e9f2fa 100%);
+  background-color: #cfe2f3;
 }
+/* Reflejo glossy: banda de luz superior en tarjetas, chips y botones gel. */
 .era-E4 .card {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 55%);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 42%);
+}
+.era-E4 .btn,
+.era-E4 .chip {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.14) 46%,
+    rgba(255, 255, 255, 0) 54%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
 }
 
-/* E6 — Servicios y streamers: oscuro con acentos neón. */
+/* En las pieles claras, los combos con tinta constante (`text-onbright`)
+   sobre ámbar/dorado oscurecidos pasan a texto claro para conservar AA. */
+.era-E3 :is(.btn-warn, .bg-warn.text-onbright, .bg-capital.text-onbright),
+.era-E4 :is(.btn-warn, .bg-warn.text-onbright, .bg-capital.text-onbright) {
+  color: var(--text-oncolor);
+}
+
+/* E6 — Servicios y streamers: oscuro casi negro con acentos neón (magenta y
+   cian), bordes y títulos que emiten luz: estética dashboard/streaming. */
 .era-E6 {
   --skin-accent: #e879f9;
-  --surface-app: #0b0413;
-  --surface-panel: #150a24;
-  --surface-raised: #221238;
-  --surface-control: #2e1a4a;
-  --surface-control-hi: #3b2360;
-  --border-line: #582a8f;
-  --border-line-hi: #7a3dc4;
+  --surface-app: #08040f;
+  --surface-panel: #120a20;
+  --surface-raised: #1d1133;
+  --surface-control: #2a1847;
+  --surface-control-hi: #38205e;
+  --border-line: #46257a;
+  --border-line-hi: #6d3ab8;
+  --text-strong: #f6f0ff;
+  --text-body: #ddd3ef;
+  --text-mute: #a99ec8;
+  --text-faint: #8d81b2;
+  --accent-info: #67e8f9;
+  --ring-focus: #67e8f9;
+}
+.era-E6 .card {
+  border-color: color-mix(in oklab, var(--skin-accent) 30%, var(--border-line));
+  box-shadow:
+    0 0 16px color-mix(in oklab, var(--skin-accent) 14%, transparent),
+    var(--shadow-flat);
+}
+.era-E6 .card-title {
+  color: var(--skin-accent);
+  text-shadow: 0 0 9px color-mix(in oklab, var(--skin-accent) 55%, transparent);
 }
 
-/* E7 — El futuro cercano: glassmorphism translúcido, minimal. */
+/* E7 — El futuro cercano: glassmorphism translúcido sobre auroras, bordes de
+   cristal con canto iluminado y desenfoque real (backdrop-filter). */
 .era-E7 {
   --skin-accent: #a5f3fc;
   --surface-app: transparent;
-  --surface-panel: rgba(148, 163, 184, 0.07);
-  --surface-raised: rgba(148, 163, 184, 0.13);
+  --surface-panel: rgba(148, 163, 184, 0.08);
+  --surface-raised: rgba(148, 163, 184, 0.14);
   --surface-control: rgba(148, 163, 184, 0.2);
-  --surface-control-hi: rgba(148, 163, 184, 0.27);
-  --border-line: rgba(165, 243, 252, 0.18);
-  --border-line-hi: rgba(165, 243, 252, 0.32);
+  --surface-control-hi: rgba(148, 163, 184, 0.28);
+  --border-line: rgba(165, 243, 252, 0.2);
+  --border-line-hi: rgba(165, 243, 252, 0.38);
   --radius-card: 1rem;
-  background: linear-gradient(160deg, #020617 0%, #0b1026 55%, #0f0a24 100%);
+  --radius-control: 0.65rem;
+  --shadow-flat: 0 1px 0 rgba(2, 6, 18, 0.35);
+  --shadow-flat-raised: 0 2px 0 rgba(2, 6, 18, 0.4);
+  background:
+    radial-gradient(42% 34% at 12% 0%, rgba(56, 189, 248, 0.18), transparent 70%),
+    radial-gradient(38% 30% at 88% 8%, rgba(167, 139, 250, 0.16), transparent 70%),
+    radial-gradient(50% 42% at 50% 100%, rgba(45, 212, 191, 0.1), transparent 70%),
+    linear-gradient(160deg, #030712 0%, #0b1026 55%, #150f2e 100%);
+  background-color: #070b1c;
+}
+.era-E7 .card,
+.era-E7 :is(header, footer) {
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+}
+.era-E7 .card {
+  background-image: linear-gradient(125deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0) 38%);
+  border-top-color: rgba(255, 255, 255, 0.3);
 }
 
 /*
@@ -392,7 +514,11 @@
   display: none;
 }
 
-/* Transición de era (docs/10 §7.6): beat a pantalla completa. */
+/* Transición de era (docs/10 §7.6): beat a pantalla completa en dos actos.
+   Acto 1: el overlay anuncia la nueva era SOBRE la piel vieja. Es su propio
+   mini-tema nocturno (tokens re-declarados en su ámbito) para garantizar la
+   legibilidad sobre CUALQUIER piel, también las claras (E3/E4); el acento de
+   la era entrante lo inyecta el componente como --skin-accent inline. */
 @keyframes era-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -401,7 +527,17 @@
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.era-overlay { animation: era-fade-in var(--motion-slow) var(--ease-decel) backwards; }
+.era-overlay {
+  animation: era-fade-in var(--motion-slow) var(--ease-decel) backwards;
+  background-color: rgba(7, 9, 14, 0.84);
+  color: var(--text-body);
+  --text-strong: #f2efe6;
+  --text-body: #d5d9de;
+  --text-mute: #a6b0bf;
+  --text-faint: #98a2b1;
+  --surface-panel: rgba(18, 21, 28, 0.85);
+  --border-line: rgba(242, 239, 230, 0.14);
+}
 .era-overlay-line { animation: era-rise var(--motion-dramatic) var(--ease-decel) backwards; }
 [data-motion='reduced'] .era-overlay,
 [data-motion='reduced'] .era-overlay-line {
@@ -409,6 +545,22 @@
 }
 [data-motion='reduced'].era-E1::after {
   background: none;
+}
+
+/* Acto 2: al "entrar en la nueva era" (o al alternar "UI moderna siempre")
+   cambia la clase de piel y EraSkinProvider estampa data-skin-morph durante
+   --motion-dramatic: todos los colores funden a la piel nueva. Solo
+   propiedades de color (nunca layout ni transform); con movimiento reducido
+   el atributo no se estampa y el cambio es instantáneo. */
+.era-skin[data-skin-morph],
+.era-skin[data-skin-morph] * {
+  transition:
+    background-color var(--motion-dramatic) var(--ease-standard),
+    border-color var(--motion-dramatic) var(--ease-standard),
+    color var(--motion-dramatic) var(--ease-standard),
+    fill var(--motion-dramatic) var(--ease-standard),
+    stroke var(--motion-dramatic) var(--ease-standard),
+    box-shadow var(--motion-dramatic) var(--ease-standard);
 }
 
 /*

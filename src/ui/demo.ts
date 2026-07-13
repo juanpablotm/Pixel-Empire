@@ -4,11 +4,13 @@ import {
   type ActiveCrisis,
   type CommunityPost,
   type Employee,
+  type EraId,
   type GameState,
   type Project,
   type ReleasedGame,
   type ReviewLine,
 } from '../core';
+import { eraOrder, getEra } from '../data/eras';
 import { useGameStore, type Screen } from '../state/store';
 
 /**
@@ -225,14 +227,33 @@ function creatorsDemo(): GameState {
   return { ...base, releasedGames: [game] };
 }
 
+/** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
+function withEra(state: GameState, era: EraId): GameState {
+  return { ...state, era, week: getEra(era).startWeek + 26 };
+}
+
 /** Aplica el escaparate pedido por la query string. Devuelve true si sembró algo. */
 export function applyDemoFromQuery(): boolean {
   if (!import.meta.env.DEV) return false;
-  const demo = new URLSearchParams(window.location.search).get('demo');
+  const params = new URLSearchParams(window.location.search);
+  const demo = params.get('demo');
   if (!demo) return false;
 
+  // `&era=E4` recoloca cualquier escaparate en esa era (piel incluida).
+  const eraParam = params.get('era');
+  const era: EraId | null =
+    eraParam !== null && (eraOrder as readonly string[]).includes(eraParam)
+      ? (eraParam as EraId)
+      : null;
+
   const seed = (game: GameState, screen: Screen, reviewGameId: string | null) =>
-    useGameStore.setState({ game, screen, speed: 0, reviewGameId, activeProjectId: 'demo-proj' });
+    useGameStore.setState({
+      game: era !== null ? withEra(game, era) : game,
+      screen,
+      speed: 0,
+      reviewGameId,
+      activeProjectId: 'demo-proj',
+    });
 
   if (demo === 'studio') {
     seed(studioDemo(), 'estudio', null);
@@ -248,6 +269,12 @@ export function applyDemoFromQuery(): boolean {
   }
   if (demo === 'creators') {
     seed(creatorsDemo(), 'creadores', null);
+    return true;
+  }
+  // El beat de transición de era (7E): overlay sobre la piel de la era vieja.
+  if (demo === 'era') {
+    seed(studioDemo(), 'estudio', null);
+    useGameStore.setState({ eraTransition: era ?? 'E5' });
     return true;
   }
   return false;
