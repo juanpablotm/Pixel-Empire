@@ -15,6 +15,7 @@ function resetStore() {
     screen: 'estudio',
     reviewGameId: null,
     colorTheme: 'dark',
+    reduceMotion: false,
   });
 }
 
@@ -223,6 +224,37 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Modo claro' }));
     expect(root).toHaveAttribute('data-theme', 'light');
+  });
+
+  it('el toggle "Reducir animaciones" estampa data-motion y persiste (Fase 7D, docs/10 §4.3)', () => {
+    const { container } = render(<App />);
+    const root = container.querySelector('.era-skin');
+    expect(root).toHaveAttribute('data-motion', 'full');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Reducir animaciones' }));
+    expect(root).toHaveAttribute('data-motion', 'reduced');
+    expect(localStorage.getItem('pixel-empire:reduce-motion')).toBe('true');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Reducir animaciones' }));
+    expect(root).toHaveAttribute('data-motion', 'full');
+    expect(localStorage.getItem('pixel-empire:reduce-motion')).toBe('false');
+  });
+
+  it('los eventos nuevos del historial aparecen como toast descartable (Fase 7D, docs/10 §6)', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
+    fireEvent.change(screen.getByLabelText('Nombre del juego'), {
+      target: { value: 'Toast Quest' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
+
+    // El evento 'proyecto' del historial se notifica sin interrumpir.
+    const toast = screen.getByText(/Empieza el desarrollo de «Toast Quest»/);
+    expect(toast).toBeInTheDocument();
+
+    // Clic para descartar.
+    fireEvent.click(toast.closest('button') as HTMLElement);
+    expect(screen.queryByText(/Empieza el desarrollo de «Toast Quest»/)).not.toBeInTheDocument();
   });
 
   it('guardar y cargar funcionan desde la pantalla del estudio', () => {

@@ -69,7 +69,7 @@ export function DilemmaModal() {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-scrim p-6">
-      <div className="w-full max-w-xl rounded-lg border border-warn/60 bg-panel p-6 shadow-2xl">
+      <div className="review-pop w-full max-w-xl rounded-lg border border-warn/60 bg-panel p-6 shadow-2xl">
         <p className="mb-1 text-xs font-bold uppercase tracking-widest text-warn">
           Dilema de pre-lanzamiento · «{projectName}»
         </p>

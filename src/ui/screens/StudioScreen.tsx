@@ -6,6 +6,7 @@ import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { formatMoney } from '../format';
 import { CommunityFeed } from '../components/CommunityFeed';
+import { StaggerGroup, StaggerItem } from '../components/Motion';
 import { OfficeScene } from '../components/OfficeScene';
 import { ReputationRadar } from '../components/ReputationRadar';
 import { SavePanel } from '../components/SavePanel';
@@ -87,9 +88,10 @@ export function StudioScreen() {
           {releasedGames.length === 0 ? (
             <p className="text-ink-faint">Todavía ninguno.</p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <StaggerGroup tag="ul" className="flex flex-col gap-2">
               {[...releasedGames].reverse().map((game) => (
-                <li
+                <StaggerItem
+                  tag="li"
                   key={game.id}
                   className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-line bg-raised/60 px-3 py-2"
                 >
@@ -120,9 +122,9 @@ export function StudioScreen() {
                   >
                     Ver reseña
                   </button>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </StaggerGroup>
           )}
         </section>
 
@@ -231,8 +233,8 @@ function HeroStage() {
                 </span>
                 <div className="h-2 min-w-24 flex-1 overflow-hidden rounded-full bg-raised">
                   <div
-                    className="h-full rounded-full bg-action-hi transition-all duration-500"
-                    style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
+                    className="meter-fill h-full rounded-full bg-action-hi"
+                    style={{ transform: `scaleX(${projectProgress(project)})` }}
                   />
                 </div>
                 <button

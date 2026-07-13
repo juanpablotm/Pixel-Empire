@@ -1,24 +1,33 @@
+import { useEffect } from 'react';
 import { getAwardCategory } from '../../data/awards';
 import { useGameStore } from '../../state/store';
+import { celebrateAwards } from '../confetti';
+import { PopIn } from './Motion';
 
 /**
  * La gala anual de premios (docs/06 §7): modal que celebra las categorías
- * ganadas esta semana. Solo muestra estado; la ceremonia la resolvió el tick
- * (core/systems/awards.ts).
+ * ganadas esta semana, con pop de entrada y lluvia dorada (Fase 7D). Solo
+ * muestra estado; la ceremonia la resolvió el tick (core/systems/awards.ts).
  */
 export function AwardsModal() {
   const awardsWeek = useGameStore((s) => s.awardsWeek);
   const dismiss = useGameStore((s) => s.dismissAwards);
   const awards = useGameStore((s) => s.game.studio.awards);
-  if (awardsWeek === null) return null;
 
-  const won = awards.filter((a) => a.week === awardsWeek);
-  if (won.length === 0) return null;
+  const won = awardsWeek === null ? [] : awards.filter((a) => a.week === awardsWeek);
+  const show = won.length > 0;
+
+  // El confeti lo dispara la UI al abrirse el modal, nunca el tick (docs/08).
+  useEffect(() => {
+    if (show) celebrateAwards();
+  }, [show]);
+
+  if (!show) return null;
   const year = won[0].year;
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-scrim px-6">
-      <div className="w-full max-w-lg rounded-lg border border-capital/50 bg-panel p-6 text-center">
+      <PopIn className="w-full max-w-lg rounded-lg border border-capital/50 bg-panel p-6 text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-capital">
           Gala anual · {year}
         </p>
@@ -48,7 +57,7 @@ export function AwardsModal() {
         >
           Recoger los premios
         </button>
-      </div>
+      </PopIn>
     </div>
   );
 }

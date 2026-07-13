@@ -13,6 +13,7 @@ import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
 import { Avatar } from '../components/Avatar';
 import { EmployeeCard } from '../components/EmployeeCard';
+import { StaggerGroup, StaggerItem } from '../components/Motion';
 
 /**
  * Pantalla de equipo (docs/10 §10.6): plantilla con tarjetas de empleado y
@@ -198,11 +199,13 @@ export function TeamScreen() {
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">Plantilla</h3>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <StaggerGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {staff.map((employee) => (
-            <EmployeeCard key={employee.id} employee={employee} />
+            <StaggerItem key={employee.id}>
+              <EmployeeCard employee={employee} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerGroup>
       </section>
 
       <section className="flex flex-col gap-3">
@@ -222,11 +225,13 @@ export function TeamScreen() {
           </p>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <StaggerGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {candidates.map((candidate) => (
-                <CandidateCard key={candidate.id} candidate={candidate} />
+                <StaggerItem key={candidate.id}>
+                  <CandidateCard candidate={candidate} />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerGroup>
             <p className="text-xs text-ink-faint">
               El pool se renueva cada {balance.staff.candidates.refreshWeeks} semanas. Coste de
               contratación: {balance.staff.hiringCostWeeks} semanas de salario.

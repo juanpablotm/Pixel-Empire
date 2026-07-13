@@ -7,6 +7,7 @@ export function SavePanel() {
   const loadGame = useGameStore((s) => s.loadGame);
   const newGame = useGameStore((s) => s.newGame);
   const [message, setMessage] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const buttonClass =
     'rounded-md bg-raised px-3 py-1.5 text-sm font-medium text-ink hover:bg-control';
@@ -18,6 +19,7 @@ export function SavePanel() {
         className={buttonClass}
         onClick={() => {
           saveGame();
+          setFailed(false);
           setMessage('Partida guardada.');
         }}
       >
@@ -27,7 +29,9 @@ export function SavePanel() {
         type="button"
         className={buttonClass}
         onClick={() => {
-          setMessage(loadGame() ? 'Partida cargada.' : 'No hay partida guardada.');
+          const ok = loadGame();
+          setFailed(!ok);
+          setMessage(ok ? 'Partida cargada.' : 'No hay partida guardada.');
         }}
       >
         📂 Cargar
@@ -37,13 +41,19 @@ export function SavePanel() {
         className={buttonClass}
         onClick={() => {
           newGame();
+          setFailed(false);
           setMessage('Partida nueva.');
         }}
       >
         ✨ Nueva partida
       </button>
       {message && (
-        <span role="status" className="text-sm text-ink-mute">
+        // key: el shake de error (docs/10 §6) se repite en cada intento fallido.
+        <span
+          key={`${message}-${failed}`}
+          role="status"
+          className={`text-sm ${failed ? 'shake-error inline-block text-danger' : 'text-ink-mute'}`}
+        >
           {message}
         </span>
       )}

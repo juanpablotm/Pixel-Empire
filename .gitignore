@@ -5,6 +5,9 @@ node_modules/
 dist/
 coverage/
 
+# Capturas de verificación visual (docs/13): locales, no se versionan
+capturas/
+
 # Editor / SO
 .DS_Store
 *.local

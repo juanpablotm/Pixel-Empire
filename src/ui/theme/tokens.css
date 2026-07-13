@@ -152,6 +152,11 @@
 
   --radius-md: var(--radius-control);
   --radius-lg: var(--radius-card);
+
+  /* Las utilidades transition-* de Tailwind heredan los tokens de movimiento
+     (docs/10 §4.2): ningún hover con duración suelta. */
+  --default-transition-duration: var(--motion-fast);
+  --default-transition-timing-function: var(--ease-standard);
 }
 
 /* ── 4. Componentes base compartidos (docs/10 §11) ───────────────────────── */

@@ -5,6 +5,7 @@ import { useGameStore } from '../../state/store';
 import { formatMoney, formatWeek } from '../format';
 import { BrandLockup } from '../theme/BrandMark';
 import { MoralScale } from './MoralScale';
+import { RollingNumber } from './Motion';
 import { ReputationRadar } from './ReputationRadar';
 import { TimeControls } from './TimeControls';
 
@@ -34,7 +35,10 @@ export function Hud() {
       </h1>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-        <span className="chip font-mono tabular-nums text-ink-hi">{formatWeek(week)}</span>
+        {/* key={week}: el chip re-monta y "late" con cada tick (docs/10 §6). */}
+        <span key={week} className="chip tick-beat font-mono tabular-nums text-ink-hi">
+          {formatWeek(week)}
+        </span>
         <span className="chip" title={`${era} · ${getEra(era).period}`}>
           🌍 {getEra(era).name}
         </span>
@@ -47,7 +51,7 @@ export function Hud() {
             inTheRed ? 'animate-pulse text-danger' : 'text-capital'
           }`}
         >
-          {formatMoney(capital)}
+          <RollingNumber value={capital} format={formatMoney} />
           {loan > 0 && <span aria-hidden> 🏦</span>}
         </button>
         <MoralScale />

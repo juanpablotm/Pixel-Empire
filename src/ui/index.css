@@ -3,9 +3,59 @@
 
 /*
  * Animaciones baseline (docs/10 §4): solo transform/opacity, desacopladas del
- * tick del núcleo, con los tokens de movimiento de ui/theme/tokens.css y
- * respetando prefers-reduced-motion.
+ * tick del núcleo, con los tokens de movimiento de ui/theme/tokens.css.
+ *
+ * Movimiento reducido (Fase 7D): EraSkinProvider estampa
+ * `data-motion="reduced"` en la raíz cuando el usuario activa el toggle
+ * "Reducir animaciones" O su sistema pide `prefers-reduced-motion`. Todas las
+ * reglas que apagan animación cuelgan de ese atributo (una sola fuente, sin
+ * duplicar bloques @media). Se apaga lo no esencial (partículas, bucles,
+ * desplazamientos) y se conservan los cambios de estado esenciales.
+ *
+ * Los tokens (--motion-*, --ease-*) gobiernan transiciones y animaciones de
+ * una pasada; los bucles ambientales (idle de la oficina, pulsos, LED) tienen
+ * su período propio — su escala temporal es de escena, no de transición.
  */
+
+/* Latido del reloj con cada tick (docs/10 §6): la fecha "late" al avanzar
+   la semana; el componente re-monta el chip con key={week}. */
+@keyframes tick-beat {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+.tick-beat {
+  animation: tick-beat var(--motion-fast) var(--ease-standard);
+}
+
+/* Relleno de barras/medidores (docs/10 §6): SOLO transform (docs/10 §4.3).
+   La barra ocupa el 100% y se escala al valor con origen a la izquierda. */
+.meter-fill {
+  width: 100%;
+  transform-origin: left center;
+  transition: transform var(--motion-slow) var(--ease-standard);
+}
+
+/* Shake sutil de error (docs/10 §6: instant×3). */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+}
+.shake-error {
+  animation: shake-x calc(var(--motion-instant) * 3) linear;
+}
+
+/* "Pop" de recompensa (docs/10 §6): desbloqueo, compra de investigación. */
+@keyframes reward-pop {
+  0% { transform: scale(0.86); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.reward-pop {
+  animation: reward-pop var(--motion-slow) var(--ease-decel);
+}
 
 @keyframes review-line-in {
   from {
@@ -37,11 +87,16 @@
   animation: review-pop-in var(--motion-slow) var(--ease-decel) backwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .review-line,
-  .review-pop {
-    animation: none;
-  }
+[data-motion='reduced'] .review-line,
+[data-motion='reduced'] .review-pop,
+[data-motion='reduced'] .tick-beat,
+[data-motion='reduced'] .shake-error,
+[data-motion='reduced'] .reward-pop,
+[data-motion='reduced'] .animate-pulse {
+  animation: none;
+}
+[data-motion='reduced'] .meter-fill {
+  transition: none;
 }
 
 /*
@@ -317,26 +372,24 @@
 }
 .office-confetti { animation: office-confetti 2.8s linear infinite; }
 
-@media (prefers-reduced-motion: reduce) {
-  .office-type,
-  .office-sip,
-  .office-idea,
-  .office-stretch,
-  .office-cheer,
-  .office-panic,
-  .office-smoke,
-  .office-steam,
-  .office-led,
-  .office-float,
-  .office-alarm,
-  .office-wash {
-    animation: none;
-  }
-  .office-wash { opacity: 0.1; }
-  .office-bubble,
-  .office-confetti {
-    display: none;
-  }
+[data-motion='reduced'] .office-type,
+[data-motion='reduced'] .office-sip,
+[data-motion='reduced'] .office-idea,
+[data-motion='reduced'] .office-stretch,
+[data-motion='reduced'] .office-cheer,
+[data-motion='reduced'] .office-panic,
+[data-motion='reduced'] .office-smoke,
+[data-motion='reduced'] .office-steam,
+[data-motion='reduced'] .office-led,
+[data-motion='reduced'] .office-float,
+[data-motion='reduced'] .office-alarm,
+[data-motion='reduced'] .office-wash {
+  animation: none;
+}
+[data-motion='reduced'] .office-wash { opacity: 0.1; }
+[data-motion='reduced'] .office-bubble,
+[data-motion='reduced'] .office-confetti {
+  display: none;
 }
 
 /* Transición de era (docs/10 §7.6): beat a pantalla completa. */
@@ -350,14 +403,12 @@
 }
 .era-overlay { animation: era-fade-in var(--motion-slow) var(--ease-decel) backwards; }
 .era-overlay-line { animation: era-rise var(--motion-dramatic) var(--ease-decel) backwards; }
-@media (prefers-reduced-motion: reduce) {
-  .era-overlay,
-  .era-overlay-line {
-    animation: none;
-  }
-  .era-E1::after {
-    background: none;
-  }
+[data-motion='reduced'] .era-overlay,
+[data-motion='reduced'] .era-overlay-line {
+  animation: none;
+}
+[data-motion='reduced'].era-E1::after {
+  background: none;
 }
 
 /*
@@ -389,14 +440,7 @@
 }
 .gala-verdict { animation: gala-verdict-in var(--motion-slow) var(--ease-decel) backwards; }
 
-@keyframes gala-confetti {
-  0% { transform: translateY(-8vh) rotate(0deg); opacity: 1; }
-  85% { opacity: 1; }
-  100% { transform: translateY(104vh) rotate(540deg); opacity: 0; }
-}
-.gala-confetti {
-  animation: gala-confetti 3.4s var(--ease-accel) forwards;
-}
+/* El confeti del hitazo es canvas-confetti desde la 7D (ui/confetti.ts). */
 
 /* — Balanza "El Precio" (§7.4) — */
 /* El origen de rotación va inline en unidades del viewBox (sin fill-box). */
@@ -510,30 +554,25 @@
   animation: office-panic 0.9s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gala-dot,
-  .gala-chip,
-  .gala-verdict,
-  .moral-beam,
-  .hype-tremble,
-  .feed-post,
-  .feed-rage,
-  .stream-chat-line,
-  .stream-live-dot,
-  .stream-play,
-  .stream-static,
-  .stream-clip,
-  .stream-fill,
-  .crisis-card,
-  .crisis-scrim,
-  .crisis-clock-hand {
-    animation: none;
-    transition: none;
-  }
-  .gala-confetti {
-    display: none;
-  }
-  .feed-rage {
-    opacity: 0.5;
-  }
+[data-motion='reduced'] .gala-dot,
+[data-motion='reduced'] .gala-chip,
+[data-motion='reduced'] .gala-verdict,
+[data-motion='reduced'] .moral-beam,
+[data-motion='reduced'] .hype-tremble,
+[data-motion='reduced'] .feed-post,
+[data-motion='reduced'] .feed-rage,
+[data-motion='reduced'] .stream-chat-line,
+[data-motion='reduced'] .stream-live-dot,
+[data-motion='reduced'] .stream-play,
+[data-motion='reduced'] .stream-static,
+[data-motion='reduced'] .stream-clip,
+[data-motion='reduced'] .stream-fill,
+[data-motion='reduced'] .crisis-card,
+[data-motion='reduced'] .crisis-scrim,
+[data-motion='reduced'] .crisis-clock-hand {
+  animation: none;
+  transition: none;
+}
+[data-motion='reduced'] .feed-rage {
+  opacity: 0.5;
 }

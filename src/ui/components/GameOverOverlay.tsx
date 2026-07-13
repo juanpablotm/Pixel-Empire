@@ -23,7 +23,7 @@ export function GameOverOverlay() {
       className="fixed inset-0 z-50 flex items-center justify-center bg-scrim px-6"
     >
       <div
-        className={`flex max-w-md flex-col items-center gap-4 rounded-lg border p-8 text-center ${
+        className={`review-pop flex max-w-md flex-col items-center gap-4 rounded-lg border p-8 text-center ${
           bankrupt ? 'border-danger/30' : 'border-line-hi'
         } bg-panel`}
       >

@@ -6,6 +6,8 @@ import { EraTransition } from './components/EraTransition';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { Hud } from './components/Hud';
 import { MoralTint } from './components/MoralScale';
+import { ScreenFade } from './components/Motion';
+import { Toasts } from './components/Toasts';
 import { ConceptionScreen } from './screens/ConceptionScreen';
 import { CreatorsScreen } from './screens/CreatorsScreen';
 import { DevelopmentScreen } from './screens/DevelopmentScreen';
@@ -22,8 +24,9 @@ import { EraSkinProvider } from './theme/EraSkinProvider';
  * Raíz de la UI de las Fases 1–6: HUD persistente + la pantalla activa
  * (docs/10 §10.1–10.10) + los overlays (crisis, dilemas, transición de era,
  * gala de premios, game over), todo envuelto en la piel de la era actual
- * (docs/10 §8). Solo lee estado con selectores finos y despacha acciones
- * (docs/08 §6).
+ * (docs/10 §8). Desde la 7D la navegación transiciona con ScreenFade y los
+ * eventos notifican con toasts. Solo lee estado con selectores finos y
+ * despacha acciones (docs/08 §6).
  */
 export function App() {
   const screen = useGameStore((s) => s.screen);
@@ -32,25 +35,32 @@ export function App() {
   const setModernUi = useGameStore((s) => s.setModernUi);
   const colorTheme = useGameStore((s) => s.colorTheme);
   const setColorTheme = useGameStore((s) => s.setColorTheme);
+  const reduceMotion = useGameStore((s) => s.reduceMotion);
+  const setReduceMotion = useGameStore((s) => s.setReduceMotion);
 
   return (
     <EraSkinProvider>
       <div className="flex min-h-screen flex-col bg-app text-ink">
         <Hud />
 
-        {screen === 'estudio' && <StudioScreen />}
-        {screen === 'concepcion' && <ConceptionScreen />}
-        {screen === 'desarrollo' && <DevelopmentScreen />}
-        {screen === 'resena' && <ReviewScreen />}
-        {screen === 'equipo' && <TeamScreen />}
-        {screen === 'mercado' && <MarketScreen />}
-        {screen === 'creadores' && <CreatorsScreen />}
-        {screen === 'investigacion' && <ResearchScreen />}
-        {screen === 'finanzas' && <FinancesScreen />}
-        {screen === 'legado' && <LegacyScreen />}
+        <ScreenFade id={screen}>
+          {screen === 'estudio' && <StudioScreen />}
+          {screen === 'concepcion' && <ConceptionScreen />}
+          {screen === 'desarrollo' && <DevelopmentScreen />}
+          {screen === 'resena' && <ReviewScreen />}
+          {screen === 'equipo' && <TeamScreen />}
+          {screen === 'mercado' && <MarketScreen />}
+          {screen === 'creadores' && <CreatorsScreen />}
+          {screen === 'investigacion' && <ResearchScreen />}
+          {screen === 'finanzas' && <FinancesScreen />}
+          {screen === 'legado' && <LegacyScreen />}
+        </ScreenFade>
 
         {/* La conciencia tiñe la interfaz (docs/10 §7.4): bajo los modales. */}
         <MoralTint />
+
+        {/* Los eventos avisan sin interrumpir (docs/10 §6). */}
+        <Toasts />
 
         {/* La capa social interrumpe cuando toca decidir (docs/07 §4–§5). */}
         <DilemmaModal />
@@ -61,7 +71,7 @@ export function App() {
         <GameOverOverlay />
 
         <footer className="flex flex-wrap items-center gap-x-4 border-t border-line px-6 py-3 text-xs text-ink-faint">
-          <span>Fase 7B+7C — oficina viva y momentos señal · semilla {seed}</span>
+          <span>Fase 7D — capa de movimiento · semilla {seed}</span>
           <label
             className="ml-auto flex items-center gap-1.5"
             title="Tema claro de la interfaz (con las pieles de era manda la piel)"
@@ -82,6 +92,18 @@ export function App() {
               className="accent-action-hi"
             />
             UI moderna siempre
+          </label>
+          <label
+            className="flex items-center gap-1.5"
+            title="Apaga partículas, desplazamientos y bucles; conserva los cambios de estado esenciales (docs/10 §4.3)"
+          >
+            <input
+              type="checkbox"
+              checked={reduceMotion}
+              onChange={(e) => setReduceMotion(e.target.checked)}
+              className="accent-action-hi"
+            />
+            Reducir animaciones
           </label>
         </footer>
       </div>

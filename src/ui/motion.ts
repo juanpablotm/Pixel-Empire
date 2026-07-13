@@ -1,21 +1,65 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useGameStore } from '../state/store';
 
 /**
  * Utilidades de movimiento (docs/10 §4): tweens con requestAnimationFrame,
  * SIEMPRE desacoplados del tick del núcleo (docs/08). Son presentación pura:
  * interpolan hacia valores que ya viven en el estado, nunca los calculan.
  *
- * Si el usuario pide menos movimiento (prefers-reduced-motion) o el entorno
- * no anima (jsdom en tests: sin matchMedia ni rAF fiables), los valores
- * saltan directamente a su destino — el contenido final es idéntico.
+ * Si el usuario pide menos movimiento (prefers-reduced-motion o el toggle
+ * "Reducir animaciones", Fase 7D) o el entorno no anima (jsdom en tests: sin
+ * matchMedia ni rAF fiables), los valores saltan directamente a su destino —
+ * el contenido final es idéntico.
  */
 
-/** true si las animaciones JS deben saltarse (accesibilidad o entorno de test). */
+/** Preferencia del SO (`prefers-reduced-motion`); false si no hay matchMedia. */
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * true si el usuario pide menos movimiento: el toggle propio "Reducir
+ * animaciones" (store) o la preferencia del sistema. Es la señal que estampa
+ * `data-motion` en la raíz (las reglas CSS cuelgan de ese atributo).
+ */
+export function reducedMotionPreferred(): boolean {
+  return useGameStore.getState().reduceMotion || prefersReducedMotion();
+}
+
+/** true si las animaciones JS deben saltarse (preferencia o entorno de test). */
 export function motionDisabled(): boolean {
   if (typeof window === 'undefined') return true;
   if (typeof window.requestAnimationFrame !== 'function') return true;
   if (typeof window.matchMedia !== 'function') return true;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return reducedMotionPreferred();
+}
+
+/** Suscripción combinada: cambia el store o la media query → re-evaluar. */
+function subscribeReducedMotion(onChange: () => void): () => void {
+  const unsubscribe = useGameStore.subscribe(onChange);
+  const query =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+  query?.addEventListener('change', onChange);
+  return () => {
+    unsubscribe();
+    query?.removeEventListener('change', onChange);
+  };
+}
+
+/**
+ * Hook reactivo de `reducedMotionPreferred()` (toggle ∨ preferencia del SO).
+ * Para el atributo `data-motion` y variantes de presentación.
+ */
+export function useReducedMotionPref(): boolean {
+  return useSyncExternalStore(subscribeReducedMotion, reducedMotionPreferred);
+}
+
+/** Hook reactivo de `motionDisabled()`: además apaga en entornos sin animación. */
+export function useMotionDisabled(): boolean {
+  return useReducedMotionPref() || motionDisabled();
 }
 
 /**

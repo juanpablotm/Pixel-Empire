@@ -17,9 +17,10 @@ export function StatBar({ label, value }: { label: string; value: number }) {
         aria-valuemax={100}
         aria-label={`${label}: ${rounded}`}
       >
+        {/* Solo transform (docs/10 §4.3): la barra escala, no re-mide layout. */}
         <div
-          className={`h-full rounded-full ${color} transition-all duration-500`}
-          style={{ width: `${rounded}%` }}
+          className={`meter-fill h-full rounded-full ${color}`}
+          style={{ transform: `scaleX(${rounded / 100})` }}
         />
       </div>
       <span className="w-7 shrink-0 text-right tabular-nums text-ink-mute">{rounded}</span>

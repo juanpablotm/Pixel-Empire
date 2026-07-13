@@ -68,8 +68,8 @@ export function LegacyScreen() {
             <span className="w-36 shrink-0 text-sm text-ink">{legacyAxisLabels[axis]}</span>
             <div className="h-3 flex-1 overflow-hidden rounded-full bg-raised">
               <div
-                className={`h-full rounded-full ${axisColor[axis]} transition-all duration-700`}
-                style={{ width: `${legacy[axis]}%` }}
+                className={`meter-fill h-full rounded-full ${axisColor[axis]}`}
+                style={{ transform: `scaleX(${legacy[axis] / 100})` }}
               />
             </div>
             <span className="w-10 text-right text-sm tabular-nums text-ink-mute">

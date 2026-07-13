@@ -17,6 +17,7 @@ import {
 import { balance } from '../../data/balance';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
+import { RollingNumber } from '../components/Motion';
 import { ReputationRadar } from '../components/ReputationRadar';
 
 /**
@@ -68,7 +69,7 @@ export function FinancesScreen() {
               game.studio.capital < 0 ? 'text-danger' : 'text-capital'
             }`}
           >
-            {formatMoney(game.studio.capital)}
+            <RollingNumber value={game.studio.capital} format={formatMoney} />
           </p>
           <p className="mt-1 text-xs text-ink-faint">
             Costes recurrentes: {formatMoney(fixed)}/sem

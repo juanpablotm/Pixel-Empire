@@ -19,7 +19,7 @@ export function FitMeter({ band }: { band: FitBand }) {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className={`h-3 w-8 rounded-sm transition-colors duration-300 ${
+            className={`h-3 w-8 rounded-sm transition-colors ${
               i < info.segments ? info.color : 'bg-control'
             }`}
           />

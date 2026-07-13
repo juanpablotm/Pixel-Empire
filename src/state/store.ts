@@ -76,6 +76,11 @@ export interface GameStore {
   modernUi: boolean;
   /** Tema base claro/oscuro (Fase 7A, docs/10 §2). Preferencia de UI pura. */
   colorTheme: ColorTheme;
+  /**
+   * Toggle "Reducir animaciones" (docs/10 §4.3, Fase 7D): apaga lo no
+   * esencial (partículas, desplazamientos) además de `prefers-reduced-motion`.
+   */
+  reduceMotion: boolean;
   /** Avanza 1 semana (1 tick) inmediatamente. */
   advanceWeek: () => void;
   /** Cambia la velocidad del bucle: 0 = pausa, 1/2/4 = multiplicador. */
@@ -94,6 +99,8 @@ export interface GameStore {
   setModernUi: (modern: boolean) => void;
   /** Cambia el tema base claro/oscuro (persistido en localStorage). */
   setColorTheme: (theme: ColorTheme) => void;
+  /** Activa/desactiva "Reducir animaciones" (persistido en localStorage). */
+  setReduceMotion: (reduce: boolean) => void;
   /** Acciones del proyecto (delegan en core/). */
   startProject: (concept: ProjectConcept) => void;
   setFocus: (phase: DevPhaseNumber, allocation: FocusAllocation, projectId?: string) => void;
@@ -133,6 +140,7 @@ export type ColorTheme = 'dark' | 'light';
 
 const THEME_STORAGE_KEY = 'pixel-empire:color-theme';
 const MODERN_UI_STORAGE_KEY = 'pixel-empire:modern-ui';
+const REDUCE_MOTION_STORAGE_KEY = 'pixel-empire:reduce-motion';
 
 /** Preferencia de tema guardada, si existe y es válida. */
 function storedColorTheme(): ColorTheme {
@@ -148,6 +156,15 @@ function storedColorTheme(): ColorTheme {
 function storedModernUi(): boolean {
   try {
     return localStorage.getItem(MODERN_UI_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Preferencia "Reducir animaciones" guardada (docs/10 §4.3). */
+function storedReduceMotion(): boolean {
+  try {
+    return localStorage.getItem(REDUCE_MOTION_STORAGE_KEY) === 'true';
   } catch {
     return false;
   }
@@ -172,6 +189,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   awardsWeek: null,
   modernUi: storedModernUi(),
   colorTheme: storedColorTheme(),
+  reduceMotion: storedReduceMotion(),
 
   advanceWeek: () => {
     const before = get().game;
@@ -265,6 +283,15 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
     }
     set({ colorTheme: theme });
+  },
+
+  setReduceMotion: (reduce) => {
+    try {
+      localStorage.setItem(REDUCE_MOTION_STORAGE_KEY, String(reduce));
+    } catch {
+      // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
+    }
+    set({ reduceMotion: reduce });
   },
 
   startProject: (concept) => {

@@ -150,8 +150,8 @@ export function DevelopmentScreen() {
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-raised">
           <div
-            className="h-full rounded-full bg-action-hi transition-all duration-500"
-            style={{ width: `${Math.round(projectProgress(project) * 100)}%` }}
+            className="meter-fill h-full rounded-full bg-action-hi"
+            style={{ transform: `scaleX(${projectProgress(project)})` }}
           />
         </div>
         <p className="mt-2 text-sm text-ink-mute">

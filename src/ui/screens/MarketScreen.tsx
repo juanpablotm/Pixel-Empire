@@ -12,6 +12,7 @@ import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { platformStageLabels, trendStageLabels } from '../../data/marketTexts';
 import { useGameStore } from '../../state/store';
+import { StaggerGroup, StaggerItem } from '../components/Motion';
 import { TrendArrow } from '../components/TrendArrow';
 
 /**
@@ -32,13 +33,13 @@ const STAGE_COLOR: Record<TrendStage, string> = {
 
 function TrendRow({ name, trend }: { name: string; trend: TrendState }) {
   return (
-    <li className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2">
+    <StaggerItem tag="li" className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2">
       <TrendArrow direction={trend.direction} />
       <span className="w-36 shrink-0 font-medium">{name}</span>
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-control">
         <div
-          className="h-full rounded-full bg-action-hi transition-all duration-500"
-          style={{ width: `${Math.round(trend.pop * 100)}%` }}
+          className="meter-fill h-full rounded-full bg-action-hi"
+          style={{ transform: `scaleX(${trend.pop})` }}
         />
       </div>
       <span className="w-10 text-right text-xs tabular-nums text-ink-mute">
@@ -47,7 +48,7 @@ function TrendRow({ name, trend }: { name: string; trend: TrendState }) {
       <span className={`w-24 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${STAGE_COLOR[trend.stage]}`}>
         {trendStageLabels[trend.stage]}
       </span>
-    </li>
+    </StaggerItem>
   );
 }
 
@@ -113,42 +114,46 @@ export function MarketScreen() {
         <h3 className="card-title">
           Géneros
         </h3>
-        <ul className="flex flex-col gap-2 text-sm">
+        <StaggerGroup tag="ul" className="flex flex-col gap-2 text-sm">
           {genresShown.map((g) => {
             const trend = market.genres[g.id];
             return trend ? <TrendRow key={g.id} name={g.name} trend={trend} /> : null;
           })}
-        </ul>
+        </StaggerGroup>
       </section>
 
       <section className="card">
         <h3 className="card-title">
           Temas
         </h3>
-        <ul className="flex flex-col gap-2 text-sm">
+        <StaggerGroup tag="ul" className="flex flex-col gap-2 text-sm">
           {themesShown.map((t) => {
             const trend = market.themes[t.id];
             return trend ? <TrendRow key={t.id} name={t.name} trend={trend} /> : null;
           })}
-        </ul>
+        </StaggerGroup>
       </section>
 
       <section className="card">
         <h3 className="card-title">
           Plataformas
         </h3>
-        <ul className="flex flex-col gap-2 text-sm">
+        <StaggerGroup tag="ul" className="flex flex-col gap-2 text-sm">
           {platformsShown.map((p) => {
             const state = market.platforms[p.id];
             if (!state) return null;
             const dead = state.stage === 'descatalogada' || state.stage === 'anunciada';
             return (
-              <li key={p.id} className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2">
+              <StaggerItem
+                tag="li"
+                key={p.id}
+                className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2"
+              >
                 <span className="w-36 shrink-0 font-medium">{p.name}</span>
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-control">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${dead ? 'bg-control-hi' : 'bg-info'}`}
-                    style={{ width: `${Math.round((state.installedBase / maxBase) * 100)}%` }}
+                    className={`meter-fill h-full rounded-full ${dead ? 'bg-control-hi' : 'bg-info'}`}
+                    style={{ transform: `scaleX(${state.installedBase / maxBase})` }}
                   />
                 </div>
                 <span className="w-24 text-right text-xs tabular-nums text-ink-mute">
@@ -157,10 +162,10 @@ export function MarketScreen() {
                 <span className={`w-28 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${dead ? 'bg-danger/15 text-danger-hi' : 'bg-control text-ink'}`}>
                   {platformStageLabels[state.stage]}
                 </span>
-              </li>
+              </StaggerItem>
             );
           })}
-        </ul>
+        </StaggerGroup>
         <p className="mt-2 text-xs text-ink-faint">
           La base instalada marca el techo de ventas semanales de cada plataforma (semana {week}).
         </p>

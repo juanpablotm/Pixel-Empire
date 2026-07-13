@@ -26,8 +26,8 @@ export function SentimentMeter({ sentiment }: { sentiment: number }) {
         className="h-2 overflow-hidden rounded-full bg-raised"
       >
         <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
-          style={{ width: `${pct}%` }}
+          className={`meter-fill h-full rounded-full ${color}`}
+          style={{ transform: `scaleX(${pct / 100})` }}
         />
       </div>
       <p className="text-xs text-ink-faint">La comunidad está {mood}. El boca a boca mueve ventas.</p>

@@ -4,6 +4,7 @@ import { stageLabels } from '../../data/staffTexts';
 import { useGameStore } from '../../state/store';
 import { hashFraction } from '../motion';
 import { CROWN_PATH } from '../theme/BrandMark';
+import { particleScale } from '../theme/motionTokens';
 import { avatarLook, type AvatarLook } from './Avatar';
 
 /**
@@ -843,10 +844,11 @@ export function OfficeScene() {
       {mood === 'alta' && <rect x="0" y="0" width={W} height={SCENE_H} fill="var(--accent-capital)" opacity="0.05" aria-hidden />}
       {crisis && <rect x="0" y="0" width={W} height={SCENE_H} fill="var(--accent-danger)" className="office-wash" aria-hidden />}
 
-      {/* confeti del hit (docs/10 §5.2) — partículas, fuera con reduced-motion */}
+      {/* confeti del hit (docs/10 §5.2) — partículas con presupuesto
+          (docs/10 §4.3), fuera con reduced-motion */}
       {mood === 'fiesta' && (
         <g aria-hidden>
-          {Array.from({ length: 26 }, (_, i) => {
+          {Array.from({ length: Math.round(26 * particleScale()) }, (_, i) => {
             const f = hashFraction(`confeti:${i}`);
             const g = hashFraction(`confeti-b:${i}`);
             return (

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import type { FactorTone, ReleasedGame } from '../../core';
 import { reviewSegments } from '../../data/segments';
 import { useGameStore } from '../../state/store';
+import { celebrateHit } from '../confetti';
 import { formatMoney } from '../format';
 import { GameCover } from '../components/GameCover';
 import { HIT_REVIEW } from '../components/OfficeScene';
-import { hashFraction, motionDisabled, useCountUpWhen } from '../motion';
+import { motionDisabled, useCountUpWhen } from '../motion';
 
 /**
  * La Reseña como gala (docs/10 §7.1, innovación I6): (1) redoble, (2) la nota
@@ -47,36 +48,6 @@ function useGalaAct(gameId: string): [number, () => void] {
   return [act, () => setAct(FINAL_ACT)];
 }
 
-/** Lluvia de confeti a pantalla completa para el hitazo (docs/10 §7.1). */
-function GalaConfetti() {
-  const colors = ['#5b8ef5', '#43b96f', '#a06bf0', '#f09a3f', '#e8b44a', '#eb6a6a'];
-  return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
-      {Array.from({ length: 70 }, (_, i) => {
-        const f = hashFraction(`gala:${i}`);
-        const g = hashFraction(`gala-b:${i}`);
-        return (
-          <span
-            key={i}
-            className="gala-confetti absolute block rounded-[1px]"
-            style={{
-              left: `${(f * 100).toFixed(1)}%`,
-              top: '-2vh',
-              width: `${5 + Math.round(g * 4)}px`,
-              height: `${8 + Math.round((1 - g) * 4)}px`,
-              backgroundColor: colors[i % colors.length],
-              // Delay negativo: el confeti ya está en el aire al estallar la
-              // gala (un cañón de confeti, no un goteo desde el techo).
-              animationDelay: `${(-f * 2).toFixed(2)}s`,
-              animationDuration: `${(2.6 + g * 1.6).toFixed(2)}s`,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 function GalaCeremony({ game }: { game: ReleasedGame }) {
   const goTo = useGameStore((s) => s.goTo);
   const [act, skip] = useGalaAct(game.id);
@@ -84,13 +55,18 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
   const shownReview = act >= FINAL_ACT ? game.review : Math.round(counted);
   const isHit = game.review >= HIT_REVIEW;
 
+  // El hitazo encadena con confeti real (canvas-confetti, docs/10 §7.1).
+  // La UI observa el acto final y celebra; el tick no sabe nada de esto.
+  useEffect(() => {
+    if (act >= FINAL_ACT && isHit) celebrateHit();
+  }, [act, isHit]);
+
   return (
     <main
       className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-8"
       onClick={act < FINAL_ACT ? skip : undefined}
     >
       <section className="review-pop relative flex flex-col items-center gap-2 overflow-hidden rounded-lg border border-line bg-panel p-8 text-center">
-        {act >= FINAL_ACT && isHit && !motionDisabled() && <GalaConfetti />}
 
         <div className="flex w-full items-center justify-center gap-6">
           <GameCover game={game} width={84} />

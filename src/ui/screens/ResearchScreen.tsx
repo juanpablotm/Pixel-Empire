@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { researchNodeStatus } from '../../core';
 import { eraOrder, getEra } from '../../data/eras';
 import { researchNodes, researchNodeUnlocks } from '../../data/research';
 import { features } from '../../data/features';
 import { genres } from '../../data/genres';
 import { useGameStore } from '../../state/store';
+import { RollingNumber } from '../components/Motion';
 
 /**
  * Pantalla de investigación (docs/02 §3): puntos 💡, asignación de personal a
@@ -19,6 +21,8 @@ export function ResearchScreen() {
   const goTo = useGameStore((s) => s.goTo);
   const buy = useGameStore((s) => s.buyResearch);
   const toggleResearch = useGameStore((s) => s.toggleResearch);
+  // "Pop" de recompensa (docs/10 §6) en el nodo recién investigado.
+  const [justBought, setJustBought] = useState<string | null>(null);
 
   const points = Math.floor(game.research.points);
   const rdStaff = game.research.rdStaff;
@@ -27,7 +31,10 @@ export function ResearchScreen() {
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">
-          Investigación <span className="ml-2 text-capital">💡 {points}</span>
+          Investigación{' '}
+          <span className="ml-2 text-capital">
+            💡 <RollingNumber value={points} />
+          </span>
         </h2>
         <button
           type="button"
@@ -99,7 +106,7 @@ export function ResearchScreen() {
                     key={node.id}
                     className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md px-4 py-3 ${
                       status === 'comprado' ? 'bg-ok/10' : 'bg-raised/60'
-                    }`}
+                    } ${justBought === node.id ? 'reward-pop' : ''}`}
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">
@@ -123,7 +130,10 @@ export function ResearchScreen() {
                     {status === 'disponible' && (
                       <button
                         type="button"
-                        onClick={() => buy(node.id)}
+                        onClick={() => {
+                          buy(node.id);
+                          setJustBought(node.id);
+                        }}
                         className="rounded-md bg-warn px-3 py-1.5 text-sm font-semibold text-onbright hover:bg-warn-hi"
                       >
                         Investigar
