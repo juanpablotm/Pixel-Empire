@@ -160,7 +160,7 @@ describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () =>
       genreId: 'shooter',
       platformId: 'pcCasero',
       audience: 'hardcore',
-      size: 'mediano',
+      size: 'pequeno',
     });
     // Sin investigar lanza; investigada se puede elegir.
     expect(() => toggleFeature({ ...state, research: e4.research }, 'multijugadorOnline')).toThrow(

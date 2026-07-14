@@ -52,6 +52,13 @@ Así el tamaño es una **decisión con peso** y la escala del estudio importa de
 bloqueados se muestran atenuados con su requisito ("Necesitas ser Corporación").
 **Toca:** `02` (tamaños/escala), `06`/`12` (economía), `16` (compendio).
 
+> **✅ Implementado (Fase 8.3).** `balance.economy.sizeBaseCost` = 500/2.000/8.000/40.000 💰 (cobrado al
+> iniciar en `startProject`; incluido en `estimateProject` y en el P&L de `releasedGameCost`).
+> `balance.development.sizeGate` fija plantilla y etapa mínimas por tamaño; el AAA exige **Corporación**
+> (etapa 4). Su plantilla mínima se alinea al umbral real de esa etapa (`stage4.staff` = 15, no 20) para
+> que ser Corporación baste, sin "dead zone". El núcleo lo valida con `sizeBlockReason` (puro, único
+> punto de verdad) y la UI atenúa los tamaños bloqueados con su requisito (docs/08 §6).
+
 ### E2 · Rediseño del marketing (campañas escalonadas y castigo por sobre-hype) ⚖️ P1 🔴
 *(playtest #7, parte diseño)*
 **Problema:** el marketing está mal balanceado y es fácil pasarse; falta profundidad y consecuencia.
@@ -66,12 +73,28 @@ bloqueados se muestran atenuados con su requisito ("Necesitas ser Corporación")
 - Mostrar en la UI una **zona segura vs zona de riesgo** del hype para que la decisión sea legible (Pilar 2).
 **Toca:** `04` (hype/ventas), `07` (campañas/creadores), `06` (coste), `12` (cifras).
 
+> **✅ Implementado (Fase 8.3).** `balance.economy.marketing.levels` pasa a **4 campañas** escalonadas
+> (2k/10k/40k/120k 💰 con +0,08/0,18/0,32/0,50 hype; nombres en `data/marketTexts.ts`). Castigo por
+> sobre-hype en `balance.market.hype.overHype`: `overHypeGap(hype, reseña)` (puro) solo es > 0 con hype
+> en zona roja (≥ 0,65) **y** reseña < 68; la brecha reduce la **cola de ventas** (`overHypeTailPenalty`
+> guardado en el `ReleasedGame`, aplicado solo al término de cola de `expectedWeeklyUnits` — el pico
+> day-one no se toca) y golpea a **hardcore/comunidad** al lanzar (`releaseProject`). Es independiente
+> del flag `overPromised` (que sigue disparando la crisis de promesa rota). El `HypeGauge` y la sección
+> de Marketing muestran **zona segura vs riesgo**. Nota: los bots (sin marketing) casi no entran en zona
+> roja, así que el castigo apunta al jugador que abusa del marketing, como debe ser.
+
 ### E3 · Despidos masivos bajan la reputación de empleador ⚖️ P2 🟢
 *(playtest #3)*
 **Refinamiento:** despedir a varios empleados en una **ventana corta** (p. ej. 3+ en ~8 semanas)
 golpea la reputación de **Empleador** (y la moral de los que quedan); si es sonado, puede filtrarse
 como noticia y tocar también a la **Comunidad**. Un despido puntual justificado no penaliza.
 **Toca:** `05` (retención/empleador), `06` (reputación segmentada).
+
+> **✅ Implementado (Fase 8.3).** `balance.staff.firing.massLayoff` (ventana 8 semanas, umbral 3). El
+> estado guarda `recentFireWeeks` (campo opcional, `?? []`, sin bump de `saveVersion`; poda a la ventana
+> en cada despido). Un despido puntual mantiene solo su coste modesto; al 3.º dentro de la ventana,
+> `fireEmployee` añade el golpe extra a **Empleador**, más moral/lealtad perdidas por los supervivientes
+> y —al filtrarse— un golpe a **Comunidad** (reputación + sentimiento) con log dedicado.
 
 ---
 

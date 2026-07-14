@@ -248,6 +248,23 @@ export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReview
   };
 }
 
+/**
+ * Brecha de sobre-hype (docs/17 E2): mide cuánto prometió el hype frente a lo
+ * que la reseña entrega. Solo es > 0 cuando el hype entró en la zona roja
+ * (≥ overHypeThreshold) Y el juego no cumple (reseña < reviewBar): el producto
+ * de ambos excesos, así que hace falta mucho hype Y reseña baja a la vez. Por
+ * debajo de minGap se ignora (ruido). Determinista y puro; alimenta la
+ * penalización de la cola de ventas y el golpe de reputación al lanzar.
+ */
+export function overHypeGap(hype: number, review: number): number {
+  const h = balance.market.hype;
+  const o = h.overHype;
+  const hypeExcess = clamp((hype - h.overHypeThreshold) / (1 - h.overHypeThreshold), 0, 1);
+  const shortfall = clamp((o.reviewBar - review) / o.reviewBar, 0, 1);
+  const gap = hypeExcess * shortfall;
+  return gap >= o.minGap ? gap : 0;
+}
+
 // ---------------------------------------------------------------------------
 // Ventas: pico + cola larga, recalculadas por tick (docs/04 §6)
 // ---------------------------------------------------------------------------
@@ -310,7 +327,10 @@ export function expectedWeeklyUnits(
     s.launch.spikeDecay ** weeksSinceRelease;
   const tailDecay =
     s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * (game.review / 100);
-  const tail = s.launch.tailAmp * tailDecay ** weeksSinceRelease;
+  // El castigo por sobre-hype (docs/17 E2) hunde SOLO la cola: el pico day-one
+  // se mantiene (ya compraron por el hype), pero el boca a boca revela la verdad.
+  const tail =
+    s.launch.tailAmp * tailDecay ** weeksSinceRelease * (1 - (game.overHypeTailPenalty ?? 0));
 
   return (
     demand *

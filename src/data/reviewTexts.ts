@@ -93,3 +93,14 @@ export const sizeLabels = {
   grande: 'grande',
   aaa: 'AAA',
 } as const;
+
+/**
+ * Motivos por los que un tamaño de proyecto está bloqueado (docs/17 E1). El
+ * núcleo (projects.ts, sizeBlockReason) elige cuál mostrar según el requisito
+ * que falte (etapa de escala o plantilla); la UI solo lo muestra y atenúa el
+ * botón. Copy centralizado, como hireBlockedLabels para la contratación (B1).
+ */
+export const sizeBlockedLabels = {
+  stage: (stageName: string) => `Necesitas ser ${stageName}`,
+  staff: (n: number) => `Necesitas ${n} personas en plantilla`,
+} as const;

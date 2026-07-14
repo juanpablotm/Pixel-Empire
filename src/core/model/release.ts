@@ -102,4 +102,11 @@ export interface ReleasedGame {
   streams?: StreamResult[];
   creatorSpikeBoost?: number;
   overPromised?: boolean;
+  /**
+   * Castigo por sobre-hype fijado al lanzar (docs/17 E2): 0..1 que reduce la
+   * COLA de ventas cuando el hype entró en zona roja y el juego no cumplió
+   * (× 1 − overHypeTailPenalty sobre el término de cola en expectedWeeklyUnits).
+   * El pico day-one no se toca. Opcional: los juegos de saves previos son 0.
+   */
+  overHypeTailPenalty?: number;
 }

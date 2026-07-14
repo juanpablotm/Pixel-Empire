@@ -25,6 +25,9 @@ El jugador define:
 - **Plataforma(s)** objetivo (según las disponibles en la era actual).
 - **Público objetivo** (Hardcore / Amplio / Casual / Infantil) — afecta al fit y a los segmentos.
 - **Tamaño del proyecto** (Pequeño / Mediano / Grande / AAA) — escala tiempo, coste y potencial.
+  Cada tamaño exige un **coste base fijo**, una **plantilla mínima** y una **etapa de escala mínima**
+  (docs/17 E1): el AAA queda bloqueado hasta ser **Corporación**. Los tamaños no disponibles se
+  muestran atenuados con su requisito. Ir a lo grande es una decisión con peso, no la opción por defecto.
 - **Nombre del juego** (texto libre; se usa en portada procedural y en la comunidad).
 
 El sistema muestra en tiempo real un **medidor de Fit** (ver `03`) que orienta sin dar la respuesta.
@@ -96,7 +99,9 @@ Transversal a las eras históricas, el estudio crece en escala. Cada etapa cambi
 | **4. Corporación** | 40+ / estudios | Magnate | Estrategia macro: franquicias, adquisiciones, plataformas, ética a escala. |
 
 La transición entre etapas se desbloquea por hitos (capital, reputación, tamaño de oficina) y es uno
-de los grandes momentos de recompensa del juego.
+de los grandes momentos de recompensa del juego. La etapa también **gatea el tamaño de proyecto**
+(docs/17 E1): el AAA solo está al alcance de una **Corporación** (con su plantilla mínima), así la
+escala del estudio importa de verdad a la hora de decidir qué juego construir.
 
 ## 5. Las Eras históricas `[DECIDIDO · baseline v1]`
 

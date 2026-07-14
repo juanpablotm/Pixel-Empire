@@ -126,6 +126,13 @@ export interface GameState {
   projectCounter: number;
   /** Semanas consecutivas con capital negativo (bancarrota al agotar la gracia). */
   negativeWeeks: number;
+  /**
+   * Semanas de los despidos recientes (docs/17 E3): ventana móvil para detectar
+   * despidos masivos (3+ en 8 semanas → golpe a Empleador/Comunidad). Se poda a
+   * la ventana en cada despido. Opcional: los saves previos arrancan sin él y se
+   * leen con `?? []` (mismo patrón que Project.startWeek / ReleasedGame.cost).
+   */
+  recentFireWeeks?: number[];
   gameOver: GameOverInfo | null;
   log: LogEntry[];
 }

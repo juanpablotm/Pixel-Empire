@@ -94,6 +94,7 @@ export {
   projectTotalWeeks,
   releasedGameCost,
   setFocus,
+  sizeBlockReason,
   startProject,
   toggleFeature,
 } from './systems/projects';
@@ -141,6 +142,7 @@ export {
   effectiveSaturation,
   expectedWeeklyUnits,
   marketSize,
+  overHypeGap,
   platformAvailable,
   platformStage,
   priceModifier,

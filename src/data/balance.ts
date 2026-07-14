@@ -47,6 +47,16 @@ export const balance = {
       ProjectSize,
       number
     >,
+    /**
+     * Coste base fijo por tamaño (docs/17 E1): se cobra AL INICIAR el proyecto,
+     * además de la licencia de plataforma y del coste por persona·semana. Hace
+     * que ir a lo grande sea una decisión con peso económico, no solo de tiempo.
+     * Escala fuerte: un AAA compromete presupuesto de corporación de entrada.
+     */
+    sizeBaseCost: { pequeno: 500, mediano: 2_000, grande: 8_000, aaa: 40_000 } satisfies Record<
+      ProjectSize,
+      number
+    >,
     /** Semanas consecutivas en negativo antes de la bancarrota (docs/06 §1: "sostenido"). */
     bankruptcyGraceWeeks: 8,
 
@@ -79,12 +89,20 @@ export const balance = {
       floorAmount: 5_000,
     },
 
-    /** Campañas de marketing por nivel: 5k/20k/80k 💰 [DECIDIDO, docs/12 §6]. */
+    /**
+     * Campañas de marketing escalonadas (docs/17 E2): coste y alcance
+     * crecientes; las caras son MUY caras pero MUY efectivas. ROI positivo con
+     * rendimientos decrecientes (el hype se topa en 1.0 y el pico decae rápido)
+     * salvo que empujes a la zona roja de sobre-hype (market.hype.overHype). Los
+     * nombres viven en data/marketTexts.ts (marketingLevelNames), alineados por
+     * índice. Comprar las cuatro satura el hype (>1.0): es la vía al sobre-hype.
+     */
     marketing: {
       levels: [
-        { cost: 5_000, hypeBoost: 0.12 },
-        { cost: 20_000, hypeBoost: 0.25 },
-        { cost: 80_000, hypeBoost: 0.45 },
+        { cost: 2_000, hypeBoost: 0.08 },
+        { cost: 10_000, hypeBoost: 0.18 },
+        { cost: 40_000, hypeBoost: 0.32 },
+        { cost: 120_000, hypeBoost: 0.5 },
       ],
     },
 
@@ -268,6 +286,21 @@ export const balance = {
       ProjectSize,
       number
     >,
+    /**
+     * Requisitos por tamaño de proyecto (docs/17 E1): plantilla mínima y etapa
+     * de escala mínima. El AAA queda bloqueado hasta Corporación (etapa 4). La
+     * UI atenúa los tamaños bloqueados con su requisito; el núcleo lo valida en
+     * startProject (sizeBlockReason). El coste base va en economy.sizeBaseCost.
+     */
+    sizeGate: {
+      pequeno: { minStaff: 1, minStage: 1 },
+      mediano: { minStaff: 3, minStage: 2 },
+      grande: { minStaff: 8, minStage: 3 },
+      // El AAA se desbloquea al ser Corporación (etapa 4); su plantilla mínima se
+      // alinea con el umbral de esa etapa (staff.scale.stage4.staff = 15) para
+      // que ser Corporación baste, sin "dead zone" entre 15 y 20 (docs/17 E1).
+      aaa: { minStaff: 15, minStage: 4 },
+    } satisfies Record<ProjectSize, { minStaff: number; minStage: ScaleStage }>,
     /** Deuda de bugs acumulada por semana de Concepto/Producción (docs/03 factor D). */
     baseBugsPerWeek: 0.02,
     /** Reducción de deuda de bugs por semana con el 100 % del esfuerzo en QA. */
@@ -404,8 +437,27 @@ export const balance = {
       /** Golpe de moral al resto cuando alguien se va. */
       teamMoraleHit: 3,
     },
-    /** Despedir golpea la moral y lealtad de los que quedan (docs/05 §6). */
-    firing: { teamMoraleHit: 8, teamLoyaltyHit: 5 },
+    /**
+     * Despedir golpea la moral y lealtad de los que quedan (docs/05 §6). Un
+     * despido puntual solo tiene ese coste modesto (+ finiquito y el firedHit de
+     * empleador). Los despidos MASIVOS (docs/17 E3) escalan: 3+ en una ventana de
+     * 8 semanas es un ERE sonado que golpea fuerte a Empleador, hunde más la
+     * moral de los supervivientes y —al filtrarse como noticia— toca a la
+     * Comunidad. La ventana vive en state.recentFireWeeks (docs/05 §7).
+     */
+    firing: {
+      teamMoraleHit: 8,
+      teamLoyaltyHit: 5,
+      massLayoff: {
+        windowWeeks: 8,
+        threshold: 3,
+        employerHit: 6,
+        teamMoraleHit: 6,
+        teamLoyaltyHit: 4,
+        communityRepHit: 3,
+        sentimentHit: 6,
+      },
+    },
 
     /** Nivel/XP: crece trabajando; mejora skills y sube el salario (docs/05 §1). */
     xp: {
@@ -609,6 +661,24 @@ export const balance = {
       max: 1,
       /** Zona roja del Manómetro de Hype (docs/10 §7.5): sobre-hype a partir de aquí. */
       overHypeThreshold: 0.65,
+      /**
+       * Castigo por sobre-hype al lanzar (docs/17 E2, el doble filo de docs/04
+       * §4): si el hype entró en la zona roja (≥ overHypeThreshold) pero el juego
+       * NO cumple (reseña < reviewBar), la brecha se cobra. brecha =
+       * clamp01((hype−umbral)/(1−umbral)) × clamp01((reviewBar−reseña)/reviewBar),
+       * 0 por debajo de minGap. Solo pega cuando hay MUCHO hype Y reseña baja.
+       *   · peor COLA de ventas: el pico day-one se mantiene (ya compraron por el
+       *     hype), pero el boca a boca hunde la cola (× 1 − brecha·tailPenaltyMax).
+       *   · golpe de reputación a quienes se sienten estafados (hardcore/comunidad,
+       *     × brecha). Independiente del flag overPromised (ese dispara además la
+       *     crisis de promesa rota de docs/07 §4).
+       */
+      overHype: {
+        reviewBar: 68,
+        minGap: 0.05,
+        tailPenaltyMax: 0.45,
+        repHit: { hardcore: 5, comunidad: 4 },
+      },
       /** Puntos de reseña restados con hype 1.0 (penalizaciónExpectativas, docs/04 §5). */
       reviewPenaltyMax: 10,
       /** Hasta este hype las expectativas no endurecen la reseña. */

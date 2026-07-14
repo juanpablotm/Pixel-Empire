@@ -25,3 +25,10 @@ export const platformStageLabels: Record<PlatformStage, string> = {
   declive: 'Declive',
   descatalogada: 'Descatalogada',
 };
+
+/**
+ * Nombres de las campañas de marketing escalonadas (docs/17 E2), alineados por
+ * índice con balance.economy.marketing.levels: coste y alcance crecientes. Copy
+ * aquí; los números (coste, hype) viven en balance.ts.
+ */
+export const marketingLevelNames = ['Nota de prensa', 'Anuncios', 'Feria/Expo', 'Campaña masiva'];

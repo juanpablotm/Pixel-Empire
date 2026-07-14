@@ -42,7 +42,7 @@ palanca de codicia haya una tentación real (dinero significativo) y un castigo 
 | **DLC day-one / contenido recortado** | Ingresos ↑ | "Nos vendieron el juego a trozos" → backlash |
 | **Secuela-refrito apresurada** | Coste ↓, ingreso rápido | Satura mercado (`04`), la crítica lo destroza |
 | **Crunch** (`05`) | Producción ↑ a corto | Moral/lealtad ↓, riesgo de escándalo laboral |
-| **Marketing engañoso / sobre-hype** (`07`) | Ventas day-one ↑ | Caída brutal + backlash si no cumple |
+| **Marketing engañoso / sobre-hype** (`07`, docs/17 E2) | Ventas day-one ↑ | Caída brutal de la **cola de ventas** + golpe a hardcore/comunidad, proporcional a la brecha hype↔calidad |
 | **Precio abusivo** | Ingreso/venta ↑ | Menos volumen, comunidad enojada |
 
 ### Palancas de INTEGRIDAD (⭐↑ / 💰↓ o más lento)
@@ -87,12 +87,18 @@ Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 |----------|---------------|
 | Capital inicial (garaje) | 10.000 💰 |
 | Precio recomendado por juego | 20–60 💰 según tamaño/era |
+| **Coste base por tamaño** (docs/17 E1) | 500 / 2.000 / 8.000 / 40.000 💰 (Pequeño/Mediano/Grande/AAA), fijo al iniciar |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
-| Campaña de marketing (por nivel) | 5k / 20k / 80k 💰 |
+| **Campaña de marketing** (escalonada, docs/17 E2) | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva) |
 | Licencia de plataforma (dev-kit) | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
+
+**Coste base + tamaño como decisión con peso (docs/17 E1):** cada tamaño exige, además del coste base
+fijo, una **plantilla mínima** (1/3/8/15) y una **etapa de escala mínima** (Garaje / Estudio pequeño /
+Consolidado / **Corporación**). El AAA queda bloqueado hasta ser Corporación. Así ir a lo grande es una
+apuesta económica real, no la opción por defecto.
 
 `factorMonetización` v1: premium = 1.0; premium+dlc ≈ 1.15; premium+mtx ≈ 1.0 + 0.6·`aggressiveness`;
 f2p ≈ 0.3 en ventas base pero MTX ≈ baseInstalada · 0.8 · `aggressiveness`.

@@ -58,12 +58,18 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 |----------|---------------|
 | Capital inicial (garaje) | 10.000 💰 |
 | Precio por juego | 20–60 💰 según tamaño/era |
+| Coste base por tamaño (docs/17 E1) | 500 / 2.000 / 8.000 / 40.000 💰 (Pequeño/Mediano/Grande/AAA), cobrado al iniciar |
+| Requisito por tamaño (docs/17 E1) | plantilla mín. 1 / 3 / 8 / 15 · etapa mín. Garaje / Estudio pequeño / Consolidado / **Corporación** |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
-| Marketing (por nivel) | 5k / 20k / 80k 💰 |
+| Marketing escalonado (docs/17 E2) | Nota de prensa 2k (+0,08) / Anuncios 10k (+0,18) / Feria-Expo 40k (+0,32) / Campaña masiva 120k (+0,50 hype) |
 | Licencia de plataforma | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
+
+**Sobre-hype (docs/17 E2):** si el hype entra en zona roja (≥ 0,65) pero la reseña no cumple (< 68), la
+brecha `clamp01((hype−0,65)/0,35) × clamp01((68−reseña)/68)` castiga la **cola de ventas** (hasta −45 %)
+y la reputación de **hardcore/comunidad** (hasta −5/−4 × brecha). El pico day-one no se toca.
 
 - `factorMonetización` v1: premium = 1.0; premium+dlc ≈ 1.15; premium+mtx ≈ 1.0 + 0.6·`aggressiveness`;
   f2p ≈ 0.3 en ventas base + MTX ≈ baseInstalada · 0.8 · `aggressiveness`.

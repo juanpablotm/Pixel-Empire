@@ -18,6 +18,7 @@ import {
   effectiveSaturation,
   expectedWeeklyUnits,
   marketSize,
+  overHypeGap,
   platformAvailable,
   platformStage,
   registerReleaseSaturation,
@@ -331,6 +332,16 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
     };
   }
 
+  /** Relleno de plantilla para alcanzar el aforo de Corporación (docs/17 E1). */
+  function team(n: number): Employee[] {
+    return Array.from({ length: n }, (_, i) => ({
+      ...mediaStar(),
+      id: `dev-${i}`,
+      name: `Dev ${i}`,
+      traits: [],
+    }));
+  }
+
   it('clampHype acota a [0, tope] venga el valor de donde venga', () => {
     expect(clampHype(5)).toBe(max);
     expect(clampHype(-3)).toBe(0);
@@ -346,13 +357,20 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
       ...base,
       studio: {
         ...base.studio,
-        scaleStage: 2,
+        // El AAA exige Corporación (docs/17 E1): 20+ en nómina y etapa 4.
+        scaleStage: 4,
         capital: 5_000_000,
         awardHype: balance.awards.rewards.hypeCap,
       },
-      staff: [...base.staff, mediaStar()],
+      staff: [...base.staff, mediaStar(), ...team(19)],
     };
     s = startProject(s, { ...CONCEPT, size: 'aaa' });
+    // Que se cueza muchas semanas: solo el fundador y la estrella en el proyecto
+    // (output bajo), pero con todas las fuentes de hype "gratis" a la vez.
+    s = {
+      ...s,
+      projects: s.projects.map((p) => ({ ...p, assignedStaff: ['fundador', 'estrella'] })),
+    };
     // El anuncio nace con el hype de los premios, ya clampeado a su rango.
     for (const p of s.projects) expect(p.hype).toBeLessThanOrEqual(max);
 
@@ -369,11 +387,43 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
   });
 
   it('acumular con el manómetro ya en el tope lo deja en el tope, no por encima', () => {
-    let s = startProject(createInitialState(SEED), { ...CONCEPT, size: 'aaa' });
+    // El AAA exige Corporación (docs/17 E1): etapa 4 y 20+ en nómina.
+    const base = createInitialState(SEED);
+    const corp: GameState = {
+      ...base,
+      studio: { ...base.studio, scaleStage: 4 },
+      staff: [...base.staff, ...team(20)],
+    };
+    let s = startProject(corp, { ...CONCEPT, size: 'aaa' });
     // Forzar Producción (el hype ya corre) y saturar el manómetro; una semana más.
     s = { ...s, projects: s.projects.map((p) => ({ ...p, phase: 2, hype: max })) };
     const after = tick(s);
     expect(after.projects[0].hype).toBe(max);
+  });
+});
+
+describe('castigo por sobre-hype (docs/17 E2)', () => {
+  const bar = balance.market.hype.overHype.reviewBar;
+
+  it('overHypeGap: solo hay brecha con MUCHO hype Y reseña baja', () => {
+    // Zona roja (hype ≥ umbral) + no cumple (reseña < listón) → castigo.
+    expect(overHypeGap(0.9, 40)).toBeGreaterThan(0);
+    // Hype alto pero el juego cumple: sin castigo.
+    expect(overHypeGap(0.9, bar + 10)).toBe(0);
+    // Reseña baja pero sin hype (zona verde): sin castigo.
+    expect(overHypeGap(0.3, 40)).toBe(0);
+    // Más brecha cuanto peor es la reseña (proporcional).
+    expect(overHypeGap(0.9, 30)).toBeGreaterThan(overHypeGap(0.9, 60));
+  });
+
+  it('el castigo hunde la COLA de ventas, no el pico de salida', () => {
+    const market = createMarketState(1);
+    const clean = makeGame({ review: 45, hypeAtRelease: 0.9, overHypeTailPenalty: 0 });
+    const punished = makeGame({ review: 45, hypeAtRelease: 0.9, overHypeTailPenalty: 0.4 });
+    // En la cola (varias semanas después) el castigado vende bastante menos.
+    expect(expectedWeeklyUnits(punished, 12, market)).toBeLessThan(
+      expectedWeeklyUnits(clean, 12, market),
+    );
   });
 });
 

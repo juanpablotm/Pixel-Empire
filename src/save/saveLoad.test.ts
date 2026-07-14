@@ -303,7 +303,7 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
       genreId: 'rpg',
       platformId: 'pcCasero',
       audience: 'hardcore',
-      size: 'grande',
+      size: 'pequeno',
     });
     // Un build anterior al clamp único pudo dejar el manómetro por encima del tope.
     state = { ...state, projects: state.projects.map((p) => ({ ...p, hype: 3.5 })) };

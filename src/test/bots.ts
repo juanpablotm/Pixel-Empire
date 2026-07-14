@@ -11,7 +11,7 @@ import type { Employee } from '../core/model/staff';
 import { resolveDilemma, respondToCrisis, type DilemmaChoice } from '../core/systems/community';
 import { weeklyFixedCosts } from '../core/systems/economy';
 import { lootBoxesBanned } from '../core/systems/morale';
-import { startProject, toggleFeature } from '../core/systems/projects';
+import { sizeBlockReason, startProject, toggleFeature } from '../core/systems/projects';
 import { computeFit } from '../core/systems/quality';
 import { buyResearch, researchNodeStatus } from '../core/systems/research';
 import {
@@ -69,7 +69,10 @@ export const INDIE: Philosophy = {
   useLootBoxes: false,
   useDlc: false,
   care: true,
-  teamTargetByEra: [1, 2, 3, 4, 5, 6, 6],
+  // Con el gate de tamaños (docs/17 E1) el mediano exige 3 personas: el indie
+  // llega a 3 pronto para no quedarse encerrado en pequeños, y sigue siendo de
+  // culto (≤6). Es la adaptación que haría un jugador listo al nuevo baseline.
+  teamTargetByEra: [1, 3, 3, 4, 5, 6, 6],
   sizeAmbition: 'indie',
   crisisResponse: 'disculpa',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
@@ -103,27 +106,32 @@ export const STUDIO: Philosophy = {
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
 
+/** Tamaños de menor a mayor: para bajar al mayor permitido por el gate (E1). */
+const SIZE_ORDER: readonly ProjectSize[] = ['pequeno', 'mediano', 'grande', 'aaa'];
+
 /**
  * Tamaño de proyecto según ambición, era, plantilla y caja: los arquetipos
  * crecen en TAMAÑO con las eras (docs/02 §6: un AAA de E6 dura años), no en
- * cadencia. El indie de culto se queda en pequeño/mediano por identidad.
+ * cadencia. El indie de culto se queda en pequeño/mediano por identidad. El
+ * tamaño deseado se BAJA al mayor permitido por el gate (docs/17 E1: coste base,
+ * plantilla y etapa mínimas), así el bot nunca intenta un tamaño bloqueado —
+ * como un jugador que ve el AAA atenuado hasta ser Corporación.
  */
 function pickSize(state: GameState, phil: Philosophy): ProjectSize {
   const staff = state.staff.length;
   const capital = state.studio.capital;
   const era = eraIndex(state.era);
-  if (
-    phil.sizeAmbition === 'aaa' &&
-    era >= 4 &&
-    staff >= 12 &&
-    capital > 600_000
-  ) {
-    return 'aaa';
+  let desired: ProjectSize = 'pequeno';
+  if (phil.sizeAmbition === 'aaa' && era >= 4 && staff >= 12 && capital > 600_000) {
+    desired = 'aaa';
+  } else if (phil.sizeAmbition !== 'indie' && era >= 2 && staff >= 6 && capital > 200_000) {
+    desired = 'grande';
+  } else if (era >= 1 && staff >= 2 && capital > 40_000) {
+    desired = 'mediano';
   }
-  if (phil.sizeAmbition !== 'indie' && era >= 2 && staff >= 6 && capital > 200_000) {
-    return 'grande';
+  for (let i = SIZE_ORDER.indexOf(desired); i >= 0; i--) {
+    if (sizeBlockReason(state, SIZE_ORDER[i]) === null) return SIZE_ORDER[i];
   }
-  if (era >= 1 && staff >= 2 && capital > 40_000) return 'mediano';
   return 'pequeno';
 }
 

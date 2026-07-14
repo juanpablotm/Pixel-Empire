@@ -8,10 +8,12 @@ import {
   projectTotalWeeks,
   releasedGameCost,
   setFocus,
+  sizeBlockReason,
   startProject,
   toggleFeature,
   type ProjectConcept,
 } from './projects';
+import type { Employee } from '../model/staff';
 
 const SEED = 42;
 
@@ -78,27 +80,132 @@ describe('startProject — concepción (docs/02 §2 paso 1)', () => {
 });
 
 describe('coste atribuible del juego para el P&L (docs/17 U4)', () => {
-  it('releasedGameCost = licencia + desarrollo (semanas·coste) + marketing', () => {
+  it('releasedGameCost = licencia + base + desarrollo (semanas·coste) + marketing', () => {
     const project = { ...withProject().projects[0], startWeek: 3, marketingUsed: [0, 1] };
     const releaseWeek = 3 + 4; // 4 semanas de calendario en desarrollo
     const licenseCost = getPlatform(project.platformId).licenseCost;
+    const baseCost = balance.economy.sizeBaseCost[project.size]; // coste base del tamaño (docs/17 E1)
     const devCost = 4 * balance.economy.devCostPerPersonWeek;
     const marketing =
       balance.economy.marketing.levels[0].cost + balance.economy.marketing.levels[1].cost;
     expect(releasedGameCost(project, releaseWeek)).toBe(
-      Math.round(licenseCost + devCost + marketing),
+      Math.round(licenseCost + baseCost + devCost + marketing),
     );
   });
 
-  it('un proyecto sin startWeek (save viejo) no imputa coste de desarrollo', () => {
+  it('un proyecto sin startWeek (save viejo) imputa licencia + coste base, no desarrollo', () => {
     const project = { ...withProject().projects[0], startWeek: undefined, marketingUsed: [] };
     const licenseCost = getPlatform(project.platformId).licenseCost;
-    expect(releasedGameCost(project, 50)).toBe(licenseCost);
+    const baseCost = balance.economy.sizeBaseCost[project.size];
+    expect(releasedGameCost(project, 50)).toBe(licenseCost + baseCost);
   });
 
   it('el juego lanzado guarda su coste (cost > 0) al salir a la venta', () => {
     const released = runUntilRelease(withProject());
     expect(released.releasedGames[0].cost).toBeGreaterThan(0);
+  });
+});
+
+/** Empleado mínimo para llenar plantilla (solo cuenta el nº para el gate). */
+function filler(id: string): Employee {
+  return {
+    id,
+    name: id,
+    avatarSeed: id,
+    specialty: 'diseno',
+    skills: { diseno: 50, tecnica: 50, arte: 50, audio: 50, marketing: 50 },
+    traits: [],
+    morale: 70,
+    energy: 90,
+    loyalty: 60,
+    salary: 500,
+    level: 3,
+    xp: 0,
+    founder: false,
+    burnedOut: false,
+    weeksLowEnergy: 0,
+  };
+}
+
+/** Estudio Corporación (etapa 4) con plantilla suficiente para el AAA (docs/17 E1). */
+function corpStudio(): GameState {
+  const base = createInitialState(SEED);
+  return {
+    ...base,
+    studio: { ...base.studio, scaleStage: 4, capital: 2_000_000 },
+    staff: [base.staff[0], ...Array.from({ length: 14 }, (_, i) => filler(`e${i}`))],
+  };
+}
+
+describe('gate de tamaño de proyecto (docs/17 E1)', () => {
+  it('el AAA está bloqueado hasta ser Corporación (etapa 4)', () => {
+    const garage = createInitialState(SEED);
+    expect(sizeBlockReason(garage, 'aaa')).toMatch(/Corporación/);
+    expect(() => startProject(garage, { ...CONCEPT, size: 'aaa' })).toThrow(/Corporación/);
+    // El pequeño sí se puede en el garaje.
+    expect(sizeBlockReason(garage, 'pequeno')).toBeNull();
+  });
+
+  it('en Corporación con plantilla suficiente el AAA se desbloquea', () => {
+    const corp = corpStudio();
+    expect(sizeBlockReason(corp, 'aaa')).toBeNull();
+    expect(() => startProject(corp, { ...CONCEPT, size: 'aaa' })).not.toThrow();
+  });
+
+  it('el mediano exige plantilla mínima además de etapa', () => {
+    // Etapa 2 pero solo el fundador: el mediano pide 3 personas (docs/17 E1).
+    const base = createInitialState(SEED);
+    const stage2Solo: GameState = { ...base, studio: { ...base.studio, scaleStage: 2 } };
+    expect(sizeBlockReason(stage2Solo, 'mediano')).toMatch(/personas/);
+    expect(() => startProject(stage2Solo, { ...CONCEPT, size: 'mediano' })).toThrow(/personas/);
+  });
+
+  it('iniciar un proyecto cobra el coste base del tamaño (docs/17 E1)', () => {
+    const before = createInitialState(SEED);
+    const after = startProject(before, CONCEPT); // pequeño
+    const license = getPlatform(CONCEPT.platformId).licenseCost;
+    expect(after.studio.capital).toBe(
+      before.studio.capital - license - balance.economy.sizeBaseCost.pequeno,
+    );
+  });
+});
+
+describe('castigo por sobre-hype al lanzar (docs/17 E2)', () => {
+  /** Lanza un juego deliberadamente flojo (reseña baja) con el hype dado. */
+  function runBadRelease(hype: number): GameState {
+    const started = startProject(createInitialState(SEED), CONCEPT);
+    const p0 = started.projects[0];
+    // Casi terminado, poca calidad y muchos bugs → reseña baja garantizada.
+    const bad = {
+      ...p0,
+      phase: 3 as const,
+      weeksSpent: 100,
+      designPoints: 0.3,
+      techPoints: 0.3,
+      qaInvested: 0,
+      bugDebt: 4,
+      hype,
+    };
+    return tick({ ...started, projects: [bad] });
+  }
+
+  it('mucho hype + reseña baja: castiga la cola de ventas y la reputación', () => {
+    const high = runBadRelease(0.95);
+    const low = runBadRelease(0.15);
+    const gHigh = high.releasedGames[0];
+    const gLow = low.releasedGames[0];
+
+    // El juego no cumple (reseña por debajo del listón) y el hype estaba en rojo.
+    expect(gHigh.review).toBeLessThan(balance.market.hype.overHype.reviewBar);
+    expect(gHigh.overHypeTailPenalty ?? 0).toBeGreaterThan(0);
+    // Sin sobre-hype (manómetro en verde) no hay castigo a la cola.
+    expect(gLow.overHypeTailPenalty ?? 0).toBe(0);
+
+    // Los que se sienten estafados castigan: hardcore y comunidad caen más.
+    expect(high.studio.reputation.hardcore).toBeLessThan(low.studio.reputation.hardcore);
+    expect(high.studio.reputation.comunidad).toBeLessThan(low.studio.reputation.comunidad);
+    // Queda traza legible en el historial (Pilar 2).
+    expect(high.log.some((e) => /bombo|sobre-?hype|estafad/i.test(e.text))).toBe(true);
   });
 });
 

@@ -340,6 +340,53 @@ describe('acciones del jugador (docs/05 §6)', () => {
     expect(() => fireEmployee(after, 'fundador')).toThrow(/fundador/i);
   });
 
+  it('despidos masivos: 3+ en la ventana golpean Empleador y Comunidad (docs/17 E3)', () => {
+    const team = [
+      makeEmployee({ id: 'a', salary: 500 }),
+      makeEmployee({ id: 'b', salary: 500 }),
+      makeEmployee({ id: 'c', salary: 500 }),
+    ];
+    const state = withStage2(team);
+    const initEmployer = state.studio.reputation.empleador;
+    const initComunidad = state.studio.reputation.comunidad;
+    const initSentiment = state.community.sentiment;
+
+    // Un despido puntual: golpe modesto a Empleador, sin tocar a la Comunidad.
+    const s1 = fireEmployee(state, 'a');
+    expect(s1.recentFireWeeks).toHaveLength(1);
+    const singleDrop = initEmployer - (s1.studio.reputation.empleador ?? 0);
+    expect(singleDrop).toBeGreaterThan(0);
+    expect(s1.studio.reputation.comunidad).toBe(initComunidad);
+    expect(s1.community.sentiment).toBe(initSentiment);
+
+    const s2 = fireEmployee(s1, 'b');
+    expect(s2.recentFireWeeks).toHaveLength(2);
+    expect(s2.studio.reputation.comunidad).toBe(initComunidad); // aún no es masivo
+
+    // El 3.º cruza el umbral: ERE sonado.
+    const s3 = fireEmployee(s2, 'c');
+    expect(s3.recentFireWeeks).toHaveLength(3);
+    // Empleador cae MÁS que en un despido puntual (golpe extra del ERE).
+    const massDrop = (s2.studio.reputation.empleador ?? 0) - (s3.studio.reputation.empleador ?? 0);
+    expect(massDrop).toBeGreaterThan(singleDrop);
+    // Y ahora sí toca a la Comunidad y al termómetro de sentimiento.
+    expect(s3.studio.reputation.comunidad).toBeLessThan(initComunidad);
+    expect(s3.community.sentiment).toBeLessThan(initSentiment);
+    expect(s3.log.some((e) => e.type === 'comunidad' && /masivos/i.test(e.text))).toBe(true);
+  });
+
+  it('despidos fuera de la ventana no cuentan como masivos (docs/17 E3)', () => {
+    const team = [makeEmployee({ id: 'a' }), makeEmployee({ id: 'b' })];
+    const base = withStage2(team);
+    // Dos despidos muy antiguos, semanas fuera de la ventana de 8.
+    const state: GameState = { ...base, week: 40, recentFireWeeks: [1, 2] };
+    const after = fireEmployee(state, 'a');
+    // Los antiguos se podan: solo cuenta este → no es masivo, la comunidad no se entera.
+    expect(after.recentFireWeeks).toEqual([40]);
+    expect(after.studio.reputation.comunidad).toBe(base.studio.reputation.comunidad);
+    expect(after.community.sentiment).toBe(base.community.sentiment);
+  });
+
   it('formar: cuesta dinero y sube la skill elegida', () => {
     const emp = makeEmployee({ id: 'emp-1' });
     const state = withStage2([emp]);
@@ -490,7 +537,7 @@ describe('renuncias: los empleados infelices se van (CA docs/11 Fase 2)', () => 
 
   it('una renuncia saca al empleado del proyecto en curso', () => {
     const miserable = makeEmployee({ id: 'triste', morale: 0, loyalty: 0 });
-    let state = startProject(withStage2([miserable]), { ...CONCEPT, size: 'aaa' });
+    let state = startProject(withStage2([miserable]), { ...CONCEPT, size: 'pequeno' });
     for (let week = 1; week <= 60 && state.staff.length > 1; week++) {
       state = advanceStaff(state, makeRng(SEED, week));
     }

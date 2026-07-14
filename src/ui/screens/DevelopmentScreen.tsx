@@ -10,6 +10,7 @@ import {
 import { balance } from '../../data/balance';
 import { devPhases, getDevPhase } from '../../data/devPhases';
 import { getGenre } from '../../data/genres';
+import { marketingLevelNames } from '../../data/marketTexts';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
 import { Avatar } from '../components/Avatar';
@@ -189,7 +190,7 @@ export function DevelopmentScreen() {
                     ? 'Disponible desde la fase de Producción (el anuncio)'
                     : used
                       ? 'Campaña ya lanzada'
-                      : `+hype a cambio de ${formatMoney(campaign.cost)}`
+                      : `+${Math.round(campaign.hypeBoost * 100)} % hype a cambio de ${formatMoney(campaign.cost)}`
                 }
                 onClick={() => launchMarketing(level, project.id)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -198,7 +199,8 @@ export function DevelopmentScreen() {
                     : 'bg-warn text-onbright hover:bg-warn-hi'
                 } ${used || tooEarly || noCash ? 'cursor-not-allowed opacity-60' : ''}`}
               >
-                {used ? '✔ ' : '📣 '}Nivel {level + 1} · {formatMoney(campaign.cost)}
+                {used ? '✔ ' : '📣 '}
+                {marketingLevelNames[level] ?? `Nivel ${level + 1}`} · {formatMoney(campaign.cost)}
               </button>
             );
           })}
@@ -210,7 +212,9 @@ export function DevelopmentScreen() {
             🔑 Campaña de creadores
           </button>
           <p className="text-xs text-ink-faint">
-            El hype vende de salida… y endurece las reseñas si el juego no cumple.
+            Campañas escalonadas: las caras son muy caras pero muy efectivas. El hype vende de
+            salida… pero en <span className="text-danger">zona de riesgo</span> el juego se compara
+            con lo prometido: si no cumple, la cola de ventas y la reputación se hunden.
           </p>
         </div>
       </section>

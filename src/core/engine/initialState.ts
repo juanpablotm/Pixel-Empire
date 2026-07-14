@@ -74,6 +74,7 @@ export function createInitialState(seed: number): GameState {
     cashflow: [],
     projectCounter: 0,
     negativeWeeks: 0,
+    recentFireWeeks: [],
     gameOver: null,
     log: [],
   };

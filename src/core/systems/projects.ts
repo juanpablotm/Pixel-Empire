@@ -21,12 +21,14 @@ import {
   clampHype,
   computeSegmentReviews,
   effectiveSaturation,
+  overHypeGap,
   platformAvailable,
   registerReleaseSaturation,
 } from './market';
 import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeQuality } from './quality';
 import { addReleaseResearchPoints, capabilityBonus } from './research';
+import { withReputationDeltas } from './reputation';
 import { buildReviewLines, reviewVerdict } from './review';
 import {
   applyReleaseMorale,
@@ -42,6 +44,8 @@ import {
 } from './unlocks';
 import { getTrait } from '../../data/traits';
 import { eraAtLeast } from '../../data/eras';
+import { sizeBlockedLabels } from '../../data/reviewTexts';
+import { stageLabels } from '../../data/staffTexts';
 import type { Employee } from '../model/staff';
 
 /**
@@ -90,6 +94,24 @@ function withProject(state: GameState, updated: Project): GameState {
 /** Proyectos en paralelo permitidos por la etapa de escala (docs/02 §4). */
 export function projectCap(state: GameState): number {
   return balance.staff.scale.projectCapByStage[state.studio.scaleStage];
+}
+
+/**
+ * Motivo estructural por el que un tamaño de proyecto está bloqueado, o null si
+ * se puede elegir (docs/17 E1). Cada tamaño exige una etapa de escala mínima
+ * (el AAA, Corporación) y una plantilla mínima; se muestra el requisito que
+ * falte, priorizando la etapa. Único punto de verdad: startProject lo valida y
+ * la UI lo muestra atenuando el botón (docs/08 §6: la UI no calcula reglas).
+ */
+export function sizeBlockReason(state: GameState, size: ProjectSize): string | null {
+  const gate = balance.development.sizeGate[size];
+  if (state.studio.scaleStage < gate.minStage) {
+    return sizeBlockedLabels.stage(stageLabels[gate.minStage]);
+  }
+  if (state.staff.length < gate.minStaff) {
+    return sizeBlockedLabels.staff(gate.minStaff);
+  }
+  return null;
 }
 
 /**
@@ -164,27 +186,32 @@ export function estimateProject(size: ProjectSize, platformId: string): {
   cost: number;
 } {
   const weeks = balance.development.phaseWeeksBySize[size] * 3;
+  // Coste estimado: desarrollo (persona·semana) + licencia + coste base fijo del
+  // tamaño (docs/17 E1). No incluye marketing ni features (aún por decidir).
   const cost =
-    weeks * balance.economy.devCostPerPersonWeek + getPlatform(platformId).licenseCost;
+    weeks * balance.economy.devCostPerPersonWeek +
+    getPlatform(platformId).licenseCost +
+    balance.economy.sizeBaseCost[size];
   return { weeks, cost };
 }
 
 /**
  * Coste atribuible al juego al lanzarlo (docs/17 U4): licencia de plataforma +
- * desarrollo (semanas de calendario · coste por persona·semana) + marketing
- * comprado. Es el "costó" del P&L de "sale del mercado". No incluye la nómina
- * general del estudio (coste compartido entre proyectos), a propósito y de
- * forma legible (Pilar 2).
+ * coste base del tamaño (docs/17 E1) + desarrollo (semanas de calendario · coste
+ * por persona·semana) + marketing comprado. Es el "costó" del P&L de "sale del
+ * mercado". No incluye la nómina general del estudio (coste compartido entre
+ * proyectos), a propósito y de forma legible (Pilar 2).
  */
 export function releasedGameCost(project: Project, releaseWeek: number): number {
   const licenseCost = getPlatform(project.platformId).licenseCost;
+  const baseCost = balance.economy.sizeBaseCost[project.size];
   const devWeeks = Math.max(0, releaseWeek - (project.startWeek ?? releaseWeek));
   const devCost = devWeeks * balance.economy.devCostPerPersonWeek;
   const marketingCost = project.marketingUsed.reduce(
     (sum, level) => sum + (balance.economy.marketing.levels[level]?.cost ?? 0),
     0,
   );
-  return Math.round(licenseCost + devCost + marketingCost);
+  return Math.round(licenseCost + baseCost + devCost + marketingCost);
 }
 
 /** Empleados sin proyecto ni I+D: el equipo por defecto de un proyecto nuevo. */
@@ -227,6 +254,10 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
   if (!platformAvailable(platform, state.week)) {
     throw new Error(`${platform.name} no está a la venta (docs/04 §7)`);
   }
+  // El tamaño exige etapa de escala y plantilla mínimas (docs/17 E1): el AAA,
+  // hasta ser Corporación. Mismo motivo que ve la UI (sizeBlockReason).
+  const sizeBlocked = sizeBlockReason(state, concept.size);
+  if (sizeBlocked) throw new Error(sizeBlocked);
 
   const monetization = concept.monetization ?? defaultMonetization();
   validateMonetization(state, monetization);
@@ -271,11 +302,14 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     bugDebt: 0,
   };
 
+  // Al arrancar se paga la licencia de la plataforma y el coste base del tamaño
+  // (docs/17 E1): comprometerse con un proyecto grande cuesta de entrada.
+  const upfrontCost = platform.licenseCost + balance.economy.sizeBaseCost[concept.size];
   const next: GameState = {
     ...state,
     studio: {
       ...state.studio,
-      capital: state.studio.capital - platform.licenseCost,
+      capital: state.studio.capital - upfrontCost,
       awardHype: 0,
     },
     projects: [...state.projects, project],
@@ -363,6 +397,12 @@ function releaseProject(state: GameState, project: Project): GameState {
     market: state.market,
   });
   const review = reviews.average;
+  // Castigo por sobre-hype (docs/17 E2): si el hype entró en zona roja y el
+  // juego no cumple, la brecha se cobra en la cola de ventas (aquí, fijada al
+  // lanzar) y en la reputación de quienes se sienten estafados (más abajo).
+  const overHypeBrecha = overHypeGap(project.hype, review);
+  const overHypeTailPenalty =
+    Math.round(overHypeBrecha * balance.market.hype.overHype.tailPenaltyMax * 100) / 100;
   const released: ReleasedGame = {
     id: project.id,
     name: project.name,
@@ -390,6 +430,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     cost: releasedGameCost(project, state.week),
     salesActive: true,
     overPromised: project.overPromised,
+    overHypeTailPenalty,
   };
   let next: GameState = {
     ...state,
@@ -404,6 +445,23 @@ function releaseProject(state: GameState, project: Project): GameState {
     'lanzamiento',
     `«${released.name}» sale a la venta: reseña media ${review}/100.`,
   );
+  // El sobre-hype que no cumple se paga (docs/17 E2): golpe a hardcore/comunidad
+  // proporcional a la brecha; la cola de ventas ya lo lleva en overHypeTailPenalty.
+  if (overHypeBrecha > 0) {
+    const o = balance.market.hype.overHype;
+    next = {
+      ...next,
+      studio: withReputationDeltas(next.studio, {
+        hardcore: -o.repHit.hardcore * overHypeBrecha,
+        comunidad: -o.repHit.comunidad * overHypeBrecha,
+      }),
+    };
+    next = appendLog(
+      next,
+      'comunidad',
+      `El bombo de «${released.name}» prometía más de lo que entrega (reseña ${review}): la cola de ventas se hunde y hardcore y comunidad se sienten estafados.`,
+    );
+  }
   // Desarrollar también enseña: puntos 💡 por lanzamiento (docs/02 §3).
   next = addReleaseResearchPoints(next, project.size);
   // El dilema moral pasa factura (docs/06): reputación por segmento, deuda

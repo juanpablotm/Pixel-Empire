@@ -84,6 +84,9 @@ grande, egos que chocan. El factor entra en el `teamFactor` de `03`.
 - **Motivar:** subidas de salario, vacaciones, bonus, mejores oficinas/perks.
 - **Crunch:** forzar sobre-esfuerzo → +producción a corto, −moral/energía/lealtad. **Palanca de codicia** (`06`).
 - **Despedir:** ahorra salario pero golpea la moral de los que quedan y la reputación como empleador.
+  Un despido puntual justificado tiene un coste modesto; los **despidos masivos** (3+ en ~8 semanas,
+  docs/17 E3) son un ERE sonado que hunde con fuerza la reputación de **Empleador**, la moral de los
+  supervivientes y —al filtrarse como noticia— también a la **Comunidad**.
 
 ## 7. Retención y fuga de talento `[DECIDIDO]`
 

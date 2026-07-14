@@ -366,14 +366,33 @@ export function hireCandidate(state: GameState, candidateId: string): GameState 
   );
 }
 
-/** Acción: despedir. Paga finiquito y golpea la moral de los que quedan. */
+/**
+ * Acción: despedir. Paga finiquito y golpea la moral de los que quedan. Un
+ * despido puntual solo tiene ese coste modesto (+ el firedHit de empleador). Los
+ * despidos MASIVOS (docs/17 E3: 3+ en una ventana de 8 semanas) escalan: golpe
+ * extra a Empleador, moral/lealtad más hundidas y —al filtrarse como noticia—
+ * también a la Comunidad (reputación y sentimiento). La ventana se guarda en
+ * state.recentFireWeeks.
+ */
 export function fireEmployee(state: GameState, employeeId: string): GameState {
   if (state.gameOver) throw new Error('La partida ha terminado');
   const employee = requireEmployee(state, employeeId);
   if (employee.founder) throw new Error('El fundador no puede despedirse a sí mismo');
 
-  const { teamMoraleHit, teamLoyaltyHit } = balance.staff.firing;
+  const fire = balance.staff.firing;
+  const mass = fire.massLayoff;
   const severance = balance.staff.severanceWeeks * employee.salary;
+
+  // Ventana móvil de despidos (docs/17 E3): este despido + los recientes dentro
+  // de la ventana. Al alcanzar el umbral es un ERE sonado con castigo escalado.
+  const recentFireWeeks = [
+    ...(state.recentFireWeeks ?? []).filter((w) => state.week - w < mass.windowWeeks),
+    state.week,
+  ];
+  const isMassLayoff = recentFireWeeks.length >= mass.threshold;
+
+  const teamMoraleHit = fire.teamMoraleHit + (isMassLayoff ? mass.teamMoraleHit : 0);
+  const teamLoyaltyHit = fire.teamLoyaltyHit + (isMassLayoff ? mass.teamLoyaltyHit : 0);
   const remaining = state.staff
     .filter((e) => e.id !== employeeId)
     .map((e) => ({
@@ -382,14 +401,24 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
       loyalty: clampStat(e.loyalty - teamLoyaltyHit),
     }));
 
-  // Despedir golpea la reputación como empleador (docs/05 §7 y docs/06 §2).
+  // Despedir golpea la reputación como empleador (docs/05 §7 y docs/06 §2); el
+  // ERE sonado añade el golpe extra y araña a la Comunidad (docs/17 E3).
   let studio: GameState['studio'] = { ...state.studio, capital: state.studio.capital - severance };
-  studio = withReputationDeltas(studio, { empleador: -balance.reputation.employer.firedHit });
+  studio = withReputationDeltas(studio, {
+    empleador: -(balance.reputation.employer.firedHit + (isMassLayoff ? mass.employerHit : 0)),
+    ...(isMassLayoff ? { comunidad: -mass.communityRepHit } : {}),
+  });
 
-  const next: GameState = {
+  const community = isMassLayoff
+    ? { ...state.community, sentiment: clampStat(state.community.sentiment - mass.sentimentHit) }
+    : state.community;
+
+  let next: GameState = {
     ...state,
     studio,
+    community,
     staff: remaining,
+    recentFireWeeks,
     stats: { ...state.stats, firedCount: state.stats.firedCount + 1 },
     projects: state.projects.map((p) =>
       p.assignedStaff.includes(employeeId)
@@ -401,11 +430,19 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
       rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
     },
   };
-  return appendLog(
+  next = appendLog(
     next,
     'staff',
     `${employee.name} ha sido despedido (finiquito: ${severance} 💰). El ambiente se resiente.`,
   );
+  if (isMassLayoff) {
+    next = appendLog(
+      next,
+      'comunidad',
+      `Despidos masivos (${recentFireWeeks.length} en ${mass.windowWeeks} semanas): la noticia se filtra y tu reputación como empleador se hunde.`,
+    );
+  }
+  return next;
 }
 
 /** Acción: formar a un empleado en una disciplina (docs/05 §6). */

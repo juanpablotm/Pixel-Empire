@@ -110,8 +110,20 @@ export function HypeGauge({ hype }: { hype: number }) {
         </svg>
       </div>
 
+      {/* Zona segura vs zona de riesgo (docs/17 E2, Pilar 2): la decisión legible. */}
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className={`flex items-center gap-1 ${overHyped ? 'text-ink-faint' : 'text-ok'}`}>
+          <span aria-hidden>🟢</span> Zona segura
+          <span className="text-ink-faint">(&lt;{Math.round(threshold * 100)} %)</span>
+        </span>
+        <span className={`flex items-center gap-1 ${overHyped ? 'text-danger' : 'text-ink-faint'}`}>
+          <span aria-hidden>🔴</span> Zona de riesgo
+        </span>
+      </div>
+
       <p className="text-xs text-ink-faint">
-        Más hype = más ventas de salida, pero el público juzgará el juego con más dureza.
+        Más hype = más ventas de salida, pero el público juzgará el juego con más dureza. En zona de
+        riesgo, si la reseña no cumple lo prometido, la cola de ventas y la reputación se resienten.
       </p>
     </div>
   );

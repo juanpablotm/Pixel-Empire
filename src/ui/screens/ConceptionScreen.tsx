@@ -10,6 +10,7 @@ import {
   lootBoxesBanned,
   monetizationFlagAvailable,
   platformAvailable,
+  sizeBlockReason,
   type Audience,
   type MonetizationModel,
   type ProjectSize,
@@ -209,11 +210,24 @@ export function ConceptionScreen() {
         </Field>
 
         <Field label="Tamaño del proyecto">
-          {SIZES.map((s) => (
-            <OptionButton key={s} selected={size === s} onClick={() => setSize(s)}>
-              {sizeLabels[s]}
-            </OptionButton>
-          ))}
+          {SIZES.map((s) => {
+            // Cada tamaño exige etapa de escala y plantilla mínimas (docs/17 E1):
+            // los bloqueados salen atenuados con su requisito (el AAA, hasta ser
+            // Corporación). El núcleo decide el motivo; la UI solo lo muestra.
+            const blocked = sizeBlockReason(game, s);
+            return (
+              <OptionButton
+                key={s}
+                selected={size === s}
+                disabled={blocked !== null}
+                title={blocked ?? undefined}
+                onClick={() => setSize(s)}
+              >
+                {sizeLabels[s]}
+                {blocked && <span className="ml-1.5 text-xs opacity-75">🔒 {blocked}</span>}
+              </OptionButton>
+            );
+          })}
         </Field>
 
         {/* Precio: palanca moral (docs/06 §2) */}
