@@ -17,6 +17,14 @@
  * su período propio — su escala temporal es de escena, no de transición.
  */
 
+/* Accesibilidad (Fase 7G, docs/10 §13): anillo de foco visible para TODO
+   control interactivo al navegar con teclado (los .btn ya tenían el suyo). */
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
 /* Latido del reloj con cada tick (docs/10 §6): la fecha "late" al avanzar
    la semana; el componente re-monta el chip con key={week}. */
 @keyframes tick-beat {
@@ -98,6 +106,15 @@
 [data-motion='reduced'] .meter-fill {
   transition: none;
 }
+
+/* Arte hero (Fase 7G, docs/10 §9): el parpadeo del cursor del terminal (E1)
+   y del punto EN VIVO (E6). Solo opacity; se apaga con movimiento reducido. */
+@keyframes hero-blink {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0.15; }
+}
+.hero-blink { animation: hero-blink 1.1s steps(1, end) infinite; }
+[data-motion='reduced'] .hero-blink { animation: none; }
 
 /*
  * Escenario hero de la vista principal (Fase 7A): telón con gradiente de la
@@ -243,7 +260,7 @@
   --text-strong: #d3fadf;
   --text-body: #a9e8bf;
   --text-mute: #6fbf8c;
-  --text-faint: #58a374;
+  --text-faint: #66b284;
   font-family: var(--font-brand);
   position: relative;
 }
@@ -297,7 +314,7 @@
   --border-line-hi: #6c685b;
   --text-strong: #1c1b15;
   --text-body: #2e2c24;
-  --text-mute: #555246;
+  --text-mute: #45422f;
   --text-faint: #4a4438;
   --accent-action: #1f7a44;
   --accent-action-hi: #2e9c5b;
@@ -306,6 +323,7 @@
   --accent-warn-hi: #5a4006;
   --accent-danger: #a3242a;
   --accent-danger-hi: #8b1e23;
+  --accent-danger-deep: #a3242a;
   --accent-info: #23539c;
   --accent-capital: #7a5206;
   --ring-focus: #1f7a44;
@@ -355,6 +373,7 @@
   --accent-warn-hi: #5a4006;
   --accent-danger: #a3242a;
   --accent-danger-hi: #8b1e23;
+  --accent-danger-deep: #a3242a;
   --accent-info: #1a5fb4;
   --accent-capital: #7a5206;
   --ring-focus: #1a5fb4;
@@ -401,7 +420,7 @@
   --text-strong: #f6f0ff;
   --text-body: #ddd3ef;
   --text-mute: #a99ec8;
-  --text-faint: #8d81b2;
+  --text-faint: #9489b7;
   --accent-info: #67e8f9;
   --ring-focus: #67e8f9;
 }

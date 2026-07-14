@@ -4,6 +4,7 @@ import {
   buyResearch,
   createGameLoop,
   createInitialState,
+  createSandboxState,
   fireEmployee,
   hireCandidate,
   launchMarketingCampaign,
@@ -94,6 +95,15 @@ export interface GameStore {
    * esencial (partículas, desplazamientos) además de `prefers-reduced-motion`.
    */
   reduceMotion: boolean;
+  /** Sonido procedural activado (docs/10 §12, Fase 7G). El juego es perfecto muteado. */
+  soundOn: boolean;
+  /** Volumen maestro 0..1 (docs/10 §12): mezcla sutil por defecto. */
+  soundVolume: number;
+  /**
+   * Escalado de fuente (docs/10 §13, Fase 7G): multiplicador sobre el tamaño
+   * base del documento. Accesibilidad pura; lo aplica EraSkinProvider.
+   */
+  fontScale: FontScale;
   /** Avanza 1 semana (1 tick) inmediatamente. */
   advanceWeek: () => void;
   /** Cambia la velocidad del bucle: 0 = pausa, 1/2/4 = multiplicador. */
@@ -114,6 +124,12 @@ export interface GameStore {
   setColorTheme: (theme: ColorTheme) => void;
   /** Activa/desactiva "Reducir animaciones" (persistido en localStorage). */
   setReduceMotion: (reduce: boolean) => void;
+  /** Activa/desactiva el sonido (persistido en localStorage). */
+  setSoundOn: (on: boolean) => void;
+  /** Fija el volumen maestro 0..1 (persistido en localStorage). */
+  setSoundVolume: (volume: number) => void;
+  /** Cambia el escalado de fuente (persistido en localStorage). */
+  setFontScale: (scale: FontScale) => void;
   /** Acciones del proyecto (delegan en core/). */
   startProject: (concept: ProjectConcept) => void;
   setFocus: (phase: DevPhaseNumber, allocation: FocusAllocation, projectId?: string) => void;
@@ -152,6 +168,12 @@ export interface GameStore {
   endTutorial: () => void;
   /** Empieza una partida nueva (pausada). */
   newGame: (seed?: number) => void;
+  /**
+   * Empieza una partida sandbox (Fase 7G, docs/01 §7): caja y 💡 de sobra,
+   * en la era elegida. Se desbloquea al terminar una partida (retiro o
+   * quiebra); el desbloqueo persiste en este navegador.
+   */
+  newSandbox: (era: EraId, seed?: number) => void;
   /** Guarda la partida en localStorage. */
   saveGame: () => void;
   /** Carga desde localStorage (pausada). Devuelve false si no hay guardado válido. */
@@ -161,10 +183,44 @@ export interface GameStore {
 /** Tema base de la UI (Fase 7A). Oscuro por defecto: es el look de juego. */
 export type ColorTheme = 'dark' | 'light';
 
+/** Escalado de fuente (docs/10 §13): base 100 %, grande 112,5 %, enorme 125 %. */
+export type FontScale = 'base' | 'grande' | 'enorme';
+
+/** Factor de cada escalado sobre el font-size raíz (rem-driven, docs/10 §13). */
+export const FONT_SCALE_FACTOR: Record<FontScale, number> = {
+  base: 1,
+  grande: 1.125,
+  enorme: 1.25,
+};
+
 const THEME_STORAGE_KEY = 'pixel-empire:color-theme';
 const MODERN_UI_STORAGE_KEY = 'pixel-empire:modern-ui';
 const REDUCE_MOTION_STORAGE_KEY = 'pixel-empire:reduce-motion';
 const ONBOARDING_STORAGE_KEY = 'pixel-empire:onboarding-done';
+const SANDBOX_STORAGE_KEY = 'pixel-empire:sandbox-unlocked';
+const SOUND_ON_STORAGE_KEY = 'pixel-empire:sound-on';
+const SOUND_VOLUME_STORAGE_KEY = 'pixel-empire:sound-volume';
+const FONT_SCALE_STORAGE_KEY = 'pixel-empire:font-scale';
+
+/**
+ * true si este navegador ya terminó una partida (retiro o quiebra): el modo
+ * sandbox queda desbloqueado para siempre (docs/01 §7, Fase 7G).
+ */
+export function sandboxUnlocked(): boolean {
+  try {
+    return localStorage.getItem(SANDBOX_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function markSandboxUnlocked(): void {
+  try {
+    localStorage.setItem(SANDBOX_STORAGE_KEY, 'true');
+  } catch {
+    // Sin almacenamiento: se volverá a desbloquear al terminar otra partida.
+  }
+}
 
 /**
  * true si el tutorial ya se completó o saltó en este navegador (Fase 7F):
@@ -214,6 +270,38 @@ function storedReduceMotion(): boolean {
   }
 }
 
+/** Preferencia de sonido guardada (docs/10 §12). Encendido por defecto. */
+function storedSoundOn(): boolean {
+  try {
+    return localStorage.getItem(SOUND_ON_STORAGE_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+/** Volumen maestro guardado, 0..1 (docs/10 §12: mezcla sutil por defecto). */
+function storedSoundVolume(): number {
+  try {
+    const stored = localStorage.getItem(SOUND_VOLUME_STORAGE_KEY);
+    // Ojo: Number(null) === 0 — sin preferencia guardada, el defecto es 0.5.
+    if (stored === null) return 0.5;
+    const parsed = Number(stored);
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : 0.5;
+  } catch {
+    return 0.5;
+  }
+}
+
+/** Escalado de fuente guardado (docs/10 §13). */
+function storedFontScale(): FontScale {
+  try {
+    const stored = localStorage.getItem(FONT_SCALE_STORAGE_KEY);
+    return stored === 'grande' || stored === 'enorme' ? stored : 'base';
+  } catch {
+    return 'base';
+  }
+}
+
 /** Semilla por defecto para partidas nuevas (fuera de core; no es lógica de juego). */
 const defaultSeed = (): number => Date.now() >>> 0;
 
@@ -237,6 +325,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   modernUi: storedModernUi(),
   colorTheme: storedColorTheme(),
   reduceMotion: storedReduceMotion(),
+  soundOn: storedSoundOn(),
+  soundVolume: storedSoundVolume(),
+  fontScale: storedFontScale(),
 
   advanceWeek: () => {
     const before = get().game;
@@ -284,6 +375,11 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       !after.projects.some((p) => p.id === get().activeProjectId)
     ) {
       set({ activeProjectId: after.projects[0]?.id ?? null });
+    }
+
+    // Terminar una partida (como sea) desbloquea el sandbox (docs/01 §7).
+    if (justEnded) {
+      markSandboxUnlocked();
     }
 
     if (eraChanged) {
@@ -339,6 +435,34 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
     }
     set({ reduceMotion: reduce });
+  },
+
+  setSoundOn: (on) => {
+    try {
+      localStorage.setItem(SOUND_ON_STORAGE_KEY, String(on));
+    } catch {
+      // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
+    }
+    set({ soundOn: on });
+  },
+
+  setSoundVolume: (volume) => {
+    const clamped = Math.min(1, Math.max(0, volume));
+    try {
+      localStorage.setItem(SOUND_VOLUME_STORAGE_KEY, String(clamped));
+    } catch {
+      // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
+    }
+    set({ soundVolume: clamped });
+  },
+
+  setFontScale: (scale) => {
+    try {
+      localStorage.setItem(FONT_SCALE_STORAGE_KEY, scale);
+    } catch {
+      // Sin almacenamiento disponible: la preferencia vive solo en la sesión.
+    }
+    set({ fontScale: scale });
   },
 
   startProject: (concept) => {
@@ -419,6 +543,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   retire: () => {
     gameLoop.setSpeed(0);
+    markSandboxUnlocked();
     set((s) => ({ game: retireStudio(s.game), speed: 0, screen: 'legado' }));
   },
 
@@ -443,6 +568,20 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     gameLoop.setSpeed(0);
     set({
       game: createInitialState(seed),
+      speed: 0,
+      screen: 'estudio',
+      reviewGameId: null,
+      activeProjectId: null,
+      eraTransition: null,
+      awardsWeek: null,
+      tutorialStep: null,
+    });
+  },
+
+  newSandbox: (era, seed = defaultSeed()) => {
+    gameLoop.setSpeed(0);
+    set({
+      game: createSandboxState(seed, era),
       speed: 0,
       screen: 'estudio',
       reviewGameId: null,

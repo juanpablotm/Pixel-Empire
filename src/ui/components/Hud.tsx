@@ -34,20 +34,37 @@ export function Hud() {
         <BrandLockup />
       </h1>
 
+      {/* Cada métrica explica qué es en su tooltip (docs/10 §13: transparencia);
+          los tooltips también salen con el teclado (tabIndex + :focus-visible). */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         {/* key={week}: el chip re-monta y "late" con cada tick (docs/10 §6). */}
-        <span key={week} className="chip tick-beat font-mono tabular-nums text-ink-hi">
+        <span
+          key={week}
+          tabIndex={0}
+          className="tip chip tick-beat cursor-help font-mono tabular-nums text-ink-hi"
+          data-tip="El tiempo avanza por semanas (1 tick = 1 semana; 52 = 1 año). Controla la velocidad a la derecha o pausa con Espacio."
+        >
           {formatWeek(week)}
         </span>
-        <span className="chip" title={`${era} · ${getEra(era).period}`}>
+        <span
+          tabIndex={0}
+          className="tip chip cursor-help"
+          data-tip={`${era} · ${getEra(era).period}. Cada era trae plataformas, géneros y modelos nuevos — y sube el listón de calidad del público.`}
+        >
           🌍 {getEra(era).name}
         </span>
-        <span className="chip">{stageLabels[scaleStage]}</span>
+        <span
+          tabIndex={0}
+          className="tip chip cursor-help"
+          data-tip="Etapa de escala: Garaje → Estudio → Consolidado → Corporación. Se sube con capital y plantilla; cada etapa da aforo y proyectos en paralelo."
+        >
+          {stageLabels[scaleStage]}
+        </span>
         <button
           type="button"
           onClick={() => goTo('finanzas')}
-          title={loan > 0 ? `Caja (préstamo vivo: ${formatMoney(loan)})` : 'Ver finanzas'}
-          className={`font-mono text-base font-semibold tabular-nums transition-colors hover:underline ${
+          data-tip={`Caja del estudio${loan > 0 ? ` (préstamo vivo: ${formatMoney(loan)})` : ''}. Paga sueldos, desarrollo y marketing; en rojo sostenido = bancarrota. Clic para ver Finanzas.`}
+          className={`tip font-mono text-base font-semibold tabular-nums transition-colors hover:underline ${
             inTheRed ? 'animate-pulse text-danger' : 'text-capital'
           }`}
         >
@@ -55,22 +72,28 @@ export function Hud() {
           {loan > 0 && <span aria-hidden> 🏦</span>}
         </button>
         <MoralScale />
-        <span className="flex items-center gap-1.5 text-ink" title="Reputación por segmento">
+        <span
+          tabIndex={0}
+          className="tip flex cursor-help items-center gap-1.5 text-ink"
+          data-tip="Reputación media ponderada de los 5 segmentos (hardcore, casual, crítica, comunidad, empleador). El radar enseña el detalle: cada palanca tiene víctimas concretas."
+        >
           <ReputationRadar reputation={reputation} size={34} />
           <span className="tabular-nums">⭐ {aggregate}</span>
         </span>
         {scandalActive && (
           <span
-            className="chip chip-danger animate-pulse"
-            title="Hay un escándalo en curso: las ventas sufren"
+            tabIndex={0}
+            className="tip chip chip-danger animate-pulse cursor-help"
+            data-tip="Hay un escándalo en curso: la deuda de reputación acumulada estalló y las ventas sufren."
           >
             💥 Escándalo
           </span>
         )}
         {bombingActive && (
           <span
-            className="chip chip-danger animate-pulse"
-            title="Review bombing en curso: nota visible y ventas hundidas hasta que amaine o lo gestiones"
+            tabIndex={0}
+            className="tip chip chip-danger animate-pulse cursor-help"
+            data-tip="Review bombing en curso: nota visible y ventas hundidas hasta que amaine o lo gestiones."
           >
             💣 Review bombing
           </span>

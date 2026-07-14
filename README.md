@@ -58,6 +58,7 @@ documentos de diseño numerados (`00`–`12`) están en la carpeta **`docs/`**. 
 | 12 | `docs/12-decisiones-cerradas.md` | Registro de cierre de decisiones (baseline v1) |
 | 13 | `docs/13-plan-visual-fase7.md` | Plan detallado de la Fase 7 (rework visual, 7A–7G) |
 | 14 | `docs/14-guia-arte-isometrico.md` | ⚠️ OPCIONAL/FUTURO: upgrade isométrico (no es la dirección actual; la vigente es flat) |
+| 15 | `docs/15-checklist-playtest.md` | Checklist de playtest y "definición de hecho" para pulir el juego |
 
 ---
 

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { getAwardCategory } from '../../data/awards';
 import { useGameStore } from '../../state/store';
 import { celebrateAwards } from '../confetti';
+import { AwardsSplash } from './HeroArt';
 import { PopIn } from './Motion';
 
 /**
@@ -31,7 +32,9 @@ export function AwardsModal() {
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-capital">
           Gala anual · {year}
         </p>
-        <h2 className="review-pop mt-2 text-3xl font-black text-capital">🏆 ¡Premiados!</h2>
+        {/* La viñeta hero de la gala (Fase 7G, docs/10 §9). */}
+        <AwardsSplash className="review-pop mx-auto -mb-2 mt-1 w-full max-w-xs" />
+        <h2 className="review-pop mt-2 text-3xl font-black text-capital">¡Premiados!</h2>
         <ul className="mt-5 flex flex-col gap-3">
           {won.map((award, i) => (
             <li
@@ -52,6 +55,7 @@ export function AwardsModal() {
         </p>
         <button
           type="button"
+          autoFocus
           onClick={dismiss}
           className="mt-5 rounded-md bg-capital px-6 py-2.5 text-sm font-semibold text-onbright hover:bg-capital/90"
         >

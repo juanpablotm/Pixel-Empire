@@ -290,7 +290,7 @@ export function DevelopmentScreen() {
             onClick={() => setCrunch(!project.crunch, project.id)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               project.crunch
-                ? 'bg-danger-hi text-oncolor hover:bg-danger-hi'
+                ? 'bg-danger-deep text-oncolor hover:bg-danger-deep'
                 : 'bg-raised text-ink hover:bg-control'
             } ${antiCrunch && !project.crunch ? 'cursor-not-allowed opacity-50' : ''}`}
           >

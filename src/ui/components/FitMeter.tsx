@@ -14,7 +14,13 @@ const BAND_INFO: Record<FitBand, { label: string; color: string; segments: numbe
 export function FitMeter({ band }: { band: FitBand }) {
   const info = BAND_INFO[band];
   return (
-    <div className="flex items-center gap-3" role="status" aria-label={`Fit: ${info.label}`}>
+    <div
+      className="tip flex cursor-help items-center gap-3"
+      tabIndex={0}
+      data-tip="El Fit mide qué tal casan tema, género, plataforma y público. Es el cimiento de la calidad: un mal encaje no se arregla con producción."
+      role="status"
+      aria-label={`Fit: ${info.label}`}
+    >
       <div className="flex gap-1">
         {[0, 1, 2].map((i) => (
           <div

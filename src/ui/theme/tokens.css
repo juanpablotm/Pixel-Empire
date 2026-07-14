@@ -38,21 +38,25 @@
   --border-line: #262d3a;
   --border-line-hi: #3b4557;
 
-  /* Texto: hueso cálido sobre tinta (identidad, no blanco puro). */
+  /* Texto: hueso cálido sobre tinta (identidad, no blanco puro).
+     Los tonos mute/faint garantizan AA (≥4.5) hasta sobre --surface-control. */
   --text-strong: #f2efe6;
   --text-body: #cdd2d8;
   --text-mute: #93a0b5;
-  --text-faint: #8a94a4;
+  --text-faint: #96a0b0;
   --text-oncolor: #f7f5ec;
 
-  /* Acentos. Acción = verde integridad (docs/10 §2). */
+  /* Acentos. Acción = verde integridad (docs/10 §2).
+     El rojo va en dos tonos AA (Fase 7G): --accent-danger es TEXTO/borde
+     sobre superficies; --accent-danger-deep es FONDO bajo texto claro. */
   --accent-action: #1e7a45;
   --accent-action-hi: #2e9c5b;
   --accent-ok: #4fb377;
   --accent-warn: #d9a83c;
   --accent-warn-hi: #e3b95e;
-  --accent-danger: #e05252;
+  --accent-danger: #e4605f;
   --accent-danger-hi: #eb6a6a;
+  --accent-danger-deep: #b23336;
   --accent-info: #5f9ee8;
   --accent-capital: #e8b44a;
 
@@ -96,8 +100,8 @@
 
   --text-strong: #1a1e27;
   --text-body: #2d323d;
-  --text-mute: #5e6675;
-  --text-faint: #666d80;
+  --text-mute: #4e5566;
+  --text-faint: #545b6a;
   --text-oncolor: #f7f5ec;
 
   --accent-action: #1f7a44;
@@ -107,8 +111,9 @@
   --accent-warn-hi: #7d5509;
   --accent-danger: #c03a3e;
   --accent-danger-hi: #a92f33;
+  --accent-danger-deep: #c03a3e;
   --accent-info: #2d69b8;
-  --accent-capital: #b57b17;
+  --accent-capital: #8f5f0a;
 
   --ring-focus: #1f7a44;
   --shadow-flat: 0 2px 0 rgba(26, 30, 39, 0.12);
@@ -143,6 +148,7 @@
   --color-warn-hi: var(--accent-warn-hi);
   --color-danger: var(--accent-danger);
   --color-danger-hi: var(--accent-danger-hi);
+  --color-danger-deep: var(--accent-danger-deep);
   --color-info: var(--accent-info);
   --color-capital: var(--accent-capital);
   --color-skin-accent: var(--skin-accent);
@@ -236,13 +242,15 @@
     background-color: var(--accent-warn-hi);
   }
 
+  /* El fondo rojo usa el tono deep (AA con texto claro, Fase 7G); el hover
+     oscurece en vez de aclarar para no perder contraste. */
   .btn-danger {
-    background-color: var(--accent-danger);
+    background-color: var(--accent-danger-deep);
     color: var(--text-oncolor);
     box-shadow: var(--shadow-flat);
   }
   .btn-danger:hover:not(:disabled) {
-    background-color: var(--accent-danger-hi);
+    background-color: color-mix(in oklab, var(--accent-danger-deep) 82%, black);
   }
 
   .btn-ghost {

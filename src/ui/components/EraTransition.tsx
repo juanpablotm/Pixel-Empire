@@ -8,6 +8,7 @@ import { platforms } from '../../data/platforms';
 import { themes } from '../../data/themes';
 import { useGameStore } from '../../state/store';
 import { eraSkins } from '../theme/eraSkins';
+import { EraSplash } from './HeroArt';
 
 /**
  * La Transición de Era (docs/10 §7.6, innovación I7): beat a pantalla
@@ -53,6 +54,10 @@ export function EraTransition() {
         >
           Nueva era · {era.period}
         </p>
+        {/* El splash hero de la era entrante (Fase 7G, docs/10 §9). */}
+        <div className="era-overlay-line -my-2" style={{ animationDelay: '200ms' }}>
+          <EraSplash era={eraId} className="mx-auto w-full max-w-md" />
+        </div>
         <h2
           className="era-overlay-line text-4xl font-black text-ink-hi"
           style={{ animationDelay: '300ms' }}
@@ -99,6 +104,7 @@ export function EraTransition() {
 
         <button
           type="button"
+          autoFocus
           onClick={dismiss}
           className="era-overlay-line mx-auto rounded-md px-6 py-2.5 text-sm font-semibold text-onbright"
           style={{ backgroundColor: 'var(--skin-accent)', animationDelay: '1100ms' }}

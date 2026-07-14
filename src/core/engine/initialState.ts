@@ -1,4 +1,6 @@
 import { balance } from '../../data/balance';
+import { getEra } from '../../data/eras';
+import type { EraId } from '../model/era';
 import type { GameState } from '../model/gameState';
 import type { LegacyTrackedStats } from '../model/moral';
 import { initialCommunityState } from '../systems/community';
@@ -17,6 +19,26 @@ export function initialLegacyStats(): LegacyTrackedStats {
     scandalCount: 0,
     earlyTrendReleases: 0,
     firedCount: 0,
+  };
+}
+
+/**
+ * Crea el estado inicial de una partida SANDBOX (docs/01 §7, Fase 7G):
+ * la misma simulación, pero con caja y 💡 de sobra (balance.sandbox) y
+ * empezando en la era elegida (el mercado arranca en su semana histórica).
+ * Puro y determinista, como todo el núcleo.
+ */
+export function createSandboxState(seed: number, startEra: EraId): GameState {
+  const startWeek = getEra(startEra).startWeek;
+  const base = createInitialState(seed);
+  return {
+    ...base,
+    week: startWeek,
+    era: startEra,
+    market: createMarketState(startWeek),
+    studio: { ...base.studio, capital: balance.sandbox.initialCapital },
+    research: { ...base.research, points: balance.sandbox.researchPoints },
+    stats: { ...base.stats, peakCapital: balance.sandbox.initialCapital },
   };
 }
 

@@ -32,7 +32,13 @@ export function HypeGauge({ hype }: { hype: number }) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between text-sm">
-        <span className="font-semibold uppercase tracking-wide text-ink-mute">📣 Hype</span>
+        <span
+          tabIndex={0}
+          className="tip cursor-help font-semibold uppercase tracking-wide text-ink-mute"
+          data-tip="Expectación del público: sube ventas de salida, pero en zona roja el juego se compara con lo prometido — si no cumple, la reseña y la comunidad lo castigan."
+        >
+          📣 Hype
+        </span>
         <span className={`tabular-nums ${overHyped ? 'font-semibold text-danger' : 'text-ink'}`}>
           {pct} %{overHyped && ' — ¡sobre-hype!'}
         </span>

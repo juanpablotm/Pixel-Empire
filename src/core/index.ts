@@ -72,7 +72,7 @@ export type {
 export { makeRng } from './engine/rng';
 export type { Rng } from './engine/rng';
 export { tick } from './engine/tick';
-export { createInitialState, initialLegacyStats } from './engine/initialState';
+export { createInitialState, createSandboxState, initialLegacyStats } from './engine/initialState';
 export { createGameLoop, SPEEDS } from './engine/gameLoop';
 export type { GameLoop, Speed } from './engine/gameLoop';
 

@@ -11,7 +11,11 @@ export function SentimentMeter({ sentiment }: { sentiment: number }) {
   return (
     <div className="review-pop flex flex-col gap-1">
       <div className="flex items-baseline justify-between text-sm">
-        <span className="font-semibold uppercase tracking-wide text-ink-mute">
+        <span
+          tabIndex={0}
+          className="tip cursor-help font-semibold uppercase tracking-wide text-ink-mute"
+          data-tip="El humor de la comunidad a corto plazo: reacciona a lanzamientos, crisis y gestos, y multiplica (o hunde) las ventas semanales. A la larga revierte hacia tu reputación."
+        >
           <span className={pct <= 38 ? 'inline-block animate-pulse' : 'inline-block'}>{emoji}</span>{' '}
           Sentimiento
         </span>

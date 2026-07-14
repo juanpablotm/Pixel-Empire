@@ -1,5 +1,6 @@
 import { useGameStore } from '../../state/store';
 import { formatWeek } from '../format';
+import { GameOverSplash } from './HeroArt';
 
 /**
  * Fin de partida: bancarrota (docs/06 §1) o retiro. Modal por encima de todo,
@@ -27,9 +28,11 @@ export function GameOverOverlay() {
           bankrupt ? 'border-danger/30' : 'border-line-hi'
         } bg-panel`}
       >
-        <span className="text-4xl" aria-hidden>
-          {bankrupt ? '📉' : '🏛️'}
-        </span>
+        {/* La viñeta hero del cierre (Fase 7G, docs/10 §9). */}
+        <GameOverSplash
+          variant={bankrupt ? 'bancarrota' : 'retiro'}
+          className="-mt-2 w-full max-w-sm"
+        />
         <h2 className={`text-2xl font-bold ${bankrupt ? 'text-danger' : 'text-ink'}`}>
           {bankrupt ? 'Bancarrota' : 'El estudio cierra'}
         </h2>
@@ -45,6 +48,7 @@ export function GameOverOverlay() {
         <div className="flex gap-3">
           <button
             type="button"
+            autoFocus
             onClick={() => goTo('legado')}
             className="rounded-md bg-control px-4 py-2 text-sm font-medium text-ink hover:bg-control-hi"
           >

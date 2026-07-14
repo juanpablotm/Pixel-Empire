@@ -1,8 +1,10 @@
 import { useState, type CSSProperties } from 'react';
+import { eras } from '../../data/eras';
 import { hasSave } from '../../save/saveLoad';
-import { onboardingCompleted, useGameStore } from '../../state/store';
+import { onboardingCompleted, sandboxUnlocked, useGameStore } from '../../state/store';
 import { useMotionDisabled } from '../motion';
 import { PopIn } from '../components/Motion';
+import { FontScaleSelect, SoundControls } from '../components/PreferenceControls';
 import { PixelCrown } from '../theme/BrandMark';
 
 /**
@@ -14,6 +16,7 @@ import { PixelCrown } from '../theme/BrandMark';
  */
 export function TitleScreen() {
   const newGame = useGameStore((s) => s.newGame);
+  const newSandbox = useGameStore((s) => s.newSandbox);
   const loadGame = useGameStore((s) => s.loadGame);
   const enterGame = useGameStore((s) => s.enterGame);
   const startTutorial = useGameStore((s) => s.startTutorial);
@@ -22,8 +25,10 @@ export function TitleScreen() {
   const motionOff = useMotionDisabled();
 
   const [showOptions, setShowOptions] = useState(false);
-  // Se evalúa al montar: el título se re-monta en cada visita.
+  const [showSandbox, setShowSandbox] = useState(false);
+  // Se evalúan al montar: el título se re-monta en cada visita.
   const [saveAvailable] = useState(() => hasSave());
+  const [sandboxAvailable] = useState(() => sandboxUnlocked());
   const [loadFailed, setLoadFailed] = useState(false);
 
   const onNewGame = () => {
@@ -103,6 +108,20 @@ export function TitleScreen() {
         </button>
         <button
           type="button"
+          disabled={!sandboxAvailable}
+          aria-expanded={showSandbox}
+          title={
+            sandboxAvailable
+              ? 'Caja y puntos de investigación de sobra, en la era que elijas'
+              : 'Se desbloquea al terminar tu primera partida (retiro o quiebra)'
+          }
+          onClick={() => setShowSandbox((v) => !v)}
+          className="btn btn-quiet justify-center py-2.5 text-base"
+        >
+          🧪 Sandbox {sandboxAvailable ? '' : '🔒'}
+        </button>
+        <button
+          type="button"
           aria-expanded={showOptions}
           onClick={() => setShowOptions((v) => !v)}
           className="btn btn-ghost justify-center py-2.5 text-base"
@@ -115,6 +134,32 @@ export function TitleScreen() {
           </p>
         )}
       </nav>
+
+      {showSandbox && sandboxAvailable && (
+        <PopIn className="card flex w-80 max-w-full flex-col gap-3">
+          <h2 className="card-title">Sandbox — elige tu era de arranque</h2>
+          <p className="text-xs text-ink-mute">
+            1.000.000 💰 y 200 💡 para experimentar sin presión. La simulación
+            es la misma; solo cambia el punto de partida.
+          </p>
+          <div className="flex flex-col gap-1">
+            {eras.map((era) => (
+              <button
+                key={era.id}
+                type="button"
+                onClick={() => {
+                  newSandbox(era.id);
+                  enterGame();
+                }}
+                className="btn btn-quiet justify-between text-sm"
+              >
+                <span>{era.name}</span>
+                <span className="font-mono text-xs text-ink-faint">{era.period}</span>
+              </button>
+            ))}
+          </div>
+        </PopIn>
+      )}
 
       {showOptions && (
         <PopIn className="card flex w-80 max-w-full flex-col gap-3">
@@ -190,6 +235,11 @@ function OptionToggles() {
         />
         Reducir animaciones
       </label>
+      {/* Sonido y accesibilidad (Fase 7G, docs/10 §12–§13). */}
+      <div className="border-t border-line pt-2">
+        <SoundControls />
+      </div>
+      <FontScaleSelect />
     </div>
   );
 }

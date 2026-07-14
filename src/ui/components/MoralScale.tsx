@@ -27,8 +27,9 @@ export function MoralScale() {
 
   return (
     <div
-      className="flex items-center"
-      title={`La Balanza "El Precio": la conciencia del estudio está ${leaning}.`}
+      className="tip flex cursor-help items-center"
+      tabIndex={0}
+      data-tip={`La Balanza "El Precio": la conciencia del estudio está ${leaning}. Loot boxes, precios abusivos y crunch la inclinan al dorado; lanzamientos honestos y cuidar al equipo, al verde.`}
       role="meter"
       aria-label="Balanza El Precio: codicia frente a integridad"
       aria-valuemin={-1}

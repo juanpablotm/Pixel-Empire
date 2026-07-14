@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useGameStore } from '../../state/store';
+import { FONT_SCALE_FACTOR, useGameStore } from '../../state/store';
 import { useMotionDisabled, useReducedMotionPref } from '../motion';
 import { motionMs } from './motionTokens';
 import { previousEra, skinFor } from './eraSkins';
@@ -22,8 +22,19 @@ export function EraSkinProvider({ children }: { children: ReactNode }) {
   const pendingEra = useGameStore((s) => s.eraTransition);
   const modernUi = useGameStore((s) => s.modernUi);
   const colorTheme = useGameStore((s) => s.colorTheme);
+  const fontScale = useGameStore((s) => s.fontScale);
   const reducedMotion = useReducedMotionPref();
   const motionOff = useMotionDisabled();
+
+  // Escalado de fuente (docs/10 §13, Fase 7G): toda la UI se mide en rem,
+  // así que basta con escalar el font-size raíz del documento.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.style.fontSize = `${FONT_SCALE_FACTOR[fontScale] * 100}%`;
+    return () => {
+      document.documentElement.style.fontSize = '';
+    };
+  }, [fontScale]);
 
   // Acto 1: el beat todavía no se cerró → se muestra la piel de la era vieja.
   const shownEra = pendingEra !== null ? previousEra(era) : era;

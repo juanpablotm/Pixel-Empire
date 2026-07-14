@@ -23,6 +23,16 @@ export const balance = {
     logMaxEntries: 100,
   },
 
+  /**
+   * Modo sandbox (docs/01 §7, Fase 7G): desbloqueable tras terminar una
+   * partida. Caja y 💡 de sobra para experimentar sin presión, empezando en
+   * la era que se quiera. Solo datos: la simulación es exactamente la misma.
+   */
+  sandbox: {
+    initialCapital: 1_000_000,
+    researchPoints: 200,
+  },
+
   economy: {
     /** Capital inicial del garaje: 10.000 💰 [DECIDIDO, docs/12 §6]. */
     initialCapital: 10_000,
@@ -226,8 +236,13 @@ export const balance = {
 
   /** Puntuación de Legado (docs/06 §6): normalizaciones de cada eje 0..100. */
   legacy: {
-    /** Riqueza: 100 puntos al alcanzar este capital máximo histórico. */
-    wealthCapitalScale: 500_000,
+    /**
+     * Riqueza: 100 puntos al alcanzar este capital máximo histórico.
+     * Afinado en 7G (bots de partida completa): con 500k saturaba —
+     * el umbral de corporación ya es 800k; 100 de riqueza debe exigir
+     * un imperio de verdad, no solo llegar a la etapa 4.
+     */
+    wealthCapitalScale: 2_000_000,
     /** Prestigio: mezcla de reputación agregada y reseña media histórica. */
     prestigeRepWeight: 0.6,
     prestigeReviewWeight: 0.4,

@@ -72,7 +72,7 @@ function StreamScreen({ stream, game }: { stream: StreamResult; game: ReleasedGa
         </div>
       </div>
 
-      <span className="absolute left-2 top-2 flex items-center gap-1.5 rounded bg-danger px-2 py-0.5 text-[0.65rem] font-black uppercase tracking-widest text-oncolor">
+      <span className="absolute left-2 top-2 flex items-center gap-1.5 rounded bg-danger-deep px-2 py-0.5 text-[0.65rem] font-black uppercase tracking-widest text-oncolor">
         <span className="stream-live-dot h-1.5 w-1.5 rounded-full bg-oncolor" aria-hidden />
         En directo
       </span>
