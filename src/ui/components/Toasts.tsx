@@ -1,19 +1,19 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import type { LogEntry } from '../../core';
+import { TOAST_HIDDEN_TYPES } from '../../data/notifications';
 import { useGameStore } from '../../state/store';
 import { useMotionDisabled } from '../motion';
 import { ease, motionSec, TOAST_HOLD_MS, TOASTS_MAX } from '../theme/motionTokens';
 
 /**
- * Toasts de notificación (docs/10 §6): los eventos nuevos del historial
- * entran deslizándose y se auto-descartan. Presentación pura: observa
- * `game.log` (que escribe el núcleo) y no calcula nada. Los beats con
- * presentación propia (lanzamiento, era, premios, fin) no se duplican aquí.
+ * Toasts de notificación (docs/10 §6): las notificaciones MENORES (docs/17 U4).
+ * Los eventos nuevos del historial entran deslizándose y se auto-descartan.
+ * Presentación pura: observa `game.log` (que escribe el núcleo) y no calcula
+ * nada. Los eventos IMPORTANTES tienen su propia superficie (beat dedicado o
+ * modal de aviso que pausa) y no se duplican aquí: la lista de tipos ocultos
+ * vive, data-driven, en data/notifications.ts (TOAST_HIDDEN_TYPES).
  */
-
-/** Tipos con overlay/pantalla dedicada: sin toast (ya tienen su momento). */
-const SILENCED: ReadonlySet<LogEntry['type']> = new Set(['lanzamiento', 'era', 'premios', 'fin']);
 
 const ICONS: Record<LogEntry['type'], string> = {
   proyecto: '🎮',
@@ -61,7 +61,7 @@ export function Toasts() {
     }
     const known = seen.current;
     const fresh = log.filter(
-      (e) => !known.has(entryKey(e)) && !SILENCED.has(e.type) && e.week >= week - 1,
+      (e) => !known.has(entryKey(e)) && !TOAST_HIDDEN_TYPES.has(e.type) && e.week >= week - 1,
     );
     log.forEach((e) => known.add(entryKey(e)));
     if (fresh.length === 0) return;

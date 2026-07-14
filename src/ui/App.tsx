@@ -7,6 +7,7 @@ import { DilemmaModal } from './components/DilemmaModal';
 import { EraTransition } from './components/EraTransition';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { Hud } from './components/Hud';
+import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { MoralTint } from './components/MoralScale';
 import { ScreenFade } from './components/Motion';
 import { FontScaleSelect, SoundControls } from './components/PreferenceControls';
@@ -81,11 +82,13 @@ function useKeyboardShortcuts(): void {
         return;
       }
 
-      // Con una decisión en pantalla, el teclado no salta por encima.
+      // Con una decisión o un aviso importante en pantalla, el teclado no salta
+      // por encima (no reanuda el tiempo bajo el modal, docs/17 U4).
       const decisionOpen =
         s.game.gameOver !== null ||
         s.eraTransition !== null ||
         s.awardsWeek !== null ||
+        s.pendingNotices.length > 0 ||
         s.game.community.crises.some((c) => c.status === 'abierta') ||
         s.game.community.dilemmas.length > 0;
       if (decisionOpen) return;
@@ -156,6 +159,9 @@ export function App() {
         {/* Los beats de la Fase 6: el mundo cambia y la gala anual (docs/10 §7.6). */}
         <EraTransition />
         <AwardsModal />
+        {/* Avisos importantes que pausan el tiempo (docs/17 U4): P&L de salida
+            del mercado, renuncias, bancarrota inminente, subida de etapa. */}
+        <ImportantNoticeModal />
         <GameOverOverlay />
 
         {/* La guía del tutorial (Fase 7F): resalta controles reales, nunca bloquea. */}

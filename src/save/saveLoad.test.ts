@@ -259,6 +259,43 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(() => tick(state)).not.toThrow();
   });
 
+  it('migra un guardado v7 (Fase 6) al esquema actual: coste del juego y startWeek (docs/17 U4)', () => {
+    const concept = {
+      name: 'Juego v7',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+    } as const;
+
+    // (a) Un juego lanzado sin `cost`: se estima por tamaño/plataforma.
+    let withGame = startProject(createInitialState(SEED), concept);
+    for (let i = 0; i < 12 && withGame.releasedGames.length === 0; i++) withGame = tick(withGame);
+    const strippedGames = withGame.releasedGames.map((g) => {
+      const copy = { ...g };
+      delete (copy as { cost?: number }).cost;
+      return copy;
+    });
+    const gameState = deserializeSave(
+      JSON.stringify({ saveVersion: 7, state: { ...withGame, releasedGames: strippedGames } }),
+    );
+    expect(gameState.releasedGames[0].cost).toBeGreaterThan(0);
+    expect(() => tick(gameState)).not.toThrow();
+
+    // (b) Un proyecto en curso sin `startWeek`: se fija en la semana actual.
+    const inFlight = startProject(createInitialState(SEED), concept);
+    const strippedProjects = inFlight.projects.map((p) => {
+      const copy = { ...p };
+      delete (copy as { startWeek?: number }).startWeek;
+      return copy;
+    });
+    const projectState = deserializeSave(
+      JSON.stringify({ saveVersion: 7, state: { ...inFlight, projects: strippedProjects } }),
+    );
+    expect(projectState.projects[0].startWeek).toBe(projectState.week);
+  });
+
   it('al cargar, sanea el hype de partidas antiguas que quedaron por encima del tope (docs/17 B2)', () => {
     let state = startProject(createInitialState(SEED), {
       name: 'Desbordado',

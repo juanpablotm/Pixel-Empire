@@ -46,6 +46,13 @@ export interface Project {
    * como crisis de promesa rota — siempre trazable a esa decisión.
    */
   overPromised: boolean;
+  /**
+   * Semana en que arrancó el desarrollo (docs/17 U4). Fija el coste de
+   * desarrollo atribuible al juego para el P&L de "sale del mercado":
+   * (releaseWeek − startWeek) × devCostPerPersonWeek. Opcional para que los
+   * proyectos de saves previos sigan siendo válidos (heredan coste dev 0).
+   */
+  startWeek?: number;
   /** Fase de desarrollo en curso. */
   phase: DevPhaseNumber;
   /** Reparto de esfuerzo por fase: focus[fase - 1]. */

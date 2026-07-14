@@ -84,6 +84,14 @@ export interface ReleasedGame {
   totalRevenue: number;
   /** Parte de totalRevenue que vino de microtransacciones (docs/06 §4). */
   mtxRevenue: number;
+  /**
+   * Coste atribuible al juego, fijado al lanzar (docs/17 U4): licencia de
+   * plataforma + desarrollo (semanas·coste) + marketing comprado. Alimenta el
+   * P&L del aviso "sale del mercado" (generó vs costó). No incluye la nómina
+   * general del estudio, que es un coste compartido entre proyectos. Opcional
+   * para que los juegos de fases/saves previos sigan siendo válidos.
+   */
+  cost?: number;
   /** false cuando las ventas semanales caen bajo el umbral y el juego sale del mercado. */
   salesActive: boolean;
   /**

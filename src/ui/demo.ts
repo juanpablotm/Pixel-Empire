@@ -11,7 +11,7 @@ import {
   type ReviewLine,
 } from '../core';
 import { eraOrder, getEra } from '../data/eras';
-import { useGameStore, type Screen } from '../state/store';
+import { useGameStore, type ImportantNotice, type Screen } from '../state/store';
 
 /**
  * Arnés de demostración SOLO para desarrollo (docs/13: "verificación visual").
@@ -227,6 +227,28 @@ function creatorsDemo(): GameState {
   return { ...base, releasedGames: [game] };
 }
 
+/**
+ * Cola de avisos importantes de escaparate (docs/17 U4): el P&L de salida del
+ * mercado al frente (para la captura), seguido de renuncia, bancarrota y
+ * subida de etapa, para revisar el drenado uno a uno.
+ */
+function noticeQueue(): ImportantNotice[] {
+  return [
+    {
+      id: 1,
+      kind: 'marketExit',
+      gameId: 'demo-game',
+      gameName: 'Órbita Rota',
+      revenue: 1_240_000,
+      cost: 465_000,
+      units: 41_800,
+    },
+    { id: 2, kind: 'staffLeft', employeeName: 'Marta Navarro', role: 'Técnica' },
+    { id: 3, kind: 'bankruptcyWarning', graceWeeks: 8 },
+    { id: 4, kind: 'scaleUp', stage: 4, stageName: 'Corporación' },
+  ];
+}
+
 /** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
 function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
@@ -273,6 +295,13 @@ export function applyDemoFromQuery(): boolean {
   }
   if (demo === 'creators') {
     seed(creatorsDemo(), 'creadores', null);
+    return true;
+  }
+  // Los avisos importantes que pausan el tiempo (docs/17 U4): el modal de P&L
+  // al frente. `&era=E4` reviste el estudio de fondo con su piel.
+  if (demo === 'aviso') {
+    seed(studioDemo(), 'estudio', null);
+    useGameStore.setState({ pendingNotices: noticeQueue() });
     return true;
   }
   // El beat de transición de era (7E): overlay sobre la piel de la era vieja.

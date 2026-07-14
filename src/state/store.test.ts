@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInitialState } from '../core';
+import { createFounder, createInitialState, startProject, tick, type GameState } from '../core';
 import { balance } from '../data/balance';
 import { useGameStore } from './store';
 
@@ -126,5 +126,166 @@ describe('useGameStore — estado + acciones que delegan en core (docs/08 §6)',
     const { game, speed } = useGameStore.getState();
     expect(game.gameOver).not.toBeNull();
     expect(speed).toBe(0);
+  });
+});
+
+/** Estado con un juego ya lanzado (vía el flujo real del núcleo). */
+function stateWithReleasedGame(): GameState {
+  let s = startProject(createInitialState(SEED), CONCEPT);
+  for (let i = 0; i < 12 && s.releasedGames.length === 0; i++) s = tick(s);
+  return s;
+}
+
+describe('avisos importantes de dos niveles (docs/17 U4)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.getState().setSpeed(0);
+    useGameStore.setState({
+      game: createInitialState(SEED),
+      speed: 0,
+      pendingNotices: [],
+      screen: 'estudio',
+    });
+  });
+
+  afterEach(() => {
+    useGameStore.getState().setSpeed(0);
+    vi.useRealTimers();
+  });
+
+  it('un juego que sale del mercado encola un aviso con su P&L y pausa', () => {
+    const base = stateWithReleasedGame();
+    const game = base.releasedGames[0];
+    // Envejecemos el juego para que sus ventas caigan bajo el umbral este tick.
+    const old = { ...game, releaseWeek: base.week - 400, salesActive: true };
+    useGameStore.setState({
+      game: { ...base, projects: [], releasedGames: [old] },
+      speed: 1,
+      pendingNotices: [],
+    });
+
+    useGameStore.getState().advanceWeek();
+
+    const { game: after, pendingNotices, speed } = useGameStore.getState();
+    expect(after.releasedGames[0].salesActive).toBe(false);
+    const notice = pendingNotices.find((n) => n.kind === 'marketExit');
+    expect(notice).toMatchObject({
+      kind: 'marketExit',
+      gameId: old.id,
+      revenue: old.totalRevenue,
+      cost: old.cost,
+    });
+    expect(speed).toBe(0);
+  });
+
+  it('la primera semana en números rojos encola un aviso de bancarrota', () => {
+    const base = createInitialState(SEED);
+    // Caja mínima: los costes fijos la dejan en negativo este tick.
+    useGameStore.setState({
+      game: { ...base, studio: { ...base.studio, capital: 50 } },
+      pendingNotices: [],
+    });
+
+    useGameStore.getState().advanceWeek();
+
+    const { game, pendingNotices } = useGameStore.getState();
+    expect(game.negativeWeeks).toBe(1);
+    expect(game.gameOver).toBeNull();
+    expect(pendingNotices.some((n) => n.kind === 'bankruptcyWarning')).toBe(true);
+  });
+
+  it('subir de etapa de escala encola un aviso', () => {
+    const base = createInitialState(SEED);
+    useGameStore.setState({
+      game: {
+        ...base,
+        studio: {
+          ...base.studio,
+          capital: balance.staff.scale.stage2CapitalThreshold + 10_000,
+        },
+      },
+      pendingNotices: [],
+    });
+
+    useGameStore.getState().advanceWeek();
+
+    const { game, pendingNotices } = useGameStore.getState();
+    expect(game.studio.scaleStage).toBe(2);
+    const notice = pendingNotices.find((n) => n.kind === 'scaleUp');
+    expect(notice).toMatchObject({ kind: 'scaleUp', stage: 2 });
+  });
+
+  it('una renuncia encola un aviso importante', () => {
+    const base = createInitialState(SEED);
+    const founder = base.staff[0];
+    // Un empleado hundido (no fundador) acaba renunciando; caja de sobra para
+    // que no se cuele un aviso de bancarrota.
+    const miserable = {
+      ...createFounder(SEED),
+      id: 'triste',
+      name: 'Triste',
+      founder: false,
+      salary: 500,
+      morale: 0,
+      loyalty: 0,
+      energy: 0,
+    };
+    useGameStore.setState({
+      game: {
+        ...base,
+        studio: { ...base.studio, capital: 1_000_000, scaleStage: 2 },
+        staff: [founder, miserable],
+      },
+      pendingNotices: [],
+    });
+
+    let guard = 0;
+    while (useGameStore.getState().game.staff.length > 1 && guard < 80) {
+      useGameStore.getState().advanceWeek();
+      guard += 1;
+    }
+
+    expect(useGameStore.getState().game.staff).toHaveLength(1);
+    expect(useGameStore.getState().pendingNotices.some((n) => n.kind === 'staffLeft')).toBe(true);
+  });
+
+  it('un despido no encola aviso (es acción del jugador, no sorpresa)', () => {
+    const base = createInitialState(SEED);
+    const founder = base.staff[0];
+    const hire = {
+      ...createFounder(SEED),
+      id: 'contratado',
+      name: 'Contratado',
+      founder: false,
+      salary: 500,
+    };
+    useGameStore.setState({
+      game: {
+        ...base,
+        studio: { ...base.studio, capital: 1_000_000, scaleStage: 2 },
+        staff: [founder, hire],
+      },
+      pendingNotices: [],
+    });
+
+    useGameStore.getState().fire('contratado');
+
+    expect(useGameStore.getState().game.staff).toHaveLength(1);
+    expect(useGameStore.getState().pendingNotices).toHaveLength(0);
+  });
+
+  it('dismissNotice drena la cola de uno en uno', () => {
+    useGameStore.setState({
+      pendingNotices: [
+        { id: 1, kind: 'bankruptcyWarning', graceWeeks: 8 },
+        { id: 2, kind: 'scaleUp', stage: 2, stageName: 'Estudio pequeño' },
+      ],
+    });
+
+    useGameStore.getState().dismissNotice();
+    expect(useGameStore.getState().pendingNotices.map((n) => n.id)).toEqual([2]);
+
+    useGameStore.getState().dismissNotice();
+    expect(useGameStore.getState().pendingNotices).toHaveLength(0);
   });
 });

@@ -32,11 +32,13 @@ import {
   type GameState,
   type MotivationKind,
   type ProjectConcept,
+  type ScaleStage,
   type Specialty,
   type Speed,
   type StudioPolicies,
 } from '../core';
 import { balance } from '../data/balance';
+import { specialtyLabels, stageLabels } from '../data/staffTexts';
 import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
 
 /**
@@ -48,6 +50,48 @@ import { loadFromLocalStorage, saveToLocalStorage } from '../save/saveLoad';
 
 /** Frente de la app (Fase 7F, docs/13 7F): pantalla de título o partida. */
 export type AppMode = 'title' | 'game';
+
+/**
+ * Aviso importante encolado (docs/17 U4): estado de PRESENTACIÓN que el
+ * ImportantNoticeModal drena de uno en uno. La clasificación menor/importante
+ * vive en data/notifications.ts; el store solo detecta los eventos por diff del
+ * estado puro y los encola (la pausa la dispara el store/UI, no el núcleo).
+ */
+export interface MarketExitNotice {
+  id: number;
+  kind: 'marketExit';
+  gameId: string;
+  gameName: string;
+  /** Lo que generó en toda su vida (ingresos, incluye MTX). */
+  revenue: number;
+  /** Lo que costó (desarrollo + licencia + marketing; docs/17 U4). */
+  cost: number;
+  units: number;
+}
+export interface StaffLeftNotice {
+  id: number;
+  kind: 'staffLeft';
+  employeeName: string;
+  /** Etiqueta de la especialidad, para el texto del aviso. */
+  role: string;
+}
+export interface BankruptcyNotice {
+  id: number;
+  kind: 'bankruptcyWarning';
+  /** Semanas de gracia antes de la bancarrota (docs/06 §1). */
+  graceWeeks: number;
+}
+export interface ScaleUpNotice {
+  id: number;
+  kind: 'scaleUp';
+  stage: ScaleStage;
+  stageName: string;
+}
+export type ImportantNotice =
+  | MarketExitNotice
+  | StaffLeftNotice
+  | BankruptcyNotice
+  | ScaleUpNotice;
 
 /** Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). */
 export type Screen =
@@ -86,6 +130,12 @@ export interface GameStore {
   eraTransition: EraId | null;
   /** Semana de la última gala de premios pendiente de mostrar (docs/06 §7). */
   awardsWeek: number | null;
+  /**
+   * Cola de avisos importantes pendientes (docs/17 U4): el modal los muestra de
+   * uno en uno y el jugador los descarta con "Aceptar/Continuar". Mientras haya
+   * avisos, el tiempo está en pausa.
+   */
+  pendingNotices: ImportantNotice[];
   /** Toggle "UI moderna siempre": desactiva las pieles de era (docs/10 §8). */
   modernUi: boolean;
   /** Tema base claro/oscuro (Fase 7A, docs/10 §2). Preferencia de UI pura. */
@@ -118,6 +168,8 @@ export interface GameStore {
   dismissEraTransition: () => void;
   /** Cierra el modal de la gala de premios. */
   dismissAwards: () => void;
+  /** Descarta el aviso importante del frente de la cola (docs/17 U4). */
+  dismissNotice: () => void;
   /** Activa/desactiva las pieles de era (docs/10 §8: "UI moderna siempre"). */
   setModernUi: (modern: boolean) => void;
   /** Cambia el tema base claro/oscuro (persistido en localStorage). */
@@ -305,6 +357,9 @@ function storedFontScale(): FontScale {
 /** Semilla por defecto para partidas nuevas (fuera de core; no es lógica de juego). */
 const defaultSeed = (): number => Date.now() >>> 0;
 
+/** Ids incrementales para los avisos importantes (clave estable de React). */
+let nextNoticeId = 1;
+
 /** Bucle real (timers) fuera de React; despacha ticks contra el store. */
 const gameLoop = createGameLoop(
   () => useGameStore.getState().advanceWeek(),
@@ -322,6 +377,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   activeProjectId: null,
   eraTransition: null,
   awardsWeek: null,
+  pendingNotices: [],
   modernUi: storedModernUi(),
   colorTheme: storedColorTheme(),
   reduceMotion: storedReduceMotion(),
@@ -352,6 +408,62 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const eraChanged = after.era !== before.era;
     const awardsWon = after.studio.awards.length > before.studio.awards.length;
 
+    // Avisos importantes de dos niveles (docs/17 U4): se detectan por diff del
+    // estado puro (sin animación) y se encolan como estado de presentación; el
+    // ImportantNoticeModal los drena de uno en uno. La clasificación vive en
+    // data/notifications.ts. Los beats con superficie propia (crisis, era,
+    // premios) no pasan por aquí: ya tienen su momento señal.
+    const notices: ImportantNotice[] = [];
+
+    // Un juego cae bajo el umbral y sale del mercado → P&L (generó vs costó).
+    for (const g of after.releasedGames) {
+      const prev = before.releasedGames.find((p) => p.id === g.id);
+      if (prev && prev.salesActive && !g.salesActive) {
+        notices.push({
+          id: nextNoticeId++,
+          kind: 'marketExit',
+          gameId: g.id,
+          gameName: g.name,
+          revenue: g.totalRevenue,
+          cost: g.cost ?? 0,
+          units: g.totalUnits,
+        });
+      }
+    }
+
+    // Renuncias: quien estaba y ya no, durante el tick, se ha ido por su pie
+    // (los despidos son otra acción y no pasan por advanceWeek).
+    const afterStaffIds = new Set(after.staff.map((e) => e.id));
+    for (const e of before.staff) {
+      if (!afterStaffIds.has(e.id)) {
+        notices.push({
+          id: nextNoticeId++,
+          kind: 'staffLeft',
+          employeeName: e.name,
+          role: specialtyLabels[e.specialty],
+        });
+      }
+    }
+
+    // Primera semana en números rojos: aviso de bancarrota inminente (docs/06 §1).
+    if (before.negativeWeeks === 0 && after.negativeWeeks >= 1 && after.gameOver === null) {
+      notices.push({
+        id: nextNoticeId++,
+        kind: 'bankruptcyWarning',
+        graceWeeks: balance.economy.bankruptcyGraceWeeks,
+      });
+    }
+
+    // Desbloqueo de etapa de escala (docs/02 §4).
+    if (after.studio.scaleStage > before.studio.scaleStage) {
+      notices.push({
+        id: nextNoticeId++,
+        kind: 'scaleUp',
+        stage: after.studio.scaleStage,
+        stageName: stageLabels[after.studio.scaleStage],
+      });
+    }
+
     if (
       released ||
       justEnded ||
@@ -361,10 +473,16 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       dilemmaFired ||
       eraChanged ||
       awardsWon ||
-      phaseChanged
+      phaseChanged ||
+      notices.length > 0
     ) {
       gameLoop.setSpeed(0);
-      set({ game: after, speed: 0 });
+      set((s) => ({
+        game: after,
+        speed: 0,
+        pendingNotices:
+          notices.length > 0 ? [...s.pendingNotices, ...notices] : s.pendingNotices,
+      }));
     } else {
       set({ game: after });
     }
@@ -409,6 +527,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   dismissEraTransition: () => set({ eraTransition: null }),
 
   dismissAwards: () => set({ awardsWeek: null }),
+
+  dismissNotice: () => set((s) => ({ pendingNotices: s.pendingNotices.slice(1) })),
 
   setModernUi: (modern) => {
     try {
@@ -574,6 +694,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       activeProjectId: null,
       eraTransition: null,
       awardsWeek: null,
+      pendingNotices: [],
       tutorialStep: null,
     });
   },
@@ -588,6 +709,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       activeProjectId: null,
       eraTransition: null,
       awardsWeek: null,
+      pendingNotices: [],
       tutorialStep: null,
     });
   },
@@ -609,6 +731,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         activeProjectId: loaded.projects[0]?.id ?? null,
         eraTransition: null,
         awardsWeek: null,
+        pendingNotices: [],
         tutorialStep: null,
       });
       return true;

@@ -92,6 +92,7 @@ export {
   projectCap,
   projectProgress,
   projectTotalWeeks,
+  releasedGameCost,
   setFocus,
   startProject,
   toggleFeature,

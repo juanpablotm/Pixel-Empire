@@ -3,6 +3,7 @@ import {
   createFounder,
   createMarketState,
   defaultPolicies,
+  estimateProject,
   initialCommunityState,
   initialLegacyStats,
   initialReputation,
@@ -17,7 +18,7 @@ import { defaultMonetization } from '../data/monetization';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -150,6 +151,25 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       research: initialResearchState(),
       policies: defaultPolicies(),
       studio: { ...file.state.studio, awards: [], awardHype: 0 },
+    },
+  }),
+  // v7 (Fase 6) → v8 (Fase 8.2): coste atribuible del juego para el P&L del
+  // aviso "sale del mercado" (docs/17 U4) y semana de inicio del proyecto.
+  // Retroactivo: los juegos viejos estiman su coste por tamaño/plataforma (sin
+  // marketing, desconocido); los proyectos en curso pierden su coste dev previo
+  // (arrancan el contador ahora). Los nuevos guardan el dato real.
+  7: (file) => ({
+    saveVersion: 8,
+    state: {
+      ...file.state,
+      projects: file.state.projects.map((p) => ({
+        ...p,
+        startWeek: p.startWeek ?? file.state.week,
+      })),
+      releasedGames: file.state.releasedGames.map((g) => ({
+        ...g,
+        cost: g.cost ?? estimateProject(g.size, g.platformId).cost,
+      })),
     },
   }),
 };

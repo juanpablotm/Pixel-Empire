@@ -169,6 +169,24 @@ export function estimateProject(size: ProjectSize, platformId: string): {
   return { weeks, cost };
 }
 
+/**
+ * Coste atribuible al juego al lanzarlo (docs/17 U4): licencia de plataforma +
+ * desarrollo (semanas de calendario · coste por persona·semana) + marketing
+ * comprado. Es el "costó" del P&L de "sale del mercado". No incluye la nómina
+ * general del estudio (coste compartido entre proyectos), a propósito y de
+ * forma legible (Pilar 2).
+ */
+export function releasedGameCost(project: Project, releaseWeek: number): number {
+  const licenseCost = getPlatform(project.platformId).licenseCost;
+  const devWeeks = Math.max(0, releaseWeek - (project.startWeek ?? releaseWeek));
+  const devCost = devWeeks * balance.economy.devCostPerPersonWeek;
+  const marketingCost = project.marketingUsed.reduce(
+    (sum, level) => sum + (balance.economy.marketing.levels[level]?.cost ?? 0),
+    0,
+  );
+  return Math.round(licenseCost + devCost + marketingCost);
+}
+
 /** Empleados sin proyecto ni I+D: el equipo por defecto de un proyecto nuevo. */
 function unassignedStaff(state: GameState): Employee[] {
   const busy = new Set<string>(state.research.rdStaff);
@@ -242,6 +260,7 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     // Arranca con quien esté libre (sin proyecto ni I+D; docs/02 §2 paso 2).
     assignedStaff: unassignedStaff(state).map((e) => e.id),
     crunch: false,
+    startWeek: state.week,
     // Los premios del año pasado inflan el anuncio (docs/06 §7); aun así el
     // hype de salida entra clampeado a su rango (docs/17 B2).
     hype: clampHype(state.studio.awardHype),
@@ -368,6 +387,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     totalUnits: 0,
     totalRevenue: 0,
     mtxRevenue: 0,
+    cost: releasedGameCost(project, state.week),
     salesActive: true,
     overPromised: project.overPromised,
   };

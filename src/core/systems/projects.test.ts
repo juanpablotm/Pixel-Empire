@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
+import { getPlatform } from '../../data/platforms';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
 import {
   projectTotalWeeks,
+  releasedGameCost,
   setFocus,
   startProject,
   toggleFeature,
@@ -67,6 +69,36 @@ describe('startProject — concepción (docs/02 §2 paso 1)', () => {
     expect(() =>
       startProject(createInitialState(SEED), { ...CONCEPT, themeId: 'inexistente' }),
     ).toThrow(/Tema desconocido/);
+  });
+
+  it('fija startWeek en la semana de concepción (docs/17 U4)', () => {
+    const state = withProject();
+    expect(state.projects[0].startWeek).toBe(state.week);
+  });
+});
+
+describe('coste atribuible del juego para el P&L (docs/17 U4)', () => {
+  it('releasedGameCost = licencia + desarrollo (semanas·coste) + marketing', () => {
+    const project = { ...withProject().projects[0], startWeek: 3, marketingUsed: [0, 1] };
+    const releaseWeek = 3 + 4; // 4 semanas de calendario en desarrollo
+    const licenseCost = getPlatform(project.platformId).licenseCost;
+    const devCost = 4 * balance.economy.devCostPerPersonWeek;
+    const marketing =
+      balance.economy.marketing.levels[0].cost + balance.economy.marketing.levels[1].cost;
+    expect(releasedGameCost(project, releaseWeek)).toBe(
+      Math.round(licenseCost + devCost + marketing),
+    );
+  });
+
+  it('un proyecto sin startWeek (save viejo) no imputa coste de desarrollo', () => {
+    const project = { ...withProject().projects[0], startWeek: undefined, marketingUsed: [] };
+    const licenseCost = getPlatform(project.platformId).licenseCost;
+    expect(releasedGameCost(project, 50)).toBe(licenseCost);
+  });
+
+  it('el juego lanzado guarda su coste (cost > 0) al salir a la venta', () => {
+    const released = runUntilRelease(withProject());
+    expect(released.releasedGames[0].cost).toBeGreaterThan(0);
   });
 });
 

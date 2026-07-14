@@ -145,6 +145,17 @@ servicio de la transparencia.
 | Transición de pantalla | Navegación | fade/slide framer | fast |
 | Latido del reloj / tick | Avance de semana | escala leve del icono de tiempo | instant |
 
+### 6.1 Notificaciones de dos niveles `[DECIDIDO · Fase 8.2, docs/17 U4]`
+Para que el jugador no se pierda lo importante, las notificaciones tienen **dos niveles**, clasificados
+en datos (`src/data/notifications.ts`, fácil de reajustar):
+- **Menores → toast** (abajo-derecha, no interrumpen): ventas rutinarias, cambios leves de sentimiento.
+  Los pinta `Toasts` leyendo el historial; oculta los tipos con superficie importante (`TOAST_HIDDEN_TYPES`).
+- **Importantes → pausan el tiempo**: unas tienen su **beat dedicado** (§7: gala de reseña, transición
+  de era, gala de premios, crisis); las demás usan un **modal genérico** centrado con "Aceptar/Continuar"
+  (`ImportantNoticeModal`): un juego que **sale del mercado** (con resumen **P&L** generó vs costó,
+  Pilar 2), cualquier **renuncia**, el **aviso de bancarrota** inminente y la **subida de etapa de escala**.
+  La pausa la dispara el estado/UI al encolar el aviso, nunca el núcleo (docs/08).
+
 ---
 
 ## 7. Momentos "señal" (signature moments) `[DECIDIDO · innovación]`
@@ -290,11 +301,40 @@ Nuevos (para las innovaciones): `OfficeScene` (§5), `FloatingBubbleLayer` (§5.
 
 Todos temáticos (claro/oscuro **y piel de era**) desde `ui/theme`, y sin lógica de simulación dentro (`08`).
 
-## 12. Feedback sonoro (opcional) `[DECIDIDO · opcional]`
+## 12. Sonido `[DECIDIDO · opcional]`
 
-Sin archivos de audio necesarios: blips procedurales con **Web Audio API** (orbes, ticks, chime de buena
-reseña, thud grave de crisis) + un hum ambiental de oficina. Mezcla sutil, con **toggle de silencio** y
-volumen. Es un plus de Fase 7; el juego funciona muteado.
+Plus de Fase 7; el juego funciona muteado. Todo con **toggle de silencio** y volumen.
+
+### 12.1 Efectos (SFX) — Web Audio, sin archivos
+Blips procedurales con **Web Audio API**: orbes de desarrollo, ticks del reloj, chime de buena reseña,
+thud grave de crisis, hum ambiental de oficina. Mezcla sutil.
+
+### 12.2 Música de fondo por periodos
+Música instrumental que **evoluciona con las eras**, para que las horas de gestión no cansen. En vez de
+7 pistas sueltas (riesgo de incoherencia), **4 "periodos musicales"** con ADN común (acogedor/positivo,
+~80 BPM, instrumental, loopable) y la instrumentación envejeciendo:
+
+| Periodo | Eras | Estilo |
+|---------|------|--------|
+| Retro | E1–E2 | Chiptune / 8-bit cálido y nostálgico |
+| Transición | E3–E4 | Lo-fi con instrumentación más rica (CD/rock suave) |
+| Moderno | E5–E6 | Lo-fi / synthwave pulido |
+| Futuro | E7 | Ambient / electrónico etéreo |
+
+- **Data-driven:** `era → periodo → pista(s)`, como las pieles (§8); el cambio de pista se engancha al
+  **beat de transición de era** (§7.6).
+- **Loop:** cada pista empieza/termina estable; se reproduce en bucle con crossfade; ten 2-3 por periodo.
+- **Incremental:** se puede lanzar con una pista y añadir periodos después. No bloquea.
+- **Fuente:** IA (Gemini/Lyria 3, clips ~30s, instrumental). Prompts en §12.3.
+- ⚠️ **Licencia:** las pistas de IA llevan marca SynthID; revisar términos de uso comercial antes de publicar.
+
+### 12.3 Prompts de música (Gemini / Lyria 3) `[baseline]`
+Generar los 4 como un **set relacionado** (escucharlos juntos para que peguen). Base común en todos:
+instrumental, sin voz, ~80 BPM, discreto, loopable.
+
+Retro (E1–E2): `chiptune/8-bit cálido y nostálgico de garaje` · Transición (E3–E4): `lo-fi con
+instrumentación más rica, aire 90s CD/rock suave` · Moderno (E5–E6): `lo-fi/synthwave pulido` ·
+Futuro (E7): `ambient/electrónico etéreo y espacioso`. (Prompts completos en el chat de diseño.)
 
 ## 13. Accesibilidad y UX de calidad `[DECIDIDO]`
 
