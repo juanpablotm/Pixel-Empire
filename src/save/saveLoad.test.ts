@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createInitialState, startProject, tick } from '../core';
+import { balance } from '../data/balance';
 import {
   deserializeSave,
   loadFromLocalStorage,
@@ -256,6 +257,21 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(state.studio.awardHype).toBe(0);
     // Un tick sobre el estado migrado no revienta.
     expect(() => tick(state)).not.toThrow();
+  });
+
+  it('al cargar, sanea el hype de partidas antiguas que quedaron por encima del tope (docs/17 B2)', () => {
+    let state = startProject(createInitialState(SEED), {
+      name: 'Desbordado',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'grande',
+    });
+    // Un build anterior al clamp único pudo dejar el manómetro por encima del tope.
+    state = { ...state, projects: state.projects.map((p) => ({ ...p, hype: 3.5 })) };
+    const loaded = deserializeSave(serializeSave(state));
+    expect(loaded.projects[0].hype).toBe(balance.market.hype.max);
   });
 
   it('el JSON incluye saveVersion', () => {

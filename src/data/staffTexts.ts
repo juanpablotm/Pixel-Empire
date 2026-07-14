@@ -38,3 +38,16 @@ export const stageLabels: Record<ScaleStage, string> = {
   3: 'Estudio consolidado',
   4: 'Corporación',
 };
+
+/**
+ * Motivos por los que el botón de contratar se deshabilita (docs/17 B1). La
+ * lógica los elige en core/systems/staff.ts (hireBlockReason); la UI solo los
+ * muestra como texto visible. Copy centralizado aquí, junto al resto de
+ * etiquetas del personal.
+ */
+export const hireBlockedLabels = {
+  gameOver: 'La partida ha terminado',
+  garage: 'En el garaje no cabe nadie más: consigue capital para mudarte',
+  officeFull: 'Oficina llena — mejórala',
+  noFunds: 'No te llega el capital para contratar',
+} as const;

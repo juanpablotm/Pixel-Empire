@@ -8,7 +8,9 @@ import { tick } from '../engine/tick';
 import type { Platform } from '../model/content';
 import type { GameState } from '../model/gameState';
 import type { ReleasedGame } from '../model/release';
+import type { Employee } from '../model/staff';
 import {
+  clampHype,
   comboKey,
   computeSegmentReviews,
   createMarketState,
@@ -302,6 +304,76 @@ describe('hype — doble filo en ventas (docs/04 §4, CA)', () => {
     expect(game.reviewsBySegment.prensa).toBeDefined();
     expect(game.reviewsBySegment.hardcore).toBeDefined();
     expect(game.reviewsBySegment.casual).toBeDefined();
+  });
+});
+
+describe('el hype nunca desborda su tope (docs/17 B2)', () => {
+  const max = balance.market.hype.max;
+
+  /** Estrella mediática: aporta hype extra al equipo (docs/07 §6). */
+  function mediaStar(): Employee {
+    return {
+      id: 'estrella',
+      name: 'Estrella Mediática',
+      avatarSeed: 'star',
+      specialty: 'marketing',
+      skills: { diseno: 40, tecnica: 40, arte: 40, audio: 40, marketing: 80 },
+      traits: ['estrellaMediatica'],
+      morale: 80,
+      energy: 100,
+      loyalty: 70,
+      salary: 2_000,
+      level: 5,
+      xp: 0,
+      founder: false,
+      burnedOut: false,
+      weeksLowEnergy: 0,
+    };
+  }
+
+  it('clampHype acota a [0, tope] venga el valor de donde venga', () => {
+    expect(clampHype(5)).toBe(max);
+    expect(clampHype(-3)).toBe(0);
+    expect(clampHype(0.42)).toBeCloseTo(0.42, 10);
+  });
+
+  it('acumular todas las fuentes base sin comprar marketing nunca pasa del tope', () => {
+    // Estudio pequeño con una Estrella mediática (hype extra) y premios
+    // pendientes al máximo: todas las fuentes "gratis" de hype a la vez, y un
+    // AAA que se cuece muchas semanas. Sin una sola campaña de marketing.
+    const base = createInitialState(SEED);
+    let s: GameState = {
+      ...base,
+      studio: {
+        ...base.studio,
+        scaleStage: 2,
+        capital: 5_000_000,
+        awardHype: balance.awards.rewards.hypeCap,
+      },
+      staff: [...base.staff, mediaStar()],
+    };
+    s = startProject(s, { ...CONCEPT, size: 'aaa' });
+    // El anuncio nace con el hype de los premios, ya clampeado a su rango.
+    for (const p of s.projects) expect(p.hype).toBeLessThanOrEqual(max);
+
+    for (let i = 0; i < 80 && s.releasedGames.length === 0; i++) {
+      s = tick(s);
+      for (const p of s.projects) {
+        expect(p.hype).toBeGreaterThanOrEqual(0);
+        expect(p.hype).toBeLessThanOrEqual(max);
+      }
+    }
+    expect(s.releasedGames.length).toBeGreaterThan(0);
+    // El hype con el que salió al mercado tampoco desborda.
+    for (const g of s.releasedGames) expect(g.hypeAtRelease).toBeLessThanOrEqual(max);
+  });
+
+  it('acumular con el manómetro ya en el tope lo deja en el tope, no por encima', () => {
+    let s = startProject(createInitialState(SEED), { ...CONCEPT, size: 'aaa' });
+    // Forzar Producción (el hype ya corre) y saturar el manómetro; una semana más.
+    s = { ...s, projects: s.projects.map((p) => ({ ...p, phase: 2, hype: max })) };
+    const after = tick(s);
+    expect(after.projects[0].hype).toBe(max);
   });
 });
 

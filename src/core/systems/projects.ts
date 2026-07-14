@@ -18,6 +18,7 @@ import type {
 import type { ReleasedGame } from '../model/release';
 import { applyReleaseCommunityEffects } from './community';
 import {
+  clampHype,
   computeSegmentReviews,
   effectiveSaturation,
   platformAvailable,
@@ -241,8 +242,9 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     // Arranca con quien esté libre (sin proyecto ni I+D; docs/02 §2 paso 2).
     assignedStaff: unassignedStaff(state).map((e) => e.id),
     crunch: false,
-    // Los premios del año pasado inflan el anuncio (docs/06 §7).
-    hype: state.studio.awardHype,
+    // Los premios del año pasado inflan el anuncio (docs/06 §7); aun así el
+    // hype de salida entra clampeado a su rango (docs/17 B2).
+    hype: clampHype(state.studio.awardHype),
     weeksSpent: 0,
     designPoints: 0,
     techPoints: 0,

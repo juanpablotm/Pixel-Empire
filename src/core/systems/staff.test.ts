@@ -16,13 +16,16 @@ import {
   computeTeamOutput,
   fireEmployee,
   generateCandidates,
+  hireBlockReason,
   hireCandidate,
   hiringCost,
   motivateEmployee,
   setCrunch,
+  staffCap,
   toggleAssignment,
   trainEmployee,
 } from './staff';
+import { hireBlockedLabels } from '../../data/staffTexts';
 
 /**
  * Sistema de personal (docs/05): teamFactor real (docs/03 factor E), química
@@ -285,6 +288,40 @@ describe('acciones del jugador (docs/05 §6)', () => {
     const full: GameState = { ...withStage2(sevenMore), candidates: pool };
     expect(full.staff).toHaveLength(8);
     expect(() => hireCandidate(full, pool[0].id)).toThrow(/llena/);
+  });
+
+  it('aforo (docs/17 B1): hireBlockReason da el motivo visible y corta al llegar al tope', () => {
+    const pool = generateCandidates(SEED, 1);
+    const cap = staffCap(withStage2()); // 8 en el estudio pequeño
+
+    // Con hueco: sin motivo de bloqueo y se puede contratar.
+    const room: GameState = { ...withStage2(), candidates: pool };
+    expect(room.staff.length).toBeLessThan(cap);
+    expect(hireBlockReason(room)).toBeNull();
+    expect(() => hireCandidate(room, pool[0].id)).not.toThrow();
+
+    // Justo en el aforo: el botón se deshabilita con «Oficina llena — mejórala».
+    const fillers = Array.from({ length: cap - 1 }, (_, i) => makeEmployee({ id: `full-${i}` }));
+    const atCap: GameState = { ...withStage2(fillers), candidates: pool };
+    expect(atCap.staff).toHaveLength(cap);
+    expect(hireBlockReason(atCap)).toBe(hireBlockedLabels.officeFull);
+    expect(() => hireCandidate(atCap, pool[0].id)).toThrow(hireBlockedLabels.officeFull);
+
+    // El garaje tiene su propio motivo (aún no hay oficina).
+    const garage: GameState = { ...createInitialState(SEED), candidates: pool };
+    expect(hireBlockReason(garage)).toBe(hireBlockedLabels.garage);
+  });
+
+  it('partida antigua por encima del aforo: sigue bloqueada, no se cuela nadie más (docs/17 B1)', () => {
+    // Un save viejo pudo quedar con más plantilla que el aforo de su etapa. El
+    // aforo se lee de la etapa ACTUAL, así que queda bloqueado igual al cargar.
+    const pool = generateCandidates(SEED, 1);
+    const cap = staffCap(withStage2());
+    const legacy = Array.from({ length: cap + 2 }, (_, i) => makeEmployee({ id: `legacy-${i}` }));
+    const overCap: GameState = { ...withStage2(legacy), candidates: pool };
+    expect(overCap.staff.length).toBeGreaterThan(cap);
+    expect(hireBlockReason(overCap)).toBe(hireBlockedLabels.officeFull);
+    expect(() => hireCandidate(overCap, pool[0].id)).toThrow(hireBlockedLabels.officeFull);
   });
 
   it('despedir: finiquito, golpe de moral al resto y fuera del proyecto', () => {

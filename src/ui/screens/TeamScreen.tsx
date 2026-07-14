@@ -1,4 +1,5 @@
 import {
+  hireBlockReason,
   hiringCost,
   policiesUnlocked,
   salaryTierOf,
@@ -7,7 +8,7 @@ import {
   type SalaryPolicy,
 } from '../../core';
 import { balance } from '../../data/balance';
-import { specialtyLabels, stageLabels, tierLabels } from '../../data/staffTexts';
+import { hireBlockedLabels, specialtyLabels, stageLabels, tierLabels } from '../../data/staffTexts';
 import { getTrait } from '../../data/traits';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
@@ -102,12 +103,14 @@ function PoliciesPanel() {
 
 function CandidateCard({ candidate }: { candidate: Employee }) {
   const capital = useGameStore((s) => s.game.studio.capital);
-  const staffCount = useGameStore((s) => s.game.staff.length);
-  const cap = useGameStore((s) => staffCap(s.game));
+  // El motivo del bloqueo lo decide el núcleo (docs/17 B1); la UI solo lo
+  // muestra. El aforo (oficina llena) manda; si no, puede faltar caja.
+  const blockReason = useGameStore((s) => hireBlockReason(s.game));
   const hire = useGameStore((s) => s.hire);
 
   const cost = hiringCost(candidate);
-  const full = staffCount >= cap;
+  const reason = blockReason ?? (capital < cost ? hireBlockedLabels.noFunds : null);
+  const disabled = reason !== null;
 
   return (
     <article
@@ -150,19 +153,23 @@ function CandidateCard({ candidate }: { candidate: Employee }) {
         })}
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-line pt-3 text-sm">
-        <span className="text-ink-mute">
-          {formatMoney(candidate.salary)}/sem · contratar: {formatMoney(cost)}
-        </span>
-        <button
-          type="button"
-          onClick={() => hire(candidate.id)}
-          disabled={full || capital < cost}
-          title={full ? 'La oficina está llena' : undefined}
-          className="rounded-md bg-action px-3 py-1.5 text-xs font-medium text-oncolor hover:bg-action-hi disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"
-        >
-          Contratar
-        </button>
+      <div className="flex flex-col gap-2 border-t border-line pt-3 text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-ink-mute">
+            {formatMoney(candidate.salary)}/sem · contratar: {formatMoney(cost)}
+          </span>
+          <button
+            type="button"
+            onClick={() => hire(candidate.id)}
+            disabled={disabled}
+            title={reason ?? undefined}
+            className="rounded-md bg-action px-3 py-1.5 text-xs font-medium text-oncolor hover:bg-action-hi disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"
+          >
+            Contratar
+          </button>
+        </div>
+        {/* Motivo visible del bloqueo (docs/17 B1): no solo un tooltip. */}
+        {reason && <p className="text-xs font-medium text-danger">{reason}</p>}
       </div>
     </article>
   );
@@ -176,13 +183,17 @@ export function TeamScreen() {
   const showPolicies = useGameStore((s) => policiesUnlocked(s.game));
   const goTo = useGameStore((s) => s.goTo);
 
+  // Aforo alcanzado: la etapa no admite a nadie más hasta mejorar (docs/17 B1).
+  const officeFull = scaleStage > 1 && staff.length >= cap;
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">
           Equipo{' '}
-          <span className="text-sm font-normal text-ink-mute">
+          <span className={`text-sm font-normal ${officeFull ? 'text-danger' : 'text-ink-mute'}`}>
             {stageLabels[scaleStage]} · {staff.length}/{cap}
+            {officeFull && ` · ${hireBlockedLabels.officeFull}`}
           </span>
         </h2>
         <button

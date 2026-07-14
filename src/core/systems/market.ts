@@ -40,6 +40,16 @@ const clamp = (value: number, min: number, max: number): number =>
 /** Redondeo a 1 decimal para guardar ajustes legibles en el estado. */
 const round1 = (value: number): number => Math.round(value * 10) / 10;
 
+/**
+ * Clamp del hype a su rango [0, tope] (docs/04 §4). Punto ÚNICO por el que
+ * pasa toda suma de hype —desarrollo, creadores, marketing, premios, dilemas—
+ * para que NUNCA desborde el tope, venga de donde venga (docs/17 B2). Si en el
+ * futuro nace otra fuente de hype, clampearla aquí basta para mantener el tope.
+ */
+export function clampHype(value: number): number {
+  return clamp(value, 0, balance.market.hype.max);
+}
+
 // ---------------------------------------------------------------------------
 // Curvas guionizadas
 // ---------------------------------------------------------------------------
@@ -446,7 +456,7 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
       (cfg.hype.popCouplingBase + cfg.hype.popCouplingSpan * pop) *
       (1 + balance.community.mediaStarHypeCoef * starBonus) *
       hypeCapability;
-    return { ...project, hype: Math.min(cfg.hype.max, project.hype + gain) };
+    return { ...project, hype: clampHype(project.hype + gain) };
   });
 
   let next: GameState = { ...state, market, projects };

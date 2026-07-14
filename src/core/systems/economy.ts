@@ -1,6 +1,7 @@
 import { balance } from '../../data/balance';
 import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
+import { clampHype } from './market';
 import { salaryCostFactor } from './policies';
 import { aggregateReputation } from './reputation';
 
@@ -121,7 +122,7 @@ export function launchMarketingCampaign(
       p.id === project.id
         ? {
             ...p,
-            hype: Math.min(balance.market.hype.max, p.hype + campaign.hypeBoost),
+            hype: clampHype(p.hype + campaign.hypeBoost),
             marketingUsed: [...p.marketingUsed, level],
           }
         : p,

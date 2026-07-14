@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createInitialState, generateCandidates } from '../core';
+import { createInitialState, generateCandidates, type Employee } from '../core';
 import { balance } from '../data/balance';
 import { useGameStore } from '../state/store';
 import { App } from './App';
@@ -187,6 +187,45 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     expect(game.staff).toHaveLength(2);
     expect(game.candidates).toHaveLength(balance.staff.candidates.poolSize - 1);
     expect(screen.getByLabelText(`Empleado ${game.staff[1].name}`)).toBeInTheDocument();
+  });
+
+  it('con la oficina llena, el botón de contratar se deshabilita con motivo visible (docs/17 B1)', () => {
+    const base = createInitialState(SEED);
+    const cap = balance.staff.scale.staffCapByStage[2]; // aforo del estudio pequeño
+    const fillers: Employee[] = Array.from({ length: cap - 1 }, (_, i) => ({
+      id: `relleno-${i}`,
+      name: `Relleno ${i}`,
+      avatarSeed: `relleno-${i}`,
+      specialty: 'tecnica',
+      skills: { diseno: 30, tecnica: 50, arte: 30, audio: 30, marketing: 20 },
+      traits: [],
+      morale: 70,
+      energy: 90,
+      loyalty: 60,
+      salary: 500,
+      level: 2,
+      xp: 0,
+      founder: false,
+      burnedOut: false,
+      weeksLowEnergy: 0,
+    }));
+    useGameStore.setState({
+      game: {
+        ...base,
+        studio: { ...base.studio, capital: 100_000, scaleStage: 2 },
+        staff: [...base.staff, ...fillers],
+        candidates: generateCandidates(SEED, 1),
+      },
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Ver equipo/ }));
+
+    // El motivo es visible (texto en pantalla, no solo un tooltip).
+    expect(screen.getAllByText(/Oficina llena — mejórala/).length).toBeGreaterThan(0);
+    // Y ningún botón de contratar queda activo.
+    for (const btn of screen.getAllByRole('button', { name: 'Contratar' })) {
+      expect(btn).toBeDisabled();
+    }
   });
 
   it('la pantalla de desarrollo muestra el factor de equipo y permite activar el crunch', () => {

@@ -32,6 +32,7 @@ import type {
 import type { GameState } from '../model/gameState';
 import type { Audience, Project } from '../model/project';
 import type { ReleasedGame } from '../model/release';
+import { clampHype } from './market';
 import { hasMtx, nudgeMoralDrift, scandalCushion } from './morale';
 import { withReputationDeltas, type ReputationDeltas } from './reputation';
 
@@ -541,7 +542,7 @@ export function assignCreatorKey(
         ? {
             ...p,
             creatorCampaign: [...p.creatorCampaign, creatorId],
-            hype: Math.min(balance.market.hype.max, round2(p.hype + hypeBoost)),
+            hype: clampHype(round2(p.hype + hypeBoost)),
           }
         : p,
     ),
@@ -784,7 +785,6 @@ export function resolveDilemma(
   const rng = makeRng(state.seed, RELEASE_FLAVOR_STREAM + state.week + 3);
   const leak = balance.community.leak;
   const over = balance.community.overHype;
-  const hypeMax = balance.market.hype.max;
 
   let next: GameState = {
     ...state,
@@ -797,7 +797,7 @@ export function resolveDilemma(
 
   switch (choice) {
     case 'transparencia': {
-      updated = { ...project, hype: clamp(round2(project.hype + leak.transparency.hype), 0, hypeMax) };
+      updated = { ...project, hype: clampHype(round2(project.hype + leak.transparency.hype)) };
       next = {
         ...next,
         studio: nudgeMoralDrift(
@@ -817,7 +817,7 @@ export function resolveDilemma(
     case 'capitalizar': {
       updated = {
         ...project,
-        hype: Math.min(hypeMax, round2(project.hype + leak.capitalize.hype)),
+        hype: clampHype(round2(project.hype + leak.capitalize.hype)),
         overPromised: true,
       };
       next = { ...next, studio: nudgeMoralDrift(next.studio, leak.capitalize.drift) };
@@ -831,7 +831,7 @@ export function resolveDilemma(
     }
     case 'moderar': {
       const cap = balance.market.hype.overHypeThreshold - over.moderate.hypeMargin;
-      updated = { ...project, hype: round2(Math.min(project.hype, cap)) };
+      updated = { ...project, hype: clampHype(round2(Math.min(project.hype, cap))) };
       next = {
         ...next,
         studio: nudgeMoralDrift(
@@ -850,7 +850,7 @@ export function resolveDilemma(
     case 'prometer': {
       updated = {
         ...project,
-        hype: Math.min(hypeMax, round2(project.hype + over.promise.hype)),
+        hype: clampHype(round2(project.hype + over.promise.hype)),
         overPromised: true,
       };
       next = { ...next, studio: nudgeMoralDrift(next.studio, over.promise.drift) };

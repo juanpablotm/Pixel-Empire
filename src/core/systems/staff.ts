@@ -1,6 +1,6 @@
 import { balance } from '../../data/balance';
 import { getGenre } from '../../data/genres';
-import { firstNames, lastNames, specialtyLabels } from '../../data/staffTexts';
+import { firstNames, hireBlockedLabels, lastNames, specialtyLabels } from '../../data/staffTexts';
 import { traits as allTraits, getTrait } from '../../data/traits';
 import { appendLog } from '../engine/log';
 import { makeRng, type Rng } from '../engine/rng';
@@ -320,9 +320,24 @@ function requireEmployee(state: GameState, employeeId: string): Employee {
   return employee;
 }
 
-/** Aforo de plantilla según la etapa de escala (docs/02 §4). */
+/** Aforo de plantilla según la etapa de escala / nivel de oficina (docs/02 §4). */
 export function staffCap(state: GameState): number {
   return balance.staff.scale.staffCapByStage[state.studio.scaleStage];
+}
+
+/**
+ * Motivo estructural por el que no se puede contratar ahora, o null si sí se
+ * puede (docs/17 B1). Único punto de verdad del aforo de la oficina: el garaje
+ * no admite a nadie y cada etapa tiene su tope (staffCap). Se lee de la etapa
+ * ACTUAL, así que también vale al cargar partidas antiguas —si un save viejo
+ * viniera por encima del aforo, aquí queda bloqueado igual—. La UI solo muestra
+ * este texto y deshabilita el botón (docs/08 §6: la UI no calcula reglas).
+ */
+export function hireBlockReason(state: GameState): string | null {
+  if (state.gameOver) return hireBlockedLabels.gameOver;
+  if (state.studio.scaleStage === 1) return hireBlockedLabels.garage;
+  if (state.staff.length >= staffCap(state)) return hireBlockedLabels.officeFull;
+  return null;
 }
 
 /** Coste de contratación: semanas de salario del candidato [DECIDIDO, docs/12 §6]. */
@@ -332,13 +347,11 @@ export function hiringCost(candidate: Employee): number {
 
 /** Acción: contratar a un candidato del pool. Requiere haber salido del garaje. */
 export function hireCandidate(state: GameState, candidateId: string): GameState {
-  if (state.gameOver) throw new Error('La partida ha terminado');
   const candidate = state.candidates.find((c) => c.id === candidateId);
   if (!candidate) throw new Error(`Candidato desconocido: ${candidateId}`);
-  if (state.studio.scaleStage === 1) {
-    throw new Error('En el garaje no cabe nadie más: consigue capital para mudarte');
-  }
-  if (state.staff.length >= staffCap(state)) throw new Error('La oficina está llena');
+  // El aforo se valida en un solo sitio (docs/17 B1): mismo motivo que ve la UI.
+  const blocked = hireBlockReason(state);
+  if (blocked) throw new Error(blocked);
 
   const next: GameState = {
     ...state,

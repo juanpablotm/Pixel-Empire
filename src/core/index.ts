@@ -131,6 +131,7 @@ export { buildReviewLines, reviewVerdict } from './systems/review';
 export { advanceSales, weeklyRevenue } from './systems/sales';
 export {
   advanceMarket,
+  clampHype,
   comboKey,
   comboPopularity,
   computeSegmentReviews,
@@ -214,6 +215,7 @@ export {
   crunchSensitivity,
   fireEmployee,
   generateCandidates,
+  hireBlockReason,
   hireCandidate,
   hiringCost,
   motivateEmployee,

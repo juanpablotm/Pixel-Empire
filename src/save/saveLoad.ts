@@ -1,4 +1,5 @@
 import {
+  clampHype,
   createFounder,
   createMarketState,
   defaultPolicies,
@@ -153,6 +154,24 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
   }),
 };
 
+/**
+ * Saneado defensivo tras migrar (docs/17 B1/B2): una partida guardada por un
+ * build anterior al clamp único pudo dejar el hype de un proyecto por encima
+ * del tope; al cargar lo devolvemos a su rango. El aforo de la oficina no se
+ * "repara" borrando plantilla (sería destructivo): la etapa actual manda y
+ * hireBlockReason ya impide crecer por encima del tope venga de donde venga el
+ * save. Idempotente sobre saves ya sanos.
+ */
+function sanitizeLoadedState(state: GameState): GameState {
+  let touched = false;
+  const projects = state.projects.map((p) => {
+    const hype = clampHype(p.hype);
+    if (hype !== p.hype) touched = true;
+    return hype === p.hype ? p : { ...p, hype };
+  });
+  return touched ? { ...state, projects } : state;
+}
+
 function isSaveFile(value: unknown): value is SaveFile {
   if (typeof value !== 'object' || value === null) return false;
   const file = value as Record<string, unknown>;
@@ -186,7 +205,7 @@ export function deserializeSave(json: string): GameState {
     }
     file = migrate(file);
   }
-  return file.state;
+  return sanitizeLoadedState(file.state);
 }
 
 export function saveToLocalStorage(state: GameState, key = SAVE_STORAGE_KEY): void {
