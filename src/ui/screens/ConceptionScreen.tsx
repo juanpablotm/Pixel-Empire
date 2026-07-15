@@ -7,9 +7,11 @@ import {
   computeFit,
   estimateProject,
   fitBand,
+  fitRevealed,
   lootBoxesBanned,
   monetizationFlagAvailable,
   platformAvailable,
+  priceRevealed,
   sizeBlockReason,
   type Audience,
   type MonetizationModel,
@@ -113,6 +115,12 @@ export function ConceptionScreen() {
   const { fit } = computeFit({ themeId, genreId, platformId, audience });
   const estimate = estimateProject(size, platformId);
   const canStart = name.trim() !== '';
+
+  // Conocimiento de mercado (docs/17 P2): el atajo PREDICTIVO se paga. Si no lo
+  // has investigado, el Fit sale "oculto" y el precio recomendado no se muestra;
+  // aun así puedes concebir el juego (el desglose posterior siempre enseña).
+  const fitKnown = fitRevealed(game, themeId, genreId);
+  const priceKnown = priceRevealed(game, size);
 
   const pricing = balance.economy.pricing;
   const recommended = balance.economy.priceBySize[size];
@@ -248,10 +256,19 @@ export function ConceptionScreen() {
             />
             <span className="w-32 text-right text-sm tabular-nums">
               {isF2p ? 'Gratis' : `${formatMoney(price)}`}
-              <span className="ml-1 text-xs text-ink-faint">(rec. {formatMoney(recommended)})</span>
+              {!isF2p && priceKnown && (
+                <span className="ml-1 text-xs text-ink-faint">(rec. {formatMoney(recommended)})</span>
+              )}
             </span>
           </div>
-          {!isF2p && <p className={`text-xs ${priceTone.color}`}>Precio {priceTone.text}.</p>}
+          {!isF2p &&
+            (priceKnown ? (
+              <p className={`text-xs ${priceTone.color}`}>Precio {priceTone.text}.</p>
+            ) : (
+              <p className="text-xs text-ink-faint">
+                ❓ Referencia de mercado por investigar (Análisis de mercado, en I+D).
+              </p>
+            ))}
         </div>
 
         {/* Monetización: la gran palanca de codicia (docs/06 §2, docs/09 §9) */}
@@ -348,7 +365,7 @@ export function ConceptionScreen() {
 
       <section className="flex flex-wrap items-center justify-between gap-4 card">
         <div data-tour="fit-meter">
-          <FitMeter band={fitBand(fit)} />
+          <FitMeter band={fitKnown ? fitBand(fit) : 'oculto'} />
         </div>
         <div className="text-sm text-ink-mute">
           ~{estimate.weeks} semanas · ~{formatMoney(estimate.cost)} + features ·{' '}

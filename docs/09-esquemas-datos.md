@@ -114,6 +114,17 @@ interface Theme { id: string; name: string; appearsInEra: EraId; basePopularityC
 Semilla: Fantasía, Ciencia ficción, Espacio, Militar, Zombis, Medieval, Deportes, Vida/Cotidiano,
 Crimen, Terror sobrenatural, Piratas, Cyberpunk, Post-apocalíptico, Superhéroes, Historia/Épica.
 
+**Gateo por investigación (docs/17 P1).** Además de `appearsInEra`, un tema es **usable** solo si es
+*starter* o está investigado con 💡. No lleva `requiresResearch` (a diferencia de géneros/features):
+cada tema se desbloquea por separado. Los datos de balance viven en `data/balance.ts`:
+`research.knowledge.starterThemes` (los libres) y `research.knowledge.themeCostByEra` (coste 💡 por la
+era del tema). El estado guarda los investigados en `research.themes` (docs/08 §5).
+
+**Nodos de conocimiento de mercado (docs/17 P2).** `ResearchNodeDef` gana un campo opcional
+`reveals?: 'fit' | 'balance' | 'price'`: un nodo así revela globalmente esa **pista predictiva**
+(medidor de Fit / balance ideal del género / precio recomendado). El estado guarda las pistas
+aprendidas por combo en `research.insights` (combos `tema|género` de "Investigar resultados").
+
 ### Tabla de afinidad Tema × Género (fit, doc 03) `[DECIDIDO]`
 Matriz con valores `MuyBueno=1.0 / Bueno=0.75 / Neutro=0.5 / Malo=0.25`. Ejemplos:
 

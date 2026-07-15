@@ -82,10 +82,30 @@ cambia de oficina, y abre nuevas líneas de negocio en eras avanzadas. Vuelta al
 ## 3. Investigación y desbloqueos `[DECIDIDO]`
 
 - Se acumulan **Puntos de Investigación (💡)** al desarrollar juegos y al asignar personal a I+D.
-- Se gastan en un árbol de desbloqueos: nuevos géneros, combinaciones de género, temas, features,
+- Se gastan en un árbol de desbloqueos: nuevos géneros, combinaciones de género, features,
   motores propios, y capacidades de estudio (marketing avanzado, formación, etc.).
 - Algunos desbloqueos están **gateados por era** (no puedes investigar "online multijugador masivo"
   en 1985).
+
+### 3.1 Temas gateados por investigación (docs/17 P1) `[DECIDIDO · baseline v1]`
+
+Empiezas con **2–3 temas libres** (baseline: fantasía, ciencia ficción, espacio) y **desbloqueas el
+resto gastando 💡**. Pasar de era **no regala temas**: la era **habilita la opción** de investigarlos,
+pero cuestan 💡 (más caros cuanto más tardía la era). Así la investigación pesa de verdad y decides
+"en qué se especializa tu estudio". Todo data-driven: la lista de starters y el coste por era viven en
+`data/balance.ts`; la era de cada tema, en `data/themes.ts`.
+
+### 3.2 El conocimiento del mercado se gana (docs/17 P2) `[DECIDIDO · baseline v1]`
+
+Las **pistas predictivas** —medidor de **Fit** (tema×género), **precio recomendado** y **balance
+Diseño/Técnica ideal** del género— siguen la regla **"conoces lo que empiezas; descubres lo que
+desbloqueas"**: las de tu contenido de partida (temas starter × géneros de E1, precio de juegos
+pequeños) son visibles desde el inicio; las de lo que desbloqueas luego empiezan **ocultas** y se
+revelan de dos formas: (a) **nodos globales de I+D** (Inteligencia de mercado) que revelan una faceta
+para todo; (b) tras lanzar un juego, **"Investigar resultados"** (gasta 💡) aprende el atajo predictivo
+de ESA combinación. Es transparencia con **Pilar 2** intacto: el **desglose de reseña** de tus propios
+lanzamientos es **siempre legible** (ver `03`); solo se paga saberlo *antes*, nunca la explicación
+*después*.
 
 ## 4. Progresión de escala (las 4 etapas de estudio) `[DECIDIDO]`
 

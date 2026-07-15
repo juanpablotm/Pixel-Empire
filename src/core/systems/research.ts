@@ -1,19 +1,29 @@
 import { balance } from '../../data/balance';
 import { eraAtLeast } from '../../data/eras';
+import { getGenre } from '../../data/genres';
 import { getResearchNode, researchNodes, researchNodeUnlocks } from '../../data/research';
+import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
-import type { ResearchState, StudioCapability } from '../model/research';
+import type { ProjectSize } from '../model/project';
+import type { MarketKnowledge, ResearchState, StudioCapability } from '../model/research';
 
 /**
  * Investigación (docs/02 §3): puntos 💡 por persona·semana en I+D y por
  * lanzar juegos; se gastan en el árbol de data/research.ts, gateado por era.
- * Los nodos dan capacidades de estudio (bonus aplicados en los sistemas) o
- * desbloquean contenido (géneros/features con `requiresResearch`).
+ * Los nodos dan capacidades de estudio (bonus aplicados en los sistemas),
+ * desbloquean contenido (géneros/features con `requiresResearch`) o revelan
+ * conocimiento de mercado (docs/17 P2). Además, los temas se desbloquean con
+ * 💡 (docs/17 P1). Todo puro; los datos viven en data/.
  */
 
 export function initialResearchState(): ResearchState {
-  return { points: 0, unlocked: [], rdStaff: [] };
+  return { points: 0, unlocked: [], rdStaff: [], themes: [], insights: [] };
+}
+
+/** Clave del combo para las pistas por combo (docs/17 P2): tema|género. */
+export function insightKey(themeId: string, genreId: string): string {
+  return `${themeId}|${genreId}`;
 }
 
 /** Bonus total de una capacidad de estudio (1 + Σ effects de los nodos comprados). */
@@ -69,6 +79,141 @@ export function buyResearch(state: GameState, nodeId: string): GameState {
     next,
     'investigacion',
     `💡 Investigado: ${node.name}.${extras.length > 0 ? ' Nuevo contenido desbloqueado.' : ''}`,
+  );
+}
+
+// --- P1: Temas gateados por investigación (docs/17) ------------------------
+
+/** ¿Un tema es libre desde el inicio? (balance.research.knowledge.starterThemes). */
+export function isStarterTheme(themeId: string): boolean {
+  return balance.research.knowledge.starterThemes.includes(themeId);
+}
+
+/** Coste en 💡 de investigar un tema, por la era en que se puede investigar. */
+export function themeResearchCost(themeId: string): number {
+  return balance.research.knowledge.themeCostByEra[getTheme(themeId).appearsInEra];
+}
+
+/**
+ * Estado de un tema para la UI (docs/17 P1). 'usable' = ya puedes hacer juegos
+ * con él (starter o investigado); el resto son estados de investigación.
+ */
+export function themeResearchStatus(
+  state: GameState,
+  themeId: string,
+): 'usable' | 'disponible' | 'sinPuntos' | 'bloqueado' {
+  const theme = getTheme(themeId);
+  if (isStarterTheme(themeId) || (state.research.themes ?? []).includes(themeId)) return 'usable';
+  if (!eraAtLeast(state.era, theme.appearsInEra)) return 'bloqueado';
+  return state.research.points >= themeResearchCost(themeId) ? 'disponible' : 'sinPuntos';
+}
+
+/** Acción: gastar 💡 en desbloquear un tema (docs/17 P1). */
+export function researchTheme(state: GameState, themeId: string): GameState {
+  if (state.gameOver) throw new Error('La partida ha terminado');
+  const theme = getTheme(themeId);
+  if (isStarterTheme(themeId)) throw new Error(`${theme.name} ya es un tema libre`);
+  if ((state.research.themes ?? []).includes(themeId)) {
+    throw new Error(`${theme.name} ya está investigado`);
+  }
+  if (!eraAtLeast(state.era, theme.appearsInEra)) {
+    throw new Error(`${theme.name} aún no se puede investigar en esta era`);
+  }
+  const cost = themeResearchCost(themeId);
+  if (state.research.points < cost) {
+    throw new Error(`Faltan puntos de investigación (${cost} 💡 necesarios)`);
+  }
+  const next: GameState = {
+    ...state,
+    research: {
+      ...state.research,
+      points: state.research.points - cost,
+      themes: [...(state.research.themes ?? []), themeId],
+    },
+  };
+  return appendLog(next, 'investigacion', `💡 Nuevo tema desbloqueado: ${theme.name}.`);
+}
+
+// --- P2: Conocimiento de mercado que se gana (docs/17) ---------------------
+
+/** Qué facetas de conocimiento de mercado están reveladas globalmente (por nodos). */
+export function marketKnowledge(state: GameState): Record<MarketKnowledge, boolean> {
+  const revealed: Record<MarketKnowledge, boolean> = { fit: false, balance: false, price: false };
+  for (const id of state.research.unlocked) {
+    const reveals = getResearchNode(id).reveals;
+    if (reveals) revealed[reveals] = true;
+  }
+  return revealed;
+}
+
+/**
+ * Regla de revelado (docs/17 P2): "conoces lo que empiezas; descubres lo que
+ * desbloqueas". Las pistas de tu contenido de PARTIDA (temas starter, géneros
+ * de E1, precio de juegos pequeños) están visibles desde el inicio —así el
+ * tutorial tiene brújula y el arranque no es un muro—; las de contenido que
+ * DESBLOQUEAS luego (temas investigados, géneros de eras futuras, tamaños
+ * mayores) empiezan ocultas y se revelan investigando (nodo global) o
+ * "Investigar resultados" de un combo lanzado. El desglose a posteriori nunca
+ * se paga (Pilar 2, docs/03): esto solo es el pronóstico previo.
+ */
+function isStartingGenre(genreId: string): boolean {
+  return getGenre(genreId).appearsInEra === 'E1';
+}
+
+/** ¿El precio recomendado de un tamaño es visible? (nodo global O juego pequeño). */
+export function priceRevealed(state: GameState, size: ProjectSize): boolean {
+  return marketKnowledge(state).price || size === 'pequeno';
+}
+
+/** ¿El Fit de un combo es preciso? (nodo global · pista del combo · contenido de partida). */
+export function fitRevealed(state: GameState, themeId: string, genreId: string): boolean {
+  if (marketKnowledge(state).fit) return true;
+  if ((state.research.insights ?? []).includes(insightKey(themeId, genreId))) return true;
+  return isStarterTheme(themeId) && isStartingGenre(genreId);
+}
+
+/** ¿El balance ideal de un género es visible? (nodo global · pista del género · género de E1). */
+export function balanceRevealed(state: GameState, genreId: string): boolean {
+  if (marketKnowledge(state).balance) return true;
+  if ((state.research.insights ?? []).some((key) => key.split('|')[1] === genreId)) return true;
+  return isStartingGenre(genreId);
+}
+
+/** ¿Ya se aprendió la pista predictiva de este combo lanzado? */
+export function insightKnown(state: GameState, themeId: string, genreId: string): boolean {
+  return (state.research.insights ?? []).includes(insightKey(themeId, genreId));
+}
+
+/**
+ * Acción: "Investigar resultados" de un juego lanzado (docs/17 P2). Gasta 💡 y
+ * aprende el atajo predictivo de esa combinación: el fit del combo tema×género
+ * y el balance ideal de ese género quedan visibles antes de lanzar la próxima
+ * vez. El desglose de reseña a posteriori NO se paga (Pilar 2): siempre fue
+ * legible; esto solo compra saberlo por adelantado.
+ */
+export function researchInsight(state: GameState, gameId: string): GameState {
+  if (state.gameOver) throw new Error('La partida ha terminado');
+  const game = state.releasedGames.find((g) => g.id === gameId);
+  if (!game) throw new Error(`Juego lanzado desconocido: ${gameId}`);
+  if (insightKnown(state, game.themeId, game.genreId)) {
+    throw new Error('Ya conoces esta combinación');
+  }
+  const cost = balance.research.knowledge.insightCost;
+  if (state.research.points < cost) {
+    throw new Error(`Faltan puntos de investigación (${cost} 💡 necesarios)`);
+  }
+  const next: GameState = {
+    ...state,
+    research: {
+      ...state.research,
+      points: state.research.points - cost,
+      insights: [...(state.research.insights ?? []), insightKey(game.themeId, game.genreId)],
+    },
+  };
+  return appendLog(
+    next,
+    'investigacion',
+    `💡 Aprendes la lección de «${game.name}»: dominas ${getTheme(game.themeId).name} + ${getGenre(game.genreId).name}.`,
   );
 }
 

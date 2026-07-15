@@ -3,6 +3,7 @@ import { balance } from '../../data/balance';
 import { getEra } from '../../data/eras';
 import { getFeature } from '../../data/features';
 import { researchNodeUnlocks } from '../../data/research';
+import { getTheme } from '../../data/themes';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
@@ -10,13 +11,21 @@ import { createMarketState } from './market';
 import { startProject, toggleFeature } from './projects';
 import {
   advanceResearch,
+  balanceRevealed,
   buyResearch,
   capabilityBonus,
+  fitRevealed,
+  insightKnown,
+  priceRevealed,
+  researchInsight,
   researchNodeStatus,
+  researchTheme,
+  themeResearchCost,
+  themeResearchStatus,
   toggleResearchAssignment,
 } from './research';
 import { toggleAssignment } from './staff';
-import { featureAvailable, genreAvailable } from './unlocks';
+import { availableThemes, featureAvailable, genreAvailable, themeAvailable } from './unlocks';
 import { genres } from '../../data/genres';
 
 /**
@@ -156,7 +165,9 @@ describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () =>
 
     let state = startProject(investigada, {
       name: 'Online SA',
-      themeId: 'militar',
+      // Tema starter (docs/17 P1): el test es sobre la feature online, no sobre
+      // el gateo de temas — evitamos investigar un tema para no ensuciarlo.
+      themeId: 'cienciaFiccion',
       genreId: 'shooter',
       platformId: 'pcCasero',
       audience: 'hardcore',
@@ -191,5 +202,153 @@ describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () =>
     const b = tick(state);
     expect(a).toEqual(b);
     expect(a.research.points).toBe(1);
+  });
+});
+
+describe('P1: temas gateados por investigación (docs/17)', () => {
+  const withPoints = (points: number): GameState => {
+    const base = createInitialState(SEED);
+    return { ...base, research: { ...base.research, points } };
+  };
+
+  it('empiezas solo con los temas starter usables', () => {
+    const usable = availableThemes(createInitialState(SEED))
+      .map((t) => t.id)
+      .sort();
+    expect(usable).toEqual([...balance.research.knowledge.starterThemes].sort());
+  });
+
+  it('no puedes usar un tema no investigado (docs/17 P1)', () => {
+    const state = withPoints(0); // E1: deportes existe en la era pero no es starter
+    expect(themeAvailable(state, getTheme('deportes'))).toBe(false);
+    expect(() =>
+      startProject(state, {
+        name: 'Fútbol 80',
+        themeId: 'deportes',
+        genreId: 'rpg',
+        platformId: 'pcCasero',
+        audience: 'amplio',
+        size: 'pequeno',
+      }),
+    ).toThrow(/no está investigado/);
+  });
+
+  it('investigar un tema lo hace usable y descuenta 💡 (docs/17 P1)', () => {
+    let state = withPoints(10);
+    expect(themeResearchStatus(state, 'deportes')).toBe('disponible');
+    state = researchTheme(state, 'deportes');
+    expect(state.research.themes).toContain('deportes');
+    expect(state.research.points).toBe(10 - themeResearchCost('deportes'));
+    expect(themeAvailable(state, getTheme('deportes'))).toBe(true);
+    // Y ahora sí se puede concebir con él.
+    expect(() =>
+      startProject(state, {
+        name: 'Fútbol 80',
+        themeId: 'deportes',
+        genreId: 'rpg',
+        platformId: 'pcCasero',
+        audience: 'amplio',
+        size: 'pequeno',
+      }),
+    ).not.toThrow();
+  });
+
+  it('no se investiga un starter, ni se repite, ni antes de su era', () => {
+    const state = withPoints(50);
+    expect(() => researchTheme(state, 'fantasia')).toThrow(/ya es un tema libre/);
+    // zombis es de E3: en E1 aún no se puede investigar (la era habilita).
+    expect(themeResearchStatus(state, 'zombis')).toBe('bloqueado');
+    expect(() => researchTheme(state, 'zombis')).toThrow(/aún no se puede investigar/);
+    const done = researchTheme(state, 'deportes');
+    expect(() => researchTheme(done, 'deportes')).toThrow(/ya está investigado/);
+  });
+
+  it('pasar de era NO regala temas: los habilita para investigarlos (docs/17 P1)', () => {
+    // En E3 (zombis existe) sigue sin ser usable hasta gastarse los 💡.
+    const e3 = atEra('E5', 20); // E5 ≥ E3: zombis en su era, con puntos
+    expect(themeAvailable(e3, getTheme('zombis'))).toBe(false);
+    expect(themeResearchStatus(e3, 'zombis')).toBe('disponible');
+    const learned = researchTheme(e3, 'zombis');
+    expect(themeAvailable(learned, getTheme('zombis'))).toBe(true);
+  });
+});
+
+describe('P2: conocimiento de mercado que se gana (docs/17)', () => {
+  it('conoces lo que empiezas: starter × género de E1, y el precio pequeño', () => {
+    const s = createInitialState(SEED);
+    expect(fitRevealed(s, 'fantasia', 'rpg')).toBe(true); // starter × E1
+    expect(balanceRevealed(s, 'rpg')).toBe(true); // género de E1
+    expect(priceRevealed(s, 'pequeno')).toBe(true); // tamaño de partida
+  });
+
+  it('lo que desbloqueas empieza oculto y se revela con los nodos globales', () => {
+    const s = atEra('E5', 200);
+    // Precio de tamaños mayores: oculto hasta Análisis de mercado.
+    expect(priceRevealed(s, 'grande')).toBe(false);
+    expect(priceRevealed(buyResearch(s, 'analisisMercado'), 'grande')).toBe(true);
+    // Balance de un género de era posterior: oculto hasta Estudio de géneros.
+    expect(balanceRevealed(s, 'shooter')).toBe(false);
+    expect(balanceRevealed(buyResearch(s, 'estudioGeneros'), 'shooter')).toBe(true);
+    // Fit de un combo de contenido desbloqueado: oculto hasta Red de afinidades.
+    expect(fitRevealed(s, 'zombis', 'shooter')).toBe(false);
+    expect(fitRevealed(buyResearch(s, 'redAfinidades'), 'zombis', 'shooter')).toBe(true);
+  });
+
+  it('una pista oculta se revela al "Investigar resultados" de ese combo (docs/17 P2)', () => {
+    let s = researchTheme(atEra('E5', 100), 'zombis');
+    expect(fitRevealed(s, 'zombis', 'shooter')).toBe(false);
+    expect(balanceRevealed(s, 'shooter')).toBe(false);
+    // Lanza un zombis × shooter.
+    s = startProject(s, {
+      name: 'Horda',
+      themeId: 'zombis',
+      genreId: 'shooter',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+    });
+    while (s.releasedGames.length === 0) s = tick(s);
+    const gameId = s.releasedGames[0].id;
+    // Aún oculto tras lanzar: el atajo predictivo se paga aparte.
+    expect(fitRevealed(s, 'zombis', 'shooter')).toBe(false);
+    const before = s.research.points;
+    const learned = researchInsight(s, gameId);
+    expect(learned.research.points).toBe(before - balance.research.knowledge.insightCost);
+    expect(insightKnown(learned, 'zombis', 'shooter')).toBe(true);
+    // El combo aprendido revela su Fit y el balance ideal de su género.
+    expect(fitRevealed(learned, 'zombis', 'shooter')).toBe(true);
+    expect(balanceRevealed(learned, 'shooter')).toBe(true);
+    // No se puede investigar dos veces el mismo combo.
+    expect(() => researchInsight(learned, gameId)).toThrow(/Ya conoces/);
+  });
+
+  it('Pilar 2: el desglose de reseña propio nunca se oculta (docs/17 P2)', () => {
+    // Un combo cuyo atajo PREDICTIVO está oculto (contenido desbloqueado, sin
+    // nodo ni pista): aun así el desglose A POSTERIORI es siempre legible.
+    let s = researchTheme(atEra('E5', 100), 'zombis');
+    expect(fitRevealed(s, 'zombis', 'shooter')).toBe(false);
+    s = startProject(s, {
+      name: 'Horda II',
+      themeId: 'zombis',
+      genreId: 'shooter',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+    });
+    while (s.releasedGames.length === 0) s = tick(s);
+    const g = s.releasedGames[0];
+    // Las 6 líneas del desglose están presentes y explican el resultado…
+    expect(g.lines.map((l) => l.factor)).toEqual([
+      'fit',
+      'balance',
+      'features',
+      'polish',
+      'team',
+      'innovation',
+    ]);
+    // …incluidos el encaje y el balance ideal del género (breakdown), sin
+    // depender de la investigación: la explicación posterior no se paga nunca.
+    expect(g.breakdown.fit).toBeGreaterThan(0);
+    expect(g.breakdown.dIdeal).toBeGreaterThan(0);
   });
 });

@@ -5,7 +5,12 @@
 export type { EraDef, EraId } from './model/era';
 export type { GameOverInfo, GameState, LogEntry, ScaleStage, Studio } from './model/gameState';
 export type { Award } from './model/awards';
-export type { ResearchNodeDef, ResearchState, StudioCapability } from './model/research';
+export type {
+  MarketKnowledge,
+  ResearchNodeDef,
+  ResearchState,
+  StudioCapability,
+} from './model/research';
 export type { SalaryPolicy, StudioPolicies } from './model/policies';
 export type { Employee, SalaryTier, Specialty, TeamFactorResult } from './model/staff';
 export type {
@@ -103,10 +108,21 @@ export { advanceEras } from './systems/eras';
 export {
   addReleaseResearchPoints,
   advanceResearch,
+  balanceRevealed,
   buyResearch,
   capabilityBonus,
+  fitRevealed,
   initialResearchState,
+  insightKey,
+  insightKnown,
+  isStarterTheme,
+  marketKnowledge,
+  priceRevealed,
+  researchInsight,
   researchNodeStatus,
+  researchTheme,
+  themeResearchCost,
+  themeResearchStatus,
   toggleResearchAssignment,
 } from './systems/research';
 export { advanceAwards, pickCategoryWinner } from './systems/awards';
@@ -127,6 +143,7 @@ export {
   featureAvailable,
   genreAvailable,
   monetizationFlagAvailable,
+  researchableThemes,
   themeAvailable,
 } from './systems/unlocks';
 export { buildReviewLines, reviewVerdict } from './systems/review';

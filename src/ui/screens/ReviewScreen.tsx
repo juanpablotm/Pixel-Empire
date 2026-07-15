@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { FactorTone, ReleasedGame } from '../../core';
+import { insightKnown, type FactorTone, type ReleasedGame } from '../../core';
+import { balance } from '../../data/balance';
 import { reviewSegments } from '../../data/segments';
 import { useGameStore } from '../../state/store';
 import { celebrateHit } from '../confetti';
@@ -170,6 +171,8 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
         </section>
       )}
 
+      {act >= FINAL_ACT && <InsightCard game={game} />}
+
       {act >= FINAL_ACT && (
         <section className="review-line flex flex-wrap items-center justify-between gap-4 card">
           <div className="text-sm text-ink-mute">
@@ -192,6 +195,50 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
         </section>
       )}
     </main>
+  );
+}
+
+/**
+ * "Investigar resultados" (docs/17 P2): el atajo predictivo POR COMBO. El
+ * desglose de arriba SIEMPRE es legible (Pilar 2); esto solo compra saber la
+ * próxima vez —antes de lanzar— el Fit de este tema×género y el balance ideal
+ * de este género. Barato: aprender de lo que ya hiciste no debe ser un muro.
+ */
+function InsightCard({ game }: { game: ReleasedGame }) {
+  const known = useGameStore((s) => insightKnown(s.game, game.themeId, game.genreId));
+  const points = useGameStore((s) => s.game.research.points);
+  const researchInsight = useGameStore((s) => s.researchInsight);
+  const cost = balance.research.knowledge.insightCost;
+
+  if (known) {
+    return (
+      <section className="review-line card flex flex-wrap items-center gap-3">
+        <span className="font-medium text-ok">✓ Combinación dominada</span>
+        <span className="text-sm text-ink-mute">
+          Ya conoces el encaje y el balance ideal de esta mezcla: los verás al concebir.
+        </span>
+      </section>
+    );
+  }
+
+  const canAfford = points >= cost;
+  return (
+    <section className="review-line card flex flex-wrap items-center justify-between gap-3">
+      <p className="max-w-md text-sm text-ink-mute">
+        <span className="font-medium text-ink">¿Investigar resultados?</span> Aprende de este
+        lanzamiento: revela el Fit de esta combinación y el balance ideal de su género para tus
+        próximos juegos.
+      </p>
+      <button
+        type="button"
+        disabled={!canAfford}
+        title={canAfford ? undefined : `Faltan puntos de investigación (${cost} 💡)`}
+        onClick={() => researchInsight(game.id)}
+        className="btn btn-quiet px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        💡 Investigar resultados ({cost})
+      </button>
+    </section>
   );
 }
 

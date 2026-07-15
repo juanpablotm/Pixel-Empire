@@ -108,6 +108,15 @@ regalan los temas nuevos: la era **habilita la opción de investigarlos**, pero 
 peso real a la investigación y a decidir "en qué me especializo".
 **Toca:** `02` §3 (investigación), `09` §3 (temas), `16`.
 
+> **✅ Implementado (Fase 8.4).** `balance.research.knowledge.starterThemes` = **fantasía, ciencia
+> ficción, espacio** (3 libres); el resto se desbloquea con 💡 según `themeCostByEra` (6/10/14/18/22/26/30
+> por la era del tema). Estado en `research.themes` (opcional, `?? []`). Un tema es **usable** si su era
+> llegó **y** (es starter o está investigado): `themeAvailable`/`availableThemes` (core/systems/unlocks).
+> La acción pura `researchTheme` (core/systems/research) valida era/no-starter/no-repetido/puntos;
+> `startProject` rechaza un tema no investigado con motivo legible. La pantalla de I+D lista "Temas por
+> investigar" con su coste; el panel de Mercado muestra las tendencias de **todos** los temas de la era
+> (los no-usables con 🔒). Pasar de era no regala nada: solo habilita la opción (docs/08 §6).
+
 ### P2 · El conocimiento del mercado se gana investigando 🧩 P1/P2 🔴
 *(playtest #2)*
 **Cambio (con cuidado de no romper el Pilar 2):** las **pistas predictivas** dejan de ser gratis al
@@ -121,6 +130,20 @@ inicio y se **desbloquean** con investigación:
   **atajo predictivo** (saberlo *antes*), no la explicación *a posteriori*. Así el descubrimiento es
   una mecánica satisfactoria, no un muro opaco.
 **Toca:** `03` (medidor de Fit/transparencia), `02` §3 (investigación), `16`.
+
+> **✅ Implementado (Fase 8.4).** Tres facetas revelables —`fit` (medidor de Fit), `balance` (ideal
+> Diseño/Técnica del género), `price` (precio recomendado)— con la regla **"conoces lo que empiezas;
+> descubres lo que desbloqueas"**: las pistas del contenido de partida (temas starter × géneros de E1,
+> precio de juegos pequeños) están visibles desde el inicio —el tutorial tiene brújula—; las de lo que
+> DESBLOQUEAS luego empiezan ocultas. Se revelan por **dos vías**: (a) **nodos globales** de I+D con
+> campo `reveals` (`analisisMercado`→price, `estudioGeneros`→balance, `redAfinidades`→fit); (b)
+> **"Investigar resultados"** de un juego lanzado (`researchInsight`, gasta `insightCost` = 4 💡), que
+> aprende el combo concreto (fit tema×género + balance del género), guardado en `research.insights`.
+> Helpers puros `fitRevealed`/`balanceRevealed`/`priceRevealed` (core/systems/research); la UI solo
+> muestra "oculto/revelado" (FitMeter con estado `oculto`, precio e ideal con "❓ por investigar").
+> **CLAVE (Pilar 2):** el **desglose de reseña** (`buildReviewLines`, ReviewScreen) es SIEMPRE completo
+> y legible, con o sin investigación: solo se paga el atajo PREDICTIVO, nunca la explicación posterior.
+> El sandbox pre-revela todo; la migración de saves siembra temas/pistas desde el historial (docs/08 §7).
 
 ---
 

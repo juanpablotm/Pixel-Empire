@@ -13,7 +13,13 @@ import { weeklyFixedCosts } from '../core/systems/economy';
 import { lootBoxesBanned } from '../core/systems/morale';
 import { sizeBlockReason, startProject, toggleFeature } from '../core/systems/projects';
 import { computeFit } from '../core/systems/quality';
-import { buyResearch, researchNodeStatus } from '../core/systems/research';
+import {
+  buyResearch,
+  researchNodeStatus,
+  researchTheme,
+  themeResearchCost,
+  themeResearchStatus,
+} from '../core/systems/research';
 import {
   hireCandidate,
   hiringCost,
@@ -27,6 +33,7 @@ import {
   availableMonetizationModels,
   availableThemes,
   monetizationFlagAvailable,
+  researchableThemes,
 } from '../core/systems/unlocks';
 
 /**
@@ -86,7 +93,7 @@ export const FACTORY: Philosophy = {
   useLootBoxes: true,
   useDlc: true,
   care: false,
-  teamTargetByEra: [1, 3, 6, 9, 13, 17, 20],
+  teamTargetByEra: [1, 3, 6, 9, 12, 13, 14],
   sizeAmbition: 'aaa',
   crisisResponse: 'silencio',
   dilemma: { leakAlpha: 'capitalizar', sobreHype: 'prometer' },
@@ -312,13 +319,31 @@ function manageEnergy(state: GameState): GameState {
   return next;
 }
 
-/** Compra el primer nodo de investigación disponible (misma regla los tres). */
+/**
+ * Investigación del bot (misma regla los tres). Variedad primero pero con
+ * mesura (docs/17 P1): un jugador listo desbloquea unos cuantos temas para no
+ * repetirse (el refrito castiga) y luego destina los 💡 a las capacidades del
+ * árbol. El bot NO paga el atajo predictivo (nodos `reveals`, docs/17 P2): ya
+ * "ve" el mercado con computeFit, así que esas pistas no le aportan nada.
+ */
 function maybeResearch(state: GameState): GameState {
+  // Capacidades primero: motores/QA/marketing componen ingreso y calidad, así
+  // que rinden más que la variedad (un jugador listo invierte ahí antes). El
+  // bot NO paga el atajo predictivo (nodos `reveals`, docs/17 P2): ya "ve" el
+  // mercado con computeFit. Con los 💡 que sobren, desbloquea temas para no
+  // repetirse (el refrito castiga, docs/17 P1).
   for (const node of researchNodes) {
+    if (node.reveals) continue;
     if (researchNodeStatus(state, node.id) === 'disponible') {
       return buyResearch(state, node.id);
     }
   }
+  const theme = researchableThemes(state)
+    .filter((t) => themeResearchStatus(state, t.id) === 'disponible')
+    .sort(
+      (a, b) => themeResearchCost(a.id) - themeResearchCost(b.id) || a.id.localeCompare(b.id),
+    )[0];
+  if (theme) return researchTheme(state, theme.id);
   return state;
 }
 

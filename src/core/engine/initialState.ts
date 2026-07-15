@@ -1,5 +1,7 @@
 import { balance } from '../../data/balance';
 import { getEra } from '../../data/eras';
+import { researchNodes } from '../../data/research';
+import { themes } from '../../data/themes';
 import type { EraId } from '../model/era';
 import type { GameState } from '../model/gameState';
 import type { LegacyTrackedStats } from '../model/moral';
@@ -31,13 +33,22 @@ export function initialLegacyStats(): LegacyTrackedStats {
 export function createSandboxState(seed: number, startEra: EraId): GameState {
   const startWeek = getEra(startEra).startWeek;
   const base = createInitialState(seed);
+  // En sandbox se experimenta sin fricción (docs/01 §7): todos los temas ya
+  // usables y el conocimiento de mercado revelado (docs/17 P1/P2). Sigue siendo
+  // la misma simulación; solo se pre-desbloquea lo que en partida se gana con 💡.
+  const knowledgeNodes = researchNodes.filter((n) => n.reveals).map((n) => n.id);
   return {
     ...base,
     week: startWeek,
     era: startEra,
     market: createMarketState(startWeek),
     studio: { ...base.studio, capital: balance.sandbox.initialCapital },
-    research: { ...base.research, points: balance.sandbox.researchPoints },
+    research: {
+      ...base.research,
+      points: balance.sandbox.researchPoints,
+      unlocked: knowledgeNodes,
+      themes: themes.map((t) => t.id),
+    },
     stats: { ...base.stats, peakCapital: balance.sandbox.initialCapital },
   };
 }

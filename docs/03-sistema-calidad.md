@@ -129,6 +129,21 @@ RESEÑA: 82 / 100   "Una joya honesta con algún defecto."
 Cada línea mapea a un factor. Verde/amarillo/rojo. Esto convierte el fracaso en **aprendizaje
 accionable** ("la próxima, más QA") en vez de frustración opaca.
 
+### 5.1 Predecir vs explicar: el conocimiento se gana (docs/17 P2) `[DECIDIDO · baseline v1]`
+
+Hay que separar dos cosas y **el Pilar 2 protege la segunda**:
+
+- El **atajo PREDICTIVO** (saber *antes* de lanzar): el **medidor de Fit** (Factor A), el **balance
+  ideal** del género (Factor B) y el **precio recomendado**. Estas pistas se **ganan con investigación**
+  (docs/02 §3.2): conoces las de tu contenido de partida (temas starter × géneros de E1, precio de
+  juegos pequeños); las de lo que desbloqueas luego empiezan **ocultas** ("Encaje por descubrir", "❓
+  por investigar") y se revelan con nodos globales de I+D o con **"Investigar resultados"** de un
+  lanzamiento con esa combinación. Aun oculta la pista, **puedes concebir el juego igualmente**.
+- La **explicación A POSTERIORI**: el **desglose de reseña** de §5 se muestra **SIEMPRE, completo y
+  legible**, con o sin investigación. Nunca se paga. Siempre aprendes de tus propios juegos; descubrir
+  combos es una mecánica satisfactoria, no un muro opaco. El principio rector de arriba sigue en pie:
+  el jugador siempre puede explicar el resultado en una frase.
+
 ## 6. Ejemplos trabajados (para test)
 
 **Ejemplo 1 — Indie pulido:** proyecto Pequeño, Fantasía×RPG (fit alto), balance casi ideal, pocas

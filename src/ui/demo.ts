@@ -249,6 +249,20 @@ function noticeQueue(): ImportantNotice[] {
   ];
 }
 
+/**
+ * Estado de escaparate: la progresión del conocimiento (docs/17 P1/P2). Un
+ * estudio de E5 con 💡 para gastar, un par de temas ya investigados y ningún
+ * nodo de conocimiento comprado: la pantalla de I+D luce los "Temas por
+ * investigar" y los nodos de "Inteligencia de mercado" con su "Revela:".
+ */
+function knowledgeDemo(): GameState {
+  const base = studioDemo();
+  return {
+    ...base,
+    research: { ...base.research, points: 42, unlocked: [], themes: ['zombis', 'cyberpunk'], insights: [] },
+  };
+}
+
 /** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
 function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
@@ -295,6 +309,12 @@ export function applyDemoFromQuery(): boolean {
   }
   if (demo === 'creators') {
     seed(creatorsDemo(), 'creadores', null);
+    return true;
+  }
+  // La progresión del conocimiento (docs/17 P1/P2): la pantalla de I+D con los
+  // temas por investigar y los nodos de conocimiento de mercado.
+  if (demo === 'conocimiento') {
+    seed(knowledgeDemo(), 'investigacion', null);
     return true;
   }
   // Los avisos importantes que pausan el tiempo (docs/17 U4): el modal de P&L

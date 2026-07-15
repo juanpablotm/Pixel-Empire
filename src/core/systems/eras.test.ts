@@ -13,6 +13,7 @@ import {
   availableMonetizationModels,
   availablePlatforms,
   availableThemes,
+  researchableThemes,
 } from './unlocks';
 
 /**
@@ -151,7 +152,12 @@ describe('desbloqueos por era (docs/09 §7, CA: contenido gateado)', () => {
     for (const era of eras) {
       const state = atWeek(era.startWeek);
       expect(availableGenres(state).length).toBeGreaterThanOrEqual(4);
-      expect(availableThemes(state).length).toBeGreaterThanOrEqual(6);
+      // Con los temas gateados por investigación (docs/17 P1), el "contenido de
+      // sobra" son los temas que la era pone al ALCANCE: usables (starter) +
+      // investigables. La era habilita; el jugador decide en qué se especializa.
+      expect(
+        availableThemes(state).length + researchableThemes(state).length,
+      ).toBeGreaterThanOrEqual(6);
       expect(availableMonetizationModels(state).length).toBeGreaterThanOrEqual(1);
       expect(availableCreatorDefs(state).length).toBeGreaterThanOrEqual(2);
       // Siempre hay al menos una plataforma A LA VENTA (no solo anunciada).

@@ -8,17 +8,20 @@ import {
   initialLegacyStats,
   initialReputation,
   initialResearchState,
+  insightKey,
+  isStarterTheme,
   type GameState,
 } from '../core';
 import { eraForWeek } from '../data/eras';
 import { defaultMonetization } from '../data/monetization';
+import { researchNodes } from '../data/research';
 
 /**
  * Serialización y carga de partidas (docs/08 §7): JSON plano + localStorage,
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -172,6 +175,41 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       })),
     },
   }),
+  // v8 (Fase 8.2) → v9 (Fase 8.4): progresión del conocimiento (docs/17 P1/P2).
+  // Migración GRACIOSA: la partida no pierde nada de lo que ya hacía. Los temas
+  // ya usados (juegos lanzados + proyectos en curso) quedan investigados; cada
+  // combo lanzado queda "aprendido" (su pista predictiva); y si el estudio ya
+  // lanzó algún juego, se dan por reveladas las 3 facetas globales (un estudio
+  // con obra a sus espaldas conoce el mercado). El descubrimiento aplica solo a
+  // partidas nuevas.
+  8: (file) => {
+    const s = file.state;
+    const usedThemes = new Set<string>();
+    const insights = new Set<string>();
+    for (const g of s.releasedGames) {
+      usedThemes.add(g.themeId);
+      insights.add(insightKey(g.themeId, g.genreId));
+    }
+    for (const p of s.projects) usedThemes.add(p.themeId);
+    const themes = [...usedThemes].filter((id) => !isStarterTheme(id));
+    const revealNodes = researchNodes.filter((n) => n.reveals).map((n) => n.id);
+    const unlocked =
+      s.releasedGames.length > 0
+        ? [...new Set([...(s.research.unlocked ?? []), ...revealNodes])]
+        : (s.research.unlocked ?? []);
+    return {
+      saveVersion: 9,
+      state: {
+        ...s,
+        research: {
+          ...s.research,
+          themes: [...(s.research.themes ?? []), ...themes],
+          insights: [...(s.research.insights ?? []), ...insights],
+          unlocked,
+        },
+      },
+    };
+  },
 };
 
 /**

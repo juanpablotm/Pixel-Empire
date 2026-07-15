@@ -246,7 +246,15 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     const state = deserializeSave(JSON.stringify({ saveVersion: 6, state: v6State }));
     // La era se recalcula por la semana (700 cae en E3, docs/02 §5).
     expect(state.era).toBe('E3');
-    expect(state.research).toEqual({ points: 0, unlocked: [], rdStaff: [] });
+    // Sin historial (ni juegos ni proyectos), la progresión del conocimiento
+    // arranca vacía (docs/17 P1/P2): sin temas investigados ni pistas.
+    expect(state.research).toEqual({
+      points: 0,
+      unlocked: [],
+      rdStaff: [],
+      themes: [],
+      insights: [],
+    });
     expect(state.policies).toEqual({
       salary: 'mercado',
       antiCrunch: false,
@@ -294,6 +302,51 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
       JSON.stringify({ saveVersion: 7, state: { ...inFlight, projects: strippedProjects } }),
     );
     expect(projectState.projects[0].startWeek).toBe(projectState.week);
+  });
+
+  it('migra un guardado v8 (Fase 8.2) al esquema actual: siembra el conocimiento desde el historial (docs/17 P1/P2)', () => {
+    // Un estudio con obra hecha (juego lanzado + proyecto en curso). Relabelamos
+    // los temas a no-starter para probar la siembra; el resto son objetos reales.
+    let played = startProject(createInitialState(SEED), {
+      name: 'Semilla',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'hardcore',
+      size: 'pequeno',
+    });
+    for (let i = 0; i < 12 && played.releasedGames.length === 0; i++) played = tick(played);
+    played = startProject(played, {
+      name: 'En curso',
+      themeId: 'cienciaFiccion',
+      genreId: 'estrategia',
+      platformId: 'pcCasero',
+      audience: 'amplio',
+      size: 'pequeno',
+    });
+    const v8State = {
+      ...played,
+      // Forma de research v8: sin themes/insights.
+      research: { points: played.research.points, unlocked: [], rdStaff: [] },
+      releasedGames: played.releasedGames.map((g) => ({
+        ...g,
+        themeId: 'militar',
+        genreId: 'shooter',
+      })),
+      projects: played.projects.map((p) => ({ ...p, themeId: 'crimen', genreId: 'rpg' })),
+    };
+
+    const state = deserializeSave(JSON.stringify({ saveVersion: 8, state: v8State }));
+    // Los temas ya usados (no-starter) quedan investigados: no se pierde acceso.
+    expect(state.research.themes).toContain('militar');
+    expect(state.research.themes).toContain('crimen');
+    // Cada combo lanzado queda "aprendido" (su pista predictiva).
+    expect(state.research.insights).toContain('militar|shooter');
+    // Un estudio con obra a sus espaldas conoce el mercado: 3 facetas globales.
+    expect(state.research.unlocked).toEqual(
+      expect.arrayContaining(['analisisMercado', 'estudioGeneros', 'redAfinidades']),
+    );
+    expect(() => tick(state)).not.toThrow();
   });
 
   it('al cargar, sanea el hype de partidas antiguas que quedaron por encima del tope (docs/17 B2)', () => {

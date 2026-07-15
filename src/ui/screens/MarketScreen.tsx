@@ -3,6 +3,7 @@ import {
   availablePlatforms,
   availableThemes,
   effectiveSaturation,
+  researchableThemes,
   saturationModifier,
   type MarketState,
   type TrendStage,
@@ -31,11 +32,22 @@ const STAGE_COLOR: Record<TrendStage, string> = {
   muerto: 'bg-danger/15 text-danger-hi',
 };
 
-function TrendRow({ name, trend }: { name: string; trend: TrendState }) {
+function TrendRow({
+  name,
+  trend,
+  locked = false,
+}: {
+  name: string;
+  trend: TrendState;
+  locked?: boolean;
+}) {
   return (
     <StaggerItem tag="li" className="flex items-center gap-3 rounded-md bg-raised/60 px-3 py-2">
       <TrendArrow direction={trend.direction} />
-      <span className="w-36 shrink-0 font-medium">{name}</span>
+      <span className={`w-36 shrink-0 font-medium ${locked ? 'text-ink-mute' : ''}`}>
+        {name}
+        {locked && <span className="ml-1 text-xs text-ink-faint" title="Investígalo para poder usarlo">🔒</span>}
+      </span>
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-control">
         <div
           className="meter-fill h-full rounded-full bg-action-hi"
@@ -92,7 +104,12 @@ export function MarketScreen() {
   const goTo = useGameStore((s) => s.goTo);
 
   const genresShown = availableGenres(game);
-  const themesShown = availableThemes(game);
+  // El mercado es observable: se ven las tendencias de todos los temas que la
+  // era ha traído, estén investigados o no (docs/17 P1). Los no-usables llevan
+  // 🔒: sirve para decidir en qué especializarse.
+  const usableThemes = availableThemes(game);
+  const lockedThemeIds = new Set(researchableThemes(game).map((t) => t.id));
+  const themesShown = [...usableThemes, ...researchableThemes(game)];
   const platformsShown = availablePlatforms(game);
 
   const maxBase = Math.max(1, ...Object.values(market.platforms).map((p) => p.installedBase));
@@ -129,7 +146,9 @@ export function MarketScreen() {
         <StaggerGroup tag="ul" className="flex flex-col gap-2 text-sm">
           {themesShown.map((t) => {
             const trend = market.themes[t.id];
-            return trend ? <TrendRow key={t.id} name={t.name} trend={trend} /> : null;
+            return trend ? (
+              <TrendRow key={t.id} name={t.name} trend={trend} locked={lockedThemeIds.has(t.id)} />
+            ) : null;
           })}
         </StaggerGroup>
       </section>

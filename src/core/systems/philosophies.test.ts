@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getEra } from '../../data/eras';
+import { themes } from '../../data/themes';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
@@ -104,11 +105,16 @@ const BALANCED: Philosophy = {
  */
 function playBot(philosophy: Philosophy): GameState {
   const startWeek = getEra('E5').startWeek;
+  const base = createInitialState(SEED);
   let state: GameState = {
-    ...createInitialState(SEED),
+    ...base,
     week: startWeek,
     era: 'E5',
     market: createMarketState(startWeek),
+    // Harness de comparación de MONETIZACIÓN (docs/17 P1): un estudio de E5 ya
+    // domina sus temas; los desbloqueamos para que la única variable sean las
+    // palancas morales, no la progresión del conocimiento.
+    research: { ...base.research, themes: themes.map((t) => t.id) },
   };
   let combo = 0;
   for (let week = 0; week < WEEKS; week++) {

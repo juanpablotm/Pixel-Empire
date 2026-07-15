@@ -10,6 +10,39 @@ import { genres } from './genres';
  * con `requiresResearch` apuntando al nodo; ver researchNodeUnlocks()).
  */
 export const researchNodes: readonly ResearchNodeDef[] = [
+  // --- Inteligencia de mercado (docs/17 P2): revela el ATAJO PREDICTIVO -----
+  // Comprar la faceta la revela para SIEMPRE y para todo (global). Es una
+  // decisión con coste de oportunidad: esos 💡 no van a motores/QA. El desglose
+  // de reseña a posteriori nunca se paga (Pilar 2): esto solo compra saberlo
+  // antes. Alternativa orgánica y por combo: "Investigar resultados" (P2).
+  {
+    id: 'analisisMercado',
+    name: 'Análisis de mercado',
+    description:
+      'Un estudio de precios del sector: revela el precio recomendado de cada tamaño de juego al concebirlo.',
+    cost: 6,
+    era: 'E1',
+    reveals: 'price',
+  },
+  {
+    id: 'estudioGeneros',
+    name: 'Estudio de géneros',
+    description:
+      'Diseccionas qué hace grande a cada género (también los de eras futuras): revela su balance Diseño/Técnica ideal en la mesa de desarrollo.',
+    cost: 10,
+    era: 'E2',
+    reveals: 'balance',
+  },
+  {
+    id: 'redAfinidades',
+    name: 'Red de afinidades',
+    description:
+      'Cruzas datos de miles de lanzamientos: el medidor de Fit deja de ser difuso para cualquier combinación tema×género.',
+    cost: 16,
+    era: 'E2',
+    reveals: 'fit',
+  },
+
   // --- Motores propios (docs/02 §3): producción más rápida -----------------
   {
     id: 'motorPropio1',

@@ -65,12 +65,15 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
 
     // Por defecto: Fantasía × RPG en PC Casero para público Amplio → verde.
+    // Fantasía es tema de partida y RPG género de E1: su Fit se conoce sin
+    // investigar (docs/17 P2, "conoces lo que empiezas").
     expect(screen.getByRole('status', { name: 'Fit: Encaje prometedor' })).toBeInTheDocument();
 
-    // Deportes × RPG para Infantil → rojo. (El nombre incluye la flecha de tendencia.)
-    fireEvent.click(screen.getByRole('button', { name: /Deportes/ }));
+    // Fantasía × Puzzle para Infantil baja el encaje, sin exponer el número.
+    // (El nombre del botón incluye la flecha de tendencia.)
+    fireEvent.click(screen.getByRole('button', { name: /Puzzle/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Infantil' }));
-    expect(screen.getByRole('status', { name: 'Fit: Mal encaje' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Fit: Encaje dudoso' })).toBeInTheDocument();
   });
 
   it('criterio de cierre de Fase 1: fundar → concebir → desarrollar → reseña descompuesta → vender → repetir', () => {
@@ -133,7 +136,8 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     expect(screen.getByText('Mercado y tendencias')).toBeInTheDocument();
     // Cada género y tema lleva su flecha ↑→↓ (docs/04 §2).
     const arrows = screen.getAllByRole('img', { name: /subiendo|estable|bajando/ });
-    expect(arrows.length).toBeGreaterThanOrEqual(10); // 4 géneros + 6 temas
+    // 4 géneros + los 7 temas de E1 (usables + por investigar, docs/17 P1).
+    expect(arrows.length).toBeGreaterThanOrEqual(10);
     // Plataformas con su etapa de ciclo de vida y base instalada.
     expect(screen.getByText('Commo 64')).toBeInTheDocument();
     expect(screen.getAllByText(/uds\/sem/).length).toBeGreaterThanOrEqual(2);

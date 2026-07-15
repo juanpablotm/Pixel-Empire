@@ -27,7 +27,7 @@ import {
 } from './market';
 import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeQuality } from './quality';
-import { addReleaseResearchPoints, capabilityBonus } from './research';
+import { addReleaseResearchPoints, capabilityBonus, themeResearchStatus } from './research';
 import { withReputationDeltas } from './reputation';
 import { buildReviewLines, reviewVerdict } from './review';
 import {
@@ -245,7 +245,12 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
   const theme = getTheme(concept.themeId);
   const genre = getGenre(concept.genreId);
   if (!themeAvailable(state, theme)) {
-    throw new Error(`El tema ${theme.name} aún no está disponible en esta era`);
+    // Distingue "aún no es tu era" de "existe pero no lo has investigado" (docs/17 P1).
+    throw new Error(
+      themeResearchStatus(state, theme.id) === 'bloqueado'
+        ? `El tema ${theme.name} aún no está disponible en esta era`
+        : `El tema ${theme.name} aún no está investigado (cuesta 💡 en Investigación)`,
+    );
   }
   if (!genreAvailable(state, genre)) {
     throw new Error(`El género ${genre.name} aún no está desbloqueado (era o investigación)`);

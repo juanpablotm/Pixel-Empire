@@ -10,6 +10,8 @@ import {
   launchMarketingCampaign,
   motivateEmployee,
   repayLoan,
+  researchInsight,
+  researchTheme,
   resolveDilemma,
   respondToCrisis,
   retireStudio,
@@ -196,6 +198,10 @@ export interface GameStore {
   /** Acciones de investigación (docs/02 §3; delegan en core/systems/research.ts). */
   toggleResearch: (employeeId: string) => void;
   buyResearch: (nodeId: string) => void;
+  /** Desbloquea un tema con 💡 (docs/17 P1). */
+  researchTheme: (themeId: string) => void;
+  /** "Investigar resultados" de un juego lanzado: aprende su combo (docs/17 P2). */
+  researchInsight: (gameId: string) => void;
   /** Gestión por políticas (docs/02 §4; delegan en core/systems/policies.ts). */
   setPolicies: (patch: Partial<StudioPolicies>) => void;
   /** Acciones de economía (docs/06 §4; delegan en core/systems/economy.ts). */
@@ -631,6 +637,14 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   buyResearch: (nodeId) => {
     set((s) => ({ game: buyResearch(s.game, nodeId) }));
+  },
+
+  researchTheme: (themeId) => {
+    set((s) => ({ game: researchTheme(s.game, themeId) }));
+  },
+
+  researchInsight: (gameId) => {
+    set((s) => ({ game: researchInsight(s.game, gameId) }));
   },
 
   setPolicies: (patch) => {

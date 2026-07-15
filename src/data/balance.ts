@@ -571,6 +571,35 @@ export const balance = {
       ProjectSize,
       number
     >,
+
+    /**
+     * Progresión del conocimiento (docs/17 P1/P2). Todo data-driven: qué temas
+     * son libres, cuánto cuesta investigar el resto (por era del tema) y el
+     * atajo predictivo por combo.
+     */
+    knowledge: {
+      /**
+       * Temas libres desde el inicio (docs/17 P1): 2–3 para que el arranque no
+       * sea monótono. El resto se desbloquea con 💡. Todos son de E1.
+       */
+      starterThemes: ['fantasia', 'cienciaFiccion', 'espacio'] as readonly string[],
+      /**
+       * Coste en 💡 de investigar un tema, por la era en que se puede investigar
+       * (su `appearsInEra`). Barato en E1 (los puntos escasean); sube con las
+       * eras (hay más 💡 en circulación). La era HABILITA la opción; el tema
+       * cuesta 💡 igualmente (docs/17 P1: pasar de era no regala temas).
+       */
+      themeCostByEra: { E1: 6, E2: 10, E3: 14, E4: 18, E5: 22, E6: 26, E7: 30 } satisfies Record<
+        EraId,
+        number
+      >,
+      /**
+       * "Investigar resultados" de un combo lanzado (docs/17 P2): 💡 por revelar
+       * el atajo predictivo de esa combinación (fit del combo + balance del
+       * género). Barato: aprender de lo que YA hiciste debe ser accesible.
+       */
+      insightCost: 4,
+    },
   },
 
   /** Premios anuales (docs/06 §7): umbrales por categoría y recompensas. */

@@ -85,9 +85,19 @@ Subir de etapa suele requerir también **mejorar la oficina** (coste creciente) 
 ### 3.3 Investigación y desbloqueos (doc `02` §3)
 
 Acumulas **Puntos de Investigación 💡** al desarrollar juegos y al asignar personal a I+D (~1 por
-persona·semana). Se gastan en un árbol que desbloquea nuevos géneros, combinaciones, temas, features,
+persona·semana). Se gastan en un árbol que desbloquea nuevos géneros, combinaciones, features,
 motores propios y capacidades de estudio (marketing avanzado, formación). Muchos desbloqueos están
 **gateados por era** (no puedes investigar "online masivo" en 1985).
+
+**Progresión del conocimiento (docs `17` P1/P2).** La investigación pesa aún más desde la Fase 8.4:
+- **Temas gateados:** empiezas con **2–3 temas libres** (fantasía, ciencia ficción, espacio) y
+  **desbloqueas el resto con 💡**. Pasar de era **no regala temas**: los **habilita** para investigarlos
+  (coste creciente por era). Decides en qué se especializa tu estudio.
+- **Conocimiento de mercado que se gana:** las **pistas predictivas** (medidor de Fit, precio
+  recomendado, balance ideal del género) siguen la regla "conoces lo que empiezas; descubres lo que
+  desbloqueas". Se revelan con **nodos globales** de Inteligencia de mercado o con **"Investigar
+  resultados"** de un lanzamiento (aprende ese combo). El **desglose de reseña siempre es legible**
+  (Pilar 2): solo se paga saberlo *antes*, no la explicación *después*.
 
 ### 3.4 Ritmo objetivo `[baseline v1]` (doc `02` §6)
 
@@ -132,7 +142,9 @@ Se pueden **mezclar dos géneros** (desbloqueable) con pesos. La afinidad tema×
 
 ## 5. Catálogo: Temas `[baseline v1]` (doc `09` §3)
 
-Cada tema tiene su curva de popularidad (modas, `04`). Algunos aparecen en eras posteriores.
+Cada tema tiene su curva de popularidad (modas, `04`). Algunos aparecen en eras posteriores. **Solo
+fantasía, ciencia ficción y espacio son libres al empezar**; el resto se **desbloquea con 💡** una vez
+su era ha llegado (docs `17` P1). La era habilita la opción; el tema cuesta 💡 igualmente.
 
 | Tema | Aparece | Afinidad típica |
 |------|:---:|-----------------|

@@ -1,5 +1,6 @@
 import {
   availableFeatures,
+  balanceRevealed,
   computeBugLevel,
   computeTeamFactor,
   computeTeamOutput,
@@ -94,6 +95,11 @@ export function DevelopmentScreen() {
   const hasWork = project.designPoints + project.techPoints > 0;
   const dReal = hasWork ? realDesignShare(project.designPoints, project.techPoints) : null;
   const balanceInfo = dReal !== null ? balanceLabel(Math.abs(dReal - genre.idealDesign)) : null;
+  // El ideal del género es una PISTA PREDICTIVA (docs/17 P2): se investiga. El
+  // balance propio (dReal) siempre se ve —es tu juego—; lo que se paga es saber
+  // hacia dónde apuntar antes de lanzar (Estudio de géneros, o "Investigar
+  // resultados" de un juego de este género).
+  const balanceKnown = balanceRevealed(game, project.genreId);
 
   const bugLevel = computeBugLevel(project.bugDebt, project.qaInvested);
   const bugs = bugLabel(bugLevel);
@@ -337,12 +343,22 @@ export function DevelopmentScreen() {
           );
         })}
         <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-3 text-sm">
-          {dReal !== null && balanceInfo ? (
+          {dReal !== null ? (
             <span>
-              Diseño {Math.round(dReal * 100)} % / Técnica {Math.round((1 - dReal) * 100)} % —{' '}
-              ideal de {genre.name}: {Math.round(genre.idealDesign * 100)} %/
-              {Math.round(genre.idealTech * 100)} % ·{' '}
-              <span className={balanceInfo.color}>{balanceInfo.text}</span>
+              Diseño {Math.round(dReal * 100)} % / Técnica {Math.round((1 - dReal) * 100)} %
+              {balanceKnown && balanceInfo ? (
+                <>
+                  {' '}
+                  — ideal de {genre.name}: {Math.round(genre.idealDesign * 100)} %/
+                  {Math.round(genre.idealTech * 100)} % ·{' '}
+                  <span className={balanceInfo.color}>{balanceInfo.text}</span>
+                </>
+              ) : (
+                <span className="text-ink-faint">
+                  {' '}
+                  — ❓ ideal de {genre.name} por investigar (Estudio de géneros, en I+D)
+                </span>
+              )}
             </span>
           ) : (
             <span className="text-ink-faint">
