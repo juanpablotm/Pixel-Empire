@@ -197,6 +197,11 @@ Beat a pantalla completa "el mundo cambia": un montaje/titular de prensa resume 
 plataformas deslizándose, modas que nacen/mueren), la **piel de la UI se transforma** (§8), y suena un
 acorde de transición. Marca el paso del tiempo como un hito emocional.
 
+**Remate (Fase 8.6, docs/17 U1):** al pulsar "Entrar en la nueva era" el beat **encadena** con la
+**cronología de eras** (§10.11), que entra con su muelle y el nodo recién conquistado ya encendido.
+Se celebra el hito en la línea del tiempo completa —de dónde vienes y cuánto queda— en vez de solapar
+dos overlays a pantalla completa.
+
 ### 7.7 El Museo del Legado (I9) — cierre de partida
 Pantalla final recorrible: estanterías con las **portadas procedurales** de todos tus juegos, una pared
 de premios, una línea de tiempo de hitos, y un "retrato" de tu perfil moral (Riqueza/Prestigio/Impacto/
@@ -314,6 +319,30 @@ Flujo de caja, ingresos por juego (curvas Recharts), costes desglosados, alertas
 ### 10.10 Pantalla de Legado (cierre)
 El **Museo del Legado** (§7.7).
 
+### 10.11 Cronologías de era y de escala (overlay) `[DECIDIDO · Fase 8.6, docs/17 U1]`
+Los **dos ejes de progreso** de `16` §3 —el mundo cambia, tu estudio crece—, cada uno con su overlay
+sobre el estudio (telón semitransparente: la partida sigue ahí detrás). Se abren desde **su chip de la
+barra superior**; la de eras, además, **se abre sola** al final del beat de era (§7.6).
+
+- **Barra de nodos** hexagonales: **superados** en verde (con ✓), **actual** con el acento de la piel,
+  trazo grueso y **pulso**, **futuros** con borde punteado y "?". Un hilo los une y se tiñe de verde en
+  el tramo recorrido. Navegable con ratón (hover/clic) y con teclado (`←`/`→`, patrón *tablist*).
+- **Panel inferior** con el nodo elegido. **Eras:** nombre, años y novedades (plataformas + negocio);
+  los futuros dicen "???" —el misterio se mantiene—. **Escala:** rol, foco de decisiones y **requisitos**
+  (capital + plantilla) más aforo y proyectos en paralelo; los futuros **sí** los enseñan: una etapa es
+  un objetivo al que apuntar, no una sorpresa.
+- **Ni pausan ni deciden nada** (criterio de la Fase 8.5): los abre el jugador y se cierran con Esc.
+  Los datos se **derivan** del núcleo (`eraNovelties`, `scaleStageInfo`) — los requisitos que se enseñan
+  son los que comprueba `advanceScale`, y las novedades, las que canta el beat (`08` §6: la UI no
+  calcula reglas).
+
+**Dos trampas de las pieles**, resueltas en el CSS (§8): el estado del nodo **no puede depender del
+tono** (hay pieles cuyo acento *es* verde —E5 esmeralda, E1 fósforo— y el actual se confundiría con los
+superados: la diferencia es estructural, hueco contra relleno), y el **tinte del relleno se queda bajo**
+(22 %): un acento al 55 % arrastra la cara lejos de la superficie de la piel y con ella el contraste del
+glifo, en direcciones opuestas según la piel (E7 cian claro contra tinta clara: 2,7:1). Con el tinte
+suave, las 7 pieles pasan AA de sobra.
+
 ---
 
 ## 11. Sistema de diseño (componentes reutilizables) `[DECIDIDO]`
@@ -331,6 +360,12 @@ sobre un chasis común), `ConceptionModal` (§10.2), `DevelopmentModal` (§10.3)
 de la cola de ventas, SVG por código). Utilidad `.scroll-slim`: la **barra de scroll** de modales y
 listas se pinta con tokens (la del sistema desentonaba con las pieles de era) y nunca estrecha la zona
 de agarre.
+
+De la Fase 8.6 (docs/17 U1): `Timeline` (§10.11), un overlay genérico para los dos ejes de progreso.
+Sus **nodos hexagonales** son `<polygon>` SVG por código (§9), no `clip-path`: el recorte se come el
+borde y el anillo de foco, y obliga a fingir el contorno con capas — que en la piel E7, cuyas
+superficies son **cristal translúcido**, se transparentan y sangran el color del marco sobre el
+hexágono entero. Con `stroke` el borde es real y el punteado de las futuras es `stroke-dasharray`.
 
 Todos temáticos (claro/oscuro **y piel de era**) desde `ui/theme`, y sin lógica de simulación dentro (`08`).
 

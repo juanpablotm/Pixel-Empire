@@ -148,6 +148,130 @@
 [data-motion='reduced'] .hero-blink { animation: none; }
 
 /*
+ * Cronologías de era y de escala (Fase 8.6, docs/17 U1): los nodos son
+ * hexágonos por clip-path (sin assets, coherentes con docs/10 §9). Tres
+ * estados: superado (verde), actual (acento de la piel de era, con pulso) y
+ * futuro (borde punteado — el candado visual). El estado se pinta con TOKENS,
+ * así que envejece con la era como el resto de la interfaz.
+ */
+/* El hexágono es un <polygon> SVG (docs/10 §9: los gráficos se dibujan por
+   código), no un clip-path: el recorte se come el borde y el outline del
+   foco, y obliga a fingir el contorno con capas — que en E7, cuyas superficies
+   son CRISTAL, se transparentan y sangran. Con SVG el borde es un `stroke` de
+   verdad: nada sangra, el punteado de las futuras es `stroke-dasharray` y el
+   anillo de foco del botón se ve entero. */
+.hex-node {
+  --hex-tint: var(--border-line-hi);
+  --hex-fill: var(--surface-raised);
+  --hex-stroke: 3;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.65rem;
+  flex: none;
+  color: var(--text-body);
+  font-weight: 700;
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+.hex-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  /* El trazo del nodo actual es grueso: que no lo recorte el viewBox. */
+  overflow: visible;
+  pointer-events: none;
+}
+.hex-svg polygon {
+  fill: var(--hex-fill);
+  stroke: var(--hex-tint);
+  stroke-width: var(--hex-stroke);
+  transition: fill var(--motion-fast) var(--ease-standard);
+}
+/* 1.25rem en negrita = "texto grande" de WCAG (umbral 3:1 en vez de 4.5:1),
+   que es lo que permite pintar la marca sobre la cara teñida del nodo actual
+   sin perder AA en ninguna piel (docs/10 §13). */
+.hex-label {
+  position: relative;
+  z-index: 1;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.hex-node:hover,
+.hex-node:focus-visible {
+  transform: translateY(-2px);
+}
+/* Dos trampas de las pieles, las dos resueltas aquí (docs/10 §8):
+   1. Superada vs actual no pueden distinguirse solo por el TONO: hay pieles
+      cuyo acento ES verde (E5 esmeralda, E1 fósforo) y el nodo actual se
+      confundiría con los ya conquistados. La diferencia es estructural:
+      hueca contra rellena, con trazo más grueso y pulso.
+   2. El color de estado tampoco puede vivir en el GLIFO: sobre el relleno del
+      nodo actual no habría AA en todas las pieles. El estado vive en el trazo
+      y en el relleno; la marca siempre va en tinta. */
+.hex-node[data-status='past'] {
+  --hex-tint: var(--accent-ok);
+  color: var(--text-body);
+}
+/* El tinte del relleno se queda BAJO a propósito: un acento al 55% arrastra la
+   cara lejos de la superficie de la piel y con ella el contraste del glifo, en
+   direcciones opuestas según la piel (E7 cian claro contra tinta clara: 2.7:1).
+   Al 22% la cara sigue siendo la superficie —su AA aguanta en las 7 pieles— y
+   el "estás aquí" lo cantan el trazo grueso y el pulso. */
+.hex-node[data-status='current'] {
+  --hex-tint: var(--skin-accent);
+  --hex-fill: color-mix(in oklab, var(--skin-accent) 22%, var(--surface-raised));
+  --hex-stroke: 5;
+  color: var(--text-strong);
+}
+/* Futura: el candado visual — borde punteado y "?" (docs/17 U1). */
+.hex-node[data-status='future'] {
+  --hex-fill: var(--surface-app);
+  --hex-stroke: 2;
+  color: var(--text-faint);
+}
+.hex-node[data-status='future'] .hex-svg polygon {
+  stroke-dasharray: 7 5;
+}
+.hex-node[aria-selected='true'] {
+  outline: 2px solid var(--ring-focus);
+  outline-offset: 3px;
+}
+
+/* El pulso del nodo actual (docs/17 U1): "estás aquí". Solo transform. */
+@keyframes hex-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+.hex-node[data-status='current'] {
+  animation: hex-pulse 2.4s var(--ease-standard) infinite;
+}
+.hex-node[data-status='current']:hover,
+.hex-node[data-status='current']:focus-visible {
+  animation: none;
+}
+[data-motion='reduced'] .hex-node[data-status='current'] {
+  animation: none;
+}
+
+/* El hilo que une los nodos: se tiñe de verde en el tramo ya recorrido. El
+   margen lo clava a la mitad del hexágono (3.65rem / 2): los rótulos de dos
+   líneas hacen columnas de distinta altura, y centrando el hilo contra la
+   columna cada tramo caería a una altura distinta. */
+.hex-link {
+  height: 2px;
+  flex: 1 1 auto;
+  min-width: 0.75rem;
+  margin-top: 1.825rem;
+  background-color: var(--border-line);
+}
+.hex-link[data-done='true'] {
+  background-color: color-mix(in oklab, var(--accent-ok) 60%, transparent);
+}
+
+/*
  * Escenario hero de la vista principal (Fase 7A): telón con gradiente de la
  * piel de era + rejilla pixel sutil. En la 7B la Oficina Viva ocupará este
  * escenario; el contenedor y su jerarquía ya quedan reservados aquí.

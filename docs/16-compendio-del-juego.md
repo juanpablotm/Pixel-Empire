@@ -71,16 +71,19 @@ el "listón de calidad" esperado y desbloquea plataformas, géneros, features y 
 ### 3.2 Etapas de escala del estudio `[baseline v1]` (doc `02` §4)
 
 Transversal a las eras. Cada etapa cambia *qué decisiones tomas* y se desbloquea al cumplir hitos de
-capital + reputación (umbrales orientativos, ajustables):
+capital + plantilla:
 
-| Etapa | Tamaño | Eres... | Se desbloquea con (baseline) | Foco de decisiones |
-|-------|--------|---------|------------------------------|--------------------|
-| **1. Garaje** | 1 (tú) | Creador | Inicio de la partida | Haces el juego con tus manos |
-| **2. Estudio pequeño** | 2–8 | Líder de equipo | 1er juego rentable + ~50k 💰 y reputación básica | Contratar, asignar, gestionar moral |
-| **3. Estudio consolidado** | 9–40 | Director | ~500k 💰 + reputación media + oficina mejorada | Múltiples equipos/proyectos, portfolio |
-| **4. Corporación** | 40+ / estudios | Magnate | ~5M 💰 + reputación alta + un "juegazo" (90+) | Estrategia macro, gestión por políticas |
+| Etapa | Aforo | Eres... | Se desbloquea con | Proyectos a la vez | Foco de decisiones |
+|-------|-------|---------|-------------------|--------------------|--------------------|
+| **1. Garaje** | 1 (tú) | Creador | Inicio de la partida | 1 | Haces el juego con tus manos |
+| **2. Estudio pequeño** | 8 | Líder de equipo | 15k 💰 | 1 | Contratar, asignar, gestionar moral |
+| **3. Estudio consolidado** | 40 | Director | 120k 💰 + 5 en plantilla | 3 | Múltiples equipos/proyectos, portfolio |
+| **4. Corporación** | 200 | Magnate | 800k 💰 + 15 en plantilla | 6 | Estrategia macro, gestión por políticas |
 
-Subir de etapa suele requerir también **mejorar la oficina** (coste creciente) para caber más gente.
+Los umbrales **viven en `data/balance.ts`** (`staff.scale`) y son los que comprueba `advanceScale`; la
+**cronología de escala** (docs/10 §10.11) los lee de ahí, así que lo que se enseña es lo que se aplica.
+*Nota de la Fase 8.6:* la tabla decía antes ~50k/500k/5M "orientativos"; se alinea con el balance real,
+que las Fases 6 y 8.3 dejaron más bajo por viabilidad (los bots no llegaban a Corporación).
 
 ### 3.3 Investigación y desbloqueos (doc `02` §3)
 

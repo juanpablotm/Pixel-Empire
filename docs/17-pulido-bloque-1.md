@@ -162,6 +162,22 @@ el beat de transición de `10` §7.6).
 Consolidado → Corporación), con los mismos estados y con los **requisitos** de cada etapa (E1 de este doc).
 **Toca:** `10` (UI), `02` (eras/escala).
 
+> **✅ Implementado (Fase 8.6).** `Timeline` (docs/10 §10.11) es **un overlay genérico** para los dos
+> ejes: cada uno solo aporta su lista de nodos. Estado de presentación en el store (`timeline` +
+> `openTimeline`/`closeTimeline`); **no pausa** —como los modales de U2— y se cierra con Esc. Los chips
+> de **Era** y **Etapa** de la barra pasan a botones y son su puerta de entrada.
+> **La apertura automática encadena con el beat** (§7.6): "Entrar en la nueva era" transforma la piel
+> *y* abre la cronología con el nodo recién conquistado encendido — celebrar el hito es el remate del
+> beat, no un segundo overlay peleándose con él.
+> **Nada se duplica:** las novedades salen de `eraNovelties` (derivadas de `appearsInEra`, la misma
+> fuente que canta el beat) y los requisitos de `scaleStageInfo`, que lee los umbrales que comprueba
+> `advanceScale` — con tests que fijan justamente eso (subir con lo que se anuncia; un pelo por debajo,
+> no). Las eras futuras dicen "???"; las etapas futuras **sí** enseñan requisitos: son un objetivo.
+> **Dos trampas de las pieles** (docs/10 §10.11): los nodos son `<polygon>` SVG, no `clip-path` (que se
+> come el borde y el foco, y sangra sobre el cristal de E7), y el estado no vive en el tono ni en el
+> glifo — hay pieles cuyo acento *es* verde. La escala del compendio (`16` §3.2) se realinea con
+> `balance.ts`: se enseña lo que se aplica.
+
 ### U2 · Menú desplegable + modales; pantalla principal más limpia 🎛️ P2 🟡
 *(playtest #5)*
 **Cambio:** llevar a un **menú desplegable** (que abre **modales**) las opciones de: Juegos lanzados,

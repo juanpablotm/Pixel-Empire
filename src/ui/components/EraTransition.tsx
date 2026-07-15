@@ -1,10 +1,9 @@
 import type { CSSProperties } from 'react';
+import { eraNovelties } from '../../core';
 import { getEra } from '../../data/eras';
 import { creators } from '../../data/creators';
 import { features } from '../../data/features';
 import { genres } from '../../data/genres';
-import { monetizationModels } from '../../data/monetization';
-import { platforms } from '../../data/platforms';
 import { themes } from '../../data/themes';
 import { useGameStore } from '../../state/store';
 import { eraSkins } from '../theme/eraSkins';
@@ -16,7 +15,8 @@ import { EraSplash } from './HeroArt';
  * del contenido (`appearsInEra`), no de listas duplicadas (docs/09 §7).
  * Mientras el beat está abierto la UI conserva la piel de la era vieja;
  * al pulsar "Entrar en la nueva era" la piel se transforma (Fase 7E,
- * EraSkinProvider + data-skin-morph).
+ * EraSkinProvider + data-skin-morph) y se abre la cronología de eras, que
+ * celebra el hito con el nodo recién conquistado (docs/17 U1).
  */
 
 function newInEra<T extends { appearsInEra: string }>(items: readonly T[], era: string): T[] {
@@ -29,12 +29,15 @@ export function EraTransition() {
   if (eraId === null) return null;
 
   const era = getEra(eraId);
+  // Plataformas y negocio salen del núcleo (`eraNovelties`), que es también lo
+  // que enseña la cronología: el beat y la línea del tiempo no pueden discrepar.
+  const novelties = eraNovelties(eraId);
   const unlocks: { label: string; names: string[] }[] = [
-    { label: 'Plataformas', names: newInEra(platforms, eraId).map((p) => p.name) },
+    { label: 'Plataformas', names: novelties.platforms },
     { label: 'Géneros', names: newInEra(genres, eraId).map((g) => g.name) },
     { label: 'Temas', names: newInEra(themes, eraId).map((t) => t.name) },
     { label: 'Features', names: newInEra(features, eraId).map((f) => f.name) },
-    { label: 'Modelos de negocio', names: newInEra(monetizationModels, eraId).map((m) => m.name) },
+    { label: 'Modelos de negocio', names: novelties.business },
     { label: 'Creadores', names: newInEra(creators, eraId).map((c) => c.name) },
   ].filter((u) => u.names.length > 0);
 

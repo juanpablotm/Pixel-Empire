@@ -104,7 +104,8 @@ export {
   toggleFeature,
 } from './systems/projects';
 export type { ProjectConcept } from './systems/projects';
-export { advanceEras } from './systems/eras';
+export { advanceEras, eraNovelties } from './systems/eras';
+export type { EraNovelties } from './systems/eras';
 export {
   addReleaseResearchPoints,
   advanceResearch,
@@ -240,10 +241,11 @@ export {
   hiringCost,
   motivateEmployee,
   salaryTierOf,
+  scaleStageInfo,
   setCrunch,
   staffCap,
   teamInnovationBonus,
   toggleAssignment,
   trainEmployee,
 } from './systems/staff';
-export type { MotivationKind } from './systems/staff';
+export type { MotivationKind, ScaleStageInfo } from './systems/staff';

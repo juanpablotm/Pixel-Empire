@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
 import { eraForWeek, eraOrder, eras, getEra } from '../../data/eras';
+import { monetizationModels } from '../../data/monetization';
+import { platforms } from '../../data/platforms';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
 import type { ProjectSize } from '../model/project';
+import { eraNovelties } from './eras';
 import { createMarketState, computeSegmentReviews, platformAvailable } from './market';
 import { startProject } from './projects';
 import {
@@ -165,6 +168,38 @@ describe('desbloqueos por era (docs/09 §7, CA: contenido gateado)', () => {
         platformAvailable(p, era.startWeek),
       );
       expect(onSale.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
+describe('novedades de la era (docs/17 U1: cronología)', () => {
+  it('E1 estrena los micro-ordenadores y la venta de copias', () => {
+    const { platforms: plats, business } = eraNovelties('E1');
+    expect(plats).toContain('PC Casero');
+    expect(business).toEqual(['Premium']);
+  });
+
+  it('E5 estrena el f2p y las loot boxes; los pases de batalla esperan a E6', () => {
+    expect(eraNovelties('E5').business).toContain('Free-to-play');
+    expect(eraNovelties('E5').business).toContain('Loot boxes');
+    expect(eraNovelties('E5').business).not.toContain('Pases de batalla');
+    expect(eraNovelties('E6').business).toContain('Pases de batalla');
+  });
+
+  it('se deriva del catálogo: cada plataforma y modelo sale en su era, una sola vez', () => {
+    const allPlatforms = eraOrder.flatMap((era) => eraNovelties(era).platforms);
+    expect(allPlatforms).toHaveLength(platforms.length);
+    expect(new Set(allPlatforms).size).toBe(allPlatforms.length);
+
+    const allBusiness = eraOrder.flatMap((era) => eraNovelties(era).business);
+    expect(allBusiness).toHaveLength(monetizationModels.length + 2);
+    expect(new Set(allBusiness).size).toBe(allBusiness.length);
+  });
+
+  it('ninguna era llega de vacío: todas estrenan algo que enseñar', () => {
+    for (const era of eraOrder) {
+      const { platforms: plats, business } = eraNovelties(era);
+      expect(plats.length + business.length).toBeGreaterThan(0);
     }
   });
 });

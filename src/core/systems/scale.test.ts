@@ -7,7 +7,7 @@ import type { Employee } from '../model/staff';
 import { weeklyFixedCosts } from './economy';
 import { advancePolicies, salaryCostFactor, setPolicies } from './policies';
 import { startProject, projectCap } from './projects';
-import { advanceScale, setCrunch, toggleAssignment } from './staff';
+import { advanceScale, scaleStageInfo, setCrunch, staffCap, toggleAssignment } from './staff';
 
 /**
  * Las 4 etapas de escala (docs/02 §4): hitos de transición, multi-proyecto
@@ -81,6 +81,39 @@ describe('hitos de transición (docs/02 §4)', () => {
     const scale = balance.staff.scale;
     const corp = advanceScale(atStage(3, scale.stage4.staff, scale.stage4.capital));
     expect(corp.candidates.length).toBe(scale.poolSizeByStage[4]);
+  });
+});
+
+/**
+ * La cronología de escala (docs/17 U1) enseña requisitos: tienen que ser los
+ * que de verdad hacen subir de etapa, no una copia que se desincronice.
+ */
+describe('scaleStageInfo: los requisitos que se muestran son los que se aplican', () => {
+  it('el garaje es el punto de partida: no tiene requisito', () => {
+    expect(scaleStageInfo(1).requires).toBeNull();
+  });
+
+  it('con lo que pide cada etapa se sube; un pelo por debajo, no', () => {
+    for (const stage of [2, 3, 4] as const) {
+      const req = scaleStageInfo(stage).requires;
+      expect(req).not.toBeNull();
+      if (req === null) continue;
+      const from = (stage - 1) as 1 | 2 | 3;
+      const staffCount = Math.max(1, req.staff);
+
+      expect(advanceScale(atStage(from, staffCount, req.capital)).studio.scaleStage).toBe(stage);
+      expect(advanceScale(atStage(from, staffCount, req.capital - 1)).studio.scaleStage).toBe(
+        from,
+      );
+    }
+  });
+
+  it('los topes que anuncia son los que aplican el aforo y el multi-proyecto', () => {
+    for (const stage of [1, 2, 3, 4] as const) {
+      const info = scaleStageInfo(stage);
+      expect(info.staffCap).toBe(staffCap(atStage(stage, 1)));
+      expect(info.projectCap).toBe(projectCap(atStage(stage, 1)));
+    }
   });
 });
 

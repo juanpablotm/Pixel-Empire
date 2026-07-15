@@ -65,6 +65,12 @@ export const monetizationFlagEras: { lootBoxes: EraId; battlePass: EraId } = {
   battlePass: 'E6',
 };
 
+/** Nombre legible de cada añadido, para las novedades de negocio de la era. */
+export const monetizationFlagLabels: Record<keyof typeof monetizationFlagEras, string> = {
+  lootBoxes: 'Loot boxes',
+  battlePass: 'Pases de batalla',
+};
+
 export function getMonetizationModel(id: MonetizationModel): MonetizationModelDef {
   const model = monetizationModels.find((m) => m.id === id);
   if (!model) throw new Error(`Modelo de monetización desconocido: ${id}`);

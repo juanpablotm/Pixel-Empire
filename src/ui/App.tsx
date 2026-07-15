@@ -14,6 +14,7 @@ import { MenuModals } from './components/MenuModals';
 import { MoralTint } from './components/MoralScale';
 import { ScreenFade } from './components/Motion';
 import { FontScaleSelect, SoundControls } from './components/PreferenceControls';
+import { Timeline } from './components/Timeline';
 import { Toasts } from './components/Toasts';
 import { CreatorsScreen } from './screens/CreatorsScreen';
 import { FinancesScreen } from './screens/FinancesScreen';
@@ -91,6 +92,9 @@ function useKeyboardShortcuts(): void {
         } else if (s.menuModal !== null) {
           e.preventDefault();
           s.closeMenuModal();
+        } else if (s.timeline !== null) {
+          e.preventDefault();
+          s.closeTimeline();
         }
         return;
       }
@@ -105,6 +109,7 @@ function useKeyboardShortcuts(): void {
         s.conceptionOpen ||
         s.devProjectId !== null ||
         s.menuModal !== null ||
+        s.timeline !== null ||
         s.game.community.crises.some((c) => c.status === 'abierta') ||
         s.game.community.dilemmas.length > 0;
       if (decisionOpen) return;
@@ -184,6 +189,10 @@ export function App() {
         <ConceptionModal />
         <DevelopmentModal />
         <MenuModals />
+
+        {/* Los dos ejes de progreso, a la vista (docs/17 U1): la cronología de
+            eras se abre sola tras el beat, para celebrar el hito. */}
+        <Timeline />
 
         {/* La capa social interrumpe cuando toca decidir (docs/07 §4–§5). */}
         <DilemmaModal />

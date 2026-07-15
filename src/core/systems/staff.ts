@@ -4,7 +4,7 @@ import { firstNames, hireBlockedLabels, lastNames, specialtyLabels } from '../..
 import { traits as allTraits, getTrait } from '../../data/traits';
 import { appendLog } from '../engine/log';
 import { makeRng, type Rng } from '../engine/rng';
-import type { GameState } from '../model/gameState';
+import type { GameState, ScaleStage } from '../model/gameState';
 import type { Employee, SalaryTier, Specialty, TeamFactorResult } from '../model/staff';
 import { nudgeMoralDrift } from './morale';
 import { employerPoolModifiers, withReputationDeltas } from './reputation';
@@ -799,6 +799,33 @@ function levelUpSkills(
 // ---------------------------------------------------------------------------
 // Escala: las 4 etapas, del garaje a la corporación (docs/02 §4)
 // ---------------------------------------------------------------------------
+
+/**
+ * Lo que hace falta para ENTRAR en una etapa, y lo que esa etapa te da
+ * (docs/02 §4). Los umbrales son los mismos que comprueba `advanceScale`:
+ * la cronología de escala (docs/17 U1) los enseña sin duplicar números.
+ * La etapa 1 es el punto de partida, así que no tiene requisito.
+ */
+export interface ScaleStageInfo {
+  requires: { capital: number; staff: number } | null;
+  staffCap: number;
+  projectCap: number;
+}
+
+export function scaleStageInfo(stage: ScaleStage): ScaleStageInfo {
+  const { scale } = balance.staff;
+  const requires: Record<ScaleStage, { capital: number; staff: number } | null> = {
+    1: null,
+    2: { capital: scale.stage2CapitalThreshold, staff: 0 },
+    3: scale.stage3,
+    4: scale.stage4,
+  };
+  return {
+    requires: requires[stage],
+    staffCap: scale.staffCapByStage[stage],
+    projectCap: scale.projectCapByStage[stage],
+  };
+}
 
 /**
  * Transición de etapa por hitos (capital y tamaño de plantilla) y refresco

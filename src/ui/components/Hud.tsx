@@ -27,6 +27,7 @@ export function Hud() {
   const scandalActive = useGameStore((s) => s.game.scandals.some((sc) => sc.weeksLeft > 0));
   const bombingActive = useGameStore((s) => s.game.community.bombs.length > 0);
   const goTo = useGameStore((s) => s.goTo);
+  const openTimeline = useGameStore((s) => s.openTimeline);
   const inTheRed = capital < 0;
   const aggregate = Math.round(aggregateReputation(reputation));
 
@@ -48,20 +49,23 @@ export function Hud() {
         >
           {formatWeek(week)}
         </span>
-        <span
-          tabIndex={0}
-          className="tip chip cursor-help"
-          data-tip={`${era} · ${getEra(era).period}. Cada era trae plataformas, géneros y modelos nuevos — y sube el listón de calidad del público.`}
+        {/* Los dos ejes de progreso abren su cronología (docs/17 U1). */}
+        <button
+          type="button"
+          onClick={() => openTimeline('eras')}
+          className="tip chip"
+          data-tip={`${era} · ${getEra(era).period}. Cada era trae plataformas, géneros y modelos nuevos — y sube el listón de calidad del público. Clic para ver la cronología.`}
         >
           🌍 {getEra(era).name}
-        </span>
-        <span
-          tabIndex={0}
-          className="tip chip cursor-help"
-          data-tip="Etapa de escala: Garaje → Estudio → Consolidado → Corporación. Se sube con capital y plantilla; cada etapa da aforo y proyectos en paralelo."
+        </button>
+        <button
+          type="button"
+          onClick={() => openTimeline('escala')}
+          className="tip chip"
+          data-tip="Etapa de escala: Garaje → Estudio → Consolidado → Corporación. Se sube con capital y plantilla; cada etapa da aforo y proyectos en paralelo. Clic para ver la cronología."
         >
           {stageLabels[scaleStage]}
-        </span>
+        </button>
         <button
           type="button"
           onClick={() => goTo('finanzas')}

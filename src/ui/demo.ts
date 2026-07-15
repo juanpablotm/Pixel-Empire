@@ -350,6 +350,13 @@ export function applyDemoFromQuery(): boolean {
     useGameStore.setState({ eraTransition: era ?? 'E5' });
     return true;
   }
+  // Las cronologías (docs/17 U1): `&eje=escala` para la de etapas. El estudio
+  // de escaparate (E5, consolidado) luce los tres estados de nodo a la vez.
+  if (demo === 'cronologia') {
+    seed(studioDemo(), 'estudio', null);
+    useGameStore.setState({ timeline: params.get('eje') === 'escala' ? 'escala' : 'eras' });
+    return true;
+  }
   // El tutorial guiado (7F) en una partida recién fundada; `&step=N` salta
   // directo a un paso del guion (ui/onboarding/steps.ts) para capturarlo.
   if (demo === 'tutorial') {

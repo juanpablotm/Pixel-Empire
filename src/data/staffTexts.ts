@@ -40,6 +40,25 @@ export const stageLabels: Record<ScaleStage, string> = {
 };
 
 /**
+ * Quién eres y qué decides en cada etapa (docs/02 §4, tabla de docs/16 §3.2).
+ * Los REQUISITOS no se escriben aquí: se leen de balance vía `scaleStageInfo`,
+ * que es lo que comprueba `advanceScale` (docs/17 U1).
+ */
+export const stageRoles: Record<ScaleStage, string> = {
+  1: 'Creador',
+  2: 'Líder de equipo',
+  3: 'Director',
+  4: 'Magnate',
+};
+
+export const stageFocus: Record<ScaleStage, string> = {
+  1: 'Haces el juego con tus manos: sin plantilla, sin nóminas y sin red.',
+  2: 'Contratas, asignas y gestionas la moral. El estudio deja de ser solo tú.',
+  3: 'Diriges: varios equipos y proyectos en paralelo, y un portfolio que mantener.',
+  4: 'Estrategia macro y gestión por políticas. La planta entera es tuya.',
+};
+
+/**
  * Motivos por los que el botón de contratar se deshabilita (docs/17 B1). La
  * lógica los elige en core/systems/staff.ts (hireBlockReason); la UI solo los
  * muestra como texto visible. Copy centralizado aquí, junto al resto de

@@ -127,8 +127,11 @@ Transversal a las eras históricas, el estudio crece en escala. Cada etapa cambi
 | **3. Estudio consolidado** | 9–40 | Director | Múltiples equipos/proyectos en paralelo; estrategia de portfolio. |
 | **4. Corporación** | 40+ / estudios | Magnate | Estrategia macro: franquicias, adquisiciones, plataformas, ética a escala. |
 
-La transición entre etapas se desbloquea por hitos (capital, reputación, tamaño de oficina) y es uno
-de los grandes momentos de recompensa del juego. La etapa también **gatea el tamaño de proyecto**
+La transición entre etapas se desbloquea por hitos de **capital + plantilla** (los umbrales concretos,
+en `data/balance.ts` → `staff.scale`; la tabla legible, en `16` §3.2) y es uno de los grandes momentos
+de recompensa del juego. Desde la Fase 8.6 el jugador los ve: la **cronología de escala** (`10` §10.11)
+enseña los requisitos de cada etapa leyéndolos de la misma fuente que los comprueba. La etapa también
+**gatea el tamaño de proyecto**
 (docs/17 E1): el AAA solo está al alcance de una **Corporación** (con su plantilla mínima), así la
 escala del estudio importa de verdad a la hora de decidir qué juego construir.
 

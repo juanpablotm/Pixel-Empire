@@ -116,6 +116,13 @@ export type Screen =
  */
 export type MenuModal = 'juegos' | 'historial' | 'partida';
 
+/**
+ * Cronología abierta, o null (docs/17 U1): la de las 7 eras o la de las 4
+ * etapas de escala. Los dos ejes de progreso de docs/16 §3, cada uno con su
+ * overlay. Presentación pura; se abre desde su chip de la barra superior.
+ */
+export type TimelineKind = 'eras' | 'escala';
+
 export interface GameStore {
   game: GameState;
   /** Velocidad de simulación actual (0 = pausa). */
@@ -151,6 +158,12 @@ export interface GameStore {
    * lo abre el jugador cuando quiere, no interrumpe como los avisos de U4.
    */
   menuModal: MenuModal | null;
+  /**
+   * Cronología visible, o null (docs/17 U1). Como los modales del menú, no
+   * pausa: se mira cuando apetece. Se abre sola tras el beat de era para
+   * celebrar el hito (docs/10 §7.6).
+   */
+  timeline: TimelineKind | null;
   /** Juego cuya reseña se muestra en la pantalla de reseña. */
   reviewGameId: string | null;
   /** Proyecto seleccionado en las pantallas de desarrollo/creadores (multi-proyecto). */
@@ -203,6 +216,10 @@ export interface GameStore {
   openMenuModal: (modal: MenuModal) => void;
   /** Cierra el modal del menú. */
   closeMenuModal: () => void;
+  /** Abre una cronología (eras o escala) desde su chip de la barra (docs/17 U1). */
+  openTimeline: (kind: TimelineKind) => void;
+  /** Cierra la cronología. */
+  closeTimeline: () => void;
   /** Abre la reseña de un juego lanzado. */
   openReview: (gameId: string) => void;
   /** Selecciona el proyecto activo para las pantallas de proyecto. */
@@ -423,6 +440,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   conceptionOpen: false,
   devProjectId: null,
   menuModal: null,
+  timeline: null,
   reviewGameId: null,
   activeProjectId: null,
   eraTransition: null,
@@ -607,11 +625,19 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   closeMenuModal: () => set({ menuModal: null }),
 
+  openTimeline: (kind) => set({ timeline: kind }),
+
+  closeTimeline: () => set({ timeline: null }),
+
   openReview: (gameId) => set({ screen: 'resena', reviewGameId: gameId }),
 
   selectProject: (projectId) => set({ activeProjectId: projectId }),
 
-  dismissEraTransition: () => set({ eraTransition: null }),
+  // El beat de era encadena con la cronología (docs/17 U1): entrar en la era
+  // nueva transforma la piel y abre la línea del tiempo con el nodo recién
+  // conquistado encendido. Celebrar el hito es el remate del beat de §7.6,
+  // no un segundo overlay peleándose con él.
+  dismissEraTransition: () => set({ eraTransition: null, timeline: 'eras' }),
 
   dismissAwards: () => set({ awardsWeek: null }),
 
@@ -773,6 +799,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       speed: 0,
       screen: 'legado',
       menuModal: null,
+      timeline: null,
       conceptionOpen: false,
       devProjectId: null,
     }));
@@ -782,7 +809,14 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   enterTitle: () => {
     gameLoop.setSpeed(0);
-    set({ appMode: 'title', speed: 0, menuModal: null, conceptionOpen: false, devProjectId: null });
+    set({
+      appMode: 'title',
+      speed: 0,
+      menuModal: null,
+      timeline: null,
+      conceptionOpen: false,
+      devProjectId: null,
+    });
   },
 
   startTutorial: () => set({ tutorialStep: 0 }),
@@ -804,6 +838,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       conceptionOpen: false,
       devProjectId: null,
       menuModal: null,
+      timeline: null,
       reviewGameId: null,
       activeProjectId: null,
       eraTransition: null,
@@ -822,6 +857,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       conceptionOpen: false,
       devProjectId: null,
       menuModal: null,
+      timeline: null,
       reviewGameId: null,
       activeProjectId: null,
       eraTransition: null,
@@ -847,6 +883,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         conceptionOpen: false,
         devProjectId: null,
         menuModal: null,
+        timeline: null,
         reviewGameId: null,
         activeProjectId: loaded.projects[0]?.id ?? null,
         eraTransition: null,
