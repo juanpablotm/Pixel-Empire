@@ -142,12 +142,18 @@ function pickSize(state: GameState, phil: Philosophy): ProjectSize {
   return 'pequeno';
 }
 
-/** Semanas de respiro tras lanzar (parches, vacaciones, preproducción). */
+/**
+ * Semanas de respiro tras lanzar (parches, vacaciones, preproducción). Cortas
+ * a propósito: desde que el calendario es honesto, el desarrollo YA dura lo que
+ * dura el tamaño (6–120 semanas) y la nómina corre mientras tanto. Quedarse
+ * parado medio año más es tirar el dinero; el descanso real lo gobierna la
+ * energía (REST_TO_START), no un respiro fijo.
+ */
 const BREATHER_BY_SIZE: Record<ProjectSize, number> = {
-  pequeno: 10,
-  mediano: 14,
-  grande: 18,
-  aaa: 24,
+  pequeno: 2,
+  mediano: 3,
+  grande: 4,
+  aaa: 6,
 };
 
 /** true si el estudio sigue de respiro tras su último lanzamiento. */

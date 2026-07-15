@@ -9,7 +9,9 @@ import type { EraId } from './era';
 /**
  * Capacidades de estudio que puede mejorar un nodo (docs/02 §3: "motores
  * propios y capacidades de estudio"). Cada valor es un bonus aditivo sobre 1:
- * p. ej. devOutput 0.1 = +10 % de output semanal de los equipos.
+ * p. ej. devOutput 0.1 = +10 % de capacidad semanal del equipo. Ojo: la
+ * capacidad NO acorta el calendario (la duración la fija el tamaño del
+ * proyecto); mejora la EJECUCIÓN en ese plazo (docs/02 §2 paso 3).
  */
 export type StudioCapability = 'devOutput' | 'qaEfficiency' | 'hypeGain' | 'researchSpeed';
 

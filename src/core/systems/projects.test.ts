@@ -79,6 +79,52 @@ describe('startProject — concepción (docs/02 §2 paso 1)', () => {
   });
 });
 
+describe('el calendario es el calendario: la plantilla no acelera (docs/02 §1 y §6)', () => {
+  /** Estudio con `n` personas asignadas, todas al mismo proyecto. */
+  function withTeam(n: number, concept: ProjectConcept = CONCEPT): GameState {
+    const base = createInitialState(SEED);
+    const extra: Employee[] = Array.from({ length: n - 1 }, (_, i) => ({
+      ...base.staff[0],
+      id: `dev-${i}`,
+      name: `Dev ${i}`,
+      founder: false,
+      salary: 300,
+    }));
+    const staffed: GameState = {
+      ...base,
+      studio: { ...base.studio, scaleStage: 4, capital: 5_000_000 },
+      staff: [...base.staff, ...extra],
+    };
+    return startProject(staffed, concept);
+  }
+
+  it('un tick es UNA semana, tenga el equipo 1 persona o 7', () => {
+    for (const n of [1, 4, 7]) {
+      const after = tick(withTeam(n));
+      expect(after.projects[0].weeksSpent, `${n} personas`).toBe(1);
+    }
+  });
+
+  it('la duración total la fija el tamaño, no la plantilla', () => {
+    const solo = runUntilRelease(withTeam(1), 1, 40);
+    const crowd = runUntilRelease(withTeam(7), 1, 40);
+    const weeks = balance.development.phaseWeeksBySize.pequeno * 3;
+    expect(solo.releasedGames[0].releaseWeek).toBe(weeks);
+    expect(crowd.releasedGames[0].releaseWeek).toBe(weeks);
+  });
+
+  it('más gente no adelanta el lanzamiento: ejecuta mejor en el mismo plazo', () => {
+    // Con la plantilla justa (pequeño espera 1) el equipo grande se topa en
+    // maxCrewRatio: ayuda, pero con rendimientos decrecientes (Brooks).
+    const solo = tick(withTeam(1));
+    const crowd = tick(withTeam(7));
+    expect(crowd.projects[0].weeksSpent).toBe(solo.projects[0].weeksSpent);
+    expect(crowd.projects[0].designPoints).toBeGreaterThan(solo.projects[0].designPoints);
+    const ratio = crowd.projects[0].designPoints / solo.projects[0].designPoints;
+    expect(ratio).toBeLessThanOrEqual(balance.development.maxCrewRatio + 1e-9);
+  });
+});
+
 describe('coste atribuible del juego para el P&L (docs/17 U4)', () => {
   it('releasedGameCost = licencia + base + desarrollo (semanas·coste) + marketing', () => {
     const project = { ...withProject().projects[0], startWeek: 3, marketingUsed: [0, 1] };

@@ -281,11 +281,26 @@ export const balance = {
   },
 
   development: {
-    /** Semanas por fase de desarrollo según tamaño (×3 fases; garaje: juego pequeño 4–8 semanas, docs/02 §6). */
-    phaseWeeksBySize: { pequeno: 2, mediano: 4, grande: 7, aaa: 12 } satisfies Record<
+    /**
+     * Semanas de CALENDARIO por fase, según tamaño (×3 fases). La duración la
+     * fija SOLO el tamaño: el calendario avanza 1 semana por tick y la plantilla
+     * NO acelera (más gente ejecuta mejor, no más rápido; ver maxCrewRatio).
+     * Calibrado a docs/02 §6: juego pequeño de garaje 6 semanas (~4–8) y AAA
+     * de 120 semanas (~2,3 años, dentro del "2–3 años").
+     */
+    phaseWeeksBySize: { pequeno: 2, mediano: 6, grande: 14, aaa: 40 } satisfies Record<
       ProjectSize,
       number
     >,
+    /**
+     * Dotación relativa (crewRatio = output / plantilla esperada del tamaño, con
+     * la esperada = sizeGate[size].minStaff). Con la plantilla justa vale 1: el
+     * ritmo de QA/bugs es el nominal. Más gente (o motores/crunch) ejecuta mejor
+     * pero con rendimientos decrecientes: se topa aquí (ley de Brooks).
+     */
+    maxCrewRatio: 1.5,
+    /** Deuda de bugs extra por semana con el equipo a media dotación (× (1 − crewRatio)). */
+    understaffBugsPerWeek: 0.05,
     /**
      * Requisitos por tamaño de proyecto (docs/17 E1): plantilla mínima y etapa
      * de escala mínima. El AAA queda bloqueado hasta Corporación (etapa 4). La
@@ -896,8 +911,16 @@ export const balance = {
   sales: {
     /** factorReseña = (reseña/100)^exponente: las reseñas altas venden desproporcionadamente más. */
     reviewExponent: 2,
-    /** La demanda escala con el tamaño del proyecto. */
-    sizeDemandFactor: { pequeno: 1, mediano: 1.8, grande: 3, aaa: 5 } satisfies Record<
+    /**
+     * La demanda escala con el tamaño del proyecto. Recalibrado al fijar el
+     * calendario (la plantilla ya no acelera): un juego grande cuesta ahora
+     * ~56× las persona-semanas de uno pequeño y un AAA ~300× (semanas × crew
+     * esperada), no 3,5× y 6× como cuando más gente acortaba el plazo. Para que
+     * ir a lo grande sea una apuesta con sentido —y no ruina segura— su público
+     * potencial crece en el mismo orden (los AAA venden órdenes de magnitud más
+     * que un indie). El precio por tamaño (20→60 💰) aporta el resto del margen.
+     */
+    sizeDemandFactor: { pequeno: 1, mediano: 5, grande: 20, aaa: 70 } satisfies Record<
       ProjectSize,
       number
     >,

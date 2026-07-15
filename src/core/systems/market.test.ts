@@ -374,7 +374,9 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
     // El anuncio nace con el hype de los premios, ya clampeado a su rango.
     for (const p of s.projects) expect(p.hype).toBeLessThanOrEqual(max);
 
-    for (let i = 0; i < 80 && s.releasedGames.length === 0; i++) {
+    // Un AAA se cuece ~120 semanas de calendario (docs/02 §6): el presupuesto
+    // de ticks cubre su duración completa.
+    for (let i = 0; i < 200 && s.releasedGames.length === 0; i++) {
       s = tick(s);
       for (const p of s.projects) {
         expect(p.hype).toBeGreaterThanOrEqual(0);

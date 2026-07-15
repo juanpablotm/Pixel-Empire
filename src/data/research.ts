@@ -43,11 +43,13 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     reveals: 'fit',
   },
 
-  // --- Motores propios (docs/02 §3): producción más rápida -----------------
+  // --- Motores propios (docs/02 §3): el equipo cunde más --------------------
+  // No acortan el calendario (lo fija el tamaño): suben la capacidad del equipo,
+  // así se ejecuta mejor en el mismo plazo (más QA, menos juego a medio cocer).
   {
     id: 'motorPropio1',
     name: 'Motor propio I',
-    description: 'Deja de reinventar la rueda: tu primer motor reutilizable. +10 % de producción.',
+    description: 'Deja de reinventar la rueda: tu primer motor reutilizable. El equipo cunde un 10 % más.',
     cost: 25,
     era: 'E2',
     effects: { devOutput: 0.1 },
@@ -55,7 +57,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
   {
     id: 'motorPropio2',
     name: 'Motor propio II',
-    description: 'Motor 3D con herramientas de equipo. +15 % de producción extra.',
+    description: 'Motor 3D con herramientas de equipo. El equipo cunde un 15 % más.',
     cost: 70,
     era: 'E4',
     requiresNodes: ['motorPropio1'],
@@ -64,7 +66,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
   {
     id: 'motorPropio3',
     name: 'Motor propio III',
-    description: 'Pipeline de nueva generación. +20 % de producción extra.',
+    description: 'Pipeline de nueva generación. El equipo cunde un 20 % más.',
     cost: 140,
     era: 'E6',
     requiresNodes: ['motorPropio2'],

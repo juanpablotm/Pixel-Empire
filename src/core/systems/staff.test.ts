@@ -433,13 +433,15 @@ describe('acciones del jugador (docs/05 §6)', () => {
 });
 
 describe('crunch: empujón a corto plazo, deuda a largo (CA docs/11 Fase 2)', () => {
-  it('acelera el desarrollo pero degrada moral, energía y lealtad', () => {
+  it('empuja la ejecución (no el calendario) y degrada moral, energía y lealtad', () => {
     const base = startProject(createInitialState(SEED), CONCEPT);
     const normal = runTicks(base, 3);
     const crunched = runTicks(setCrunch(base, true), 3);
 
-    // Empujón: más semanas de trabajo acumuladas en el mismo tiempo real.
-    expect(crunched.projects[0].weeksSpent).toBeGreaterThan(normal.projects[0].weeksSpent);
+    // El calendario no se comprime: una semana es una semana (docs/02 §1). Lo
+    // que da el crunch es más trabajo hecho DENTRO del mismo plazo.
+    expect(crunched.projects[0].weeksSpent).toBe(normal.projects[0].weeksSpent);
+    expect(crunched.projects[0].designPoints).toBeGreaterThan(normal.projects[0].designPoints);
 
     // Deuda: el fundador acaba peor en las tres barras.
     const [fNormal] = normal.staff;
@@ -449,14 +451,16 @@ describe('crunch: empujón a corto plazo, deuda a largo (CA docs/11 Fase 2)', ()
     expect(fCrunched.loyalty).toBeLessThan(fNormal.loyalty);
   });
 
-  it('con crunch el juego sale antes, con más bugs y peor equipo → menos calidad', () => {
+  it('con crunch el juego sale el mismo día, con más bugs y peor equipo → menos calidad', () => {
     const base = startProject(createInitialState(SEED), CONCEPT);
     const normal = runUntilRelease(base);
     const crunched = runUntilRelease(setCrunch(base, true));
 
     const gNormal = normal.releasedGames[0];
     const gCrunched = crunched.releasedGames[0];
-    expect(gCrunched.releaseWeek).toBeLessThan(gNormal.releaseWeek);
+    // La fecha la fija el tamaño, no la prisa: quemar al equipo ya no adelanta
+    // el lanzamiento. Su precio (bugs y moral) sigue intacto.
+    expect(gCrunched.releaseWeek).toBe(gNormal.releaseWeek);
     expect(gCrunched.breakdown.bugLevel).toBeGreaterThan(gNormal.breakdown.bugLevel);
     expect(gCrunched.breakdown.teamFactor).toBeLessThan(gNormal.breakdown.teamFactor);
     expect(gCrunched.quality).toBeLessThan(gNormal.quality);

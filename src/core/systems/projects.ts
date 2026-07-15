@@ -485,9 +485,19 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
   if (!project) return state;
 
   const team = assignedTeam(state, project);
-  // El motor propio acelera la producción (docs/02 §3: capacidades de estudio).
+  // Capacidad del equipo esta semana: ~1 por persona, con motores propios
+  // (docs/02 §3), crunch y burnout encima (core/systems/staff.ts).
   const output = computeTeamOutput(team, project.crunch) * capabilityBonus(state, 'devOutput');
   if (output <= 0) return state; // sin nadie asignado, el proyecto no avanza
+
+  // DOTACIÓN RELATIVA, no velocidad: la duración de un juego la fija su tamaño
+  // (semanas de calendario) y la plantilla NO la acelera. Lo que decide la
+  // capacidad del equipo es cómo de BIEN se ejecuta en ese plazo: con la
+  // plantilla justa (sizeGate.minStaff) crewRatio = 1 y el QA rinde al ritmo
+  // nominal; ir corto deja el juego a medio cocer (menos QA, más bugs) e ir
+  // sobrado ayuda solo hasta maxCrewRatio (rendimientos decrecientes, Brooks).
+  const crewExpected = balance.development.sizeGate[project.size].minStaff;
+  const crewRatio = Math.min(output / crewExpected, balance.development.maxCrewRatio);
 
   const allocation = project.focus[project.phase - 1];
   const aspects = getDevPhase(project.phase).aspects;
@@ -502,33 +512,42 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
     qa += effort * aspect.qaWeight;
   }
 
-  // Bugs semanales (solo Concepto/Producción): base y prisa del crunch escalan
-  // con el output; los rasgos suman (o restan) por persona (docs/03 factor D).
-  const traitBugs = team.reduce(
-    (sum, e) => sum + e.traits.reduce((s, id) => s + (getTrait(id).modifiers.bugRisk ?? 0), 0),
-    0,
-  );
+  // Bugs semanales (solo Concepto/Producción): los genera el ritmo del proyecto
+  // y la prisa del crunch, no el número de cabezas (docs/03 factor D). Los
+  // rasgos entran como media del equipo (la sensibilidad es de su composición,
+  // no de su tamaño) y la falta de dotación pasa su propia factura.
+  const traitBugs =
+    team.length > 0
+      ? team.reduce(
+          (sum, e) => sum + e.traits.reduce((s, id) => s + (getTrait(id).modifiers.bugRisk ?? 0), 0),
+          0,
+        ) / team.length
+      : 0;
   const weeklyBugs =
     project.phase < 3
       ? Math.max(
           0,
-          (balance.development.baseBugsPerWeek +
-            (project.crunch ? balance.staff.crunch.extraBugsPerWeek : 0)) *
-            output +
-            traitBugs,
+          balance.development.baseBugsPerWeek +
+            (project.crunch ? balance.staff.crunch.extraBugsPerWeek : 0) +
+            traitBugs +
+            balance.development.understaffBugsPerWeek * Math.max(0, 1 - crewRatio),
         )
       : 0;
 
-  const weeksSpent = project.weeksSpent + output;
+  // El calendario es el calendario: 1 tick = 1 semana (docs/02 §1).
+  const weeksSpent = project.weeksSpent + 1;
   let worked: Project = {
     ...project,
     weeksSpent,
-    designPoints: project.designPoints + design * output,
-    techPoints: project.techPoints + tech * output,
+    designPoints: project.designPoints + design * crewRatio,
+    techPoints: project.techPoints + tech * crewRatio,
     // El QA profesional rinde más (docs/02 §3: capacidad qaEfficiency).
     qaInvested:
       project.qaInvested +
-      qa * balance.development.qaReductionPerWeek * output * capabilityBonus(state, 'qaEfficiency'),
+      qa *
+        balance.development.qaReductionPerWeek *
+        crewRatio *
+        capabilityBonus(state, 'qaEfficiency'),
     bugDebt: project.bugDebt + weeklyBugs,
   };
 

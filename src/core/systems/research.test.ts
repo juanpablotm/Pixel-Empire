@@ -134,7 +134,7 @@ describe('el árbol: era, prerrequisitos y compra (docs/02 §3)', () => {
 });
 
 describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () => {
-  it('el motor propio acelera la producción (devOutput)', () => {
+  it('el motor propio hace cundir al equipo, pero NO acorta el calendario (devOutput)', () => {
     const base = startProject(atEra('E2', 0), {
       name: 'Con motor',
       themeId: 'fantasia',
@@ -150,7 +150,12 @@ describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () =>
     expect(capabilityBonus(withEngine, 'devOutput')).toBeCloseTo(1.1, 10);
     const slow = tick(base);
     const fast = tick(withEngine);
-    expect(fast.projects[0].weeksSpent).toBeGreaterThan(slow.projects[0].weeksSpent);
+    // El calendario es el calendario: 1 tick = 1 semana, con motor o sin él.
+    expect(fast.projects[0].weeksSpent).toBe(slow.projects[0].weeksSpent);
+    // Lo que sube es la EJECUCIÓN en ese mismo plazo: más trabajo hecho por
+    // semana (el QA llega en la fase de Pulido, así que aquí aún es 0).
+    expect(fast.projects[0].designPoints).toBeGreaterThan(slow.projects[0].designPoints);
+    expect(fast.projects[0].techPoints).toBeGreaterThan(slow.projects[0].techPoints);
   });
 
   it('el multijugador online exige su tecnología además de la era', () => {

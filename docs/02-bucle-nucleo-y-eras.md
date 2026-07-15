@@ -164,6 +164,20 @@ muertos en E5. Y cada era sube el "listón de calidad esperado" por el público 
 
 - Objetivo de diseño (cerrado): una partida completa (E1→E7) de **8–10 horas**.
 - Un juego pequeño en el garaje: ~4–8 semanas de desarrollo. Un AAA en E6: ~2–3 años.
+
+### 6.1 El calendario no se compra con plantilla `[DECIDIDO · baseline v1]`
+
+**1 tick = 1 semana, siempre.** La duración de un juego la fija **solo su tamaño** (pequeño 6 ·
+mediano 18 · grande 42 · AAA 120 semanas de calendario, `balance.development.phaseWeeksBySize`).
+Meter más gente **no acorta el plazo**: lo que hace la capacidad del equipo (personas + motores
+propios + crunch, menos el burnout) es decidir **cómo de bien se ejecuta dentro de ese plazo**.
+
+Se modela con la **dotación relativa**: `crewRatio = capacidad / plantilla esperada del tamaño`
+(la esperada es el `minStaff` del gate de tamaño, docs/17 E1: 1/3/8/15). Con la plantilla justa vale
+1 y el QA rinde al ritmo nominal; ir corto deja el juego a medio cocer (menos QA y más bugs por falta
+de manos); ir sobrado ayuda solo hasta `maxCrewRatio` (rendimientos decrecientes — ley de Brooks:
+siete personas no hacen un juego pequeño en una semana). Para crecer de verdad no se amontona gente
+en un proyecto: se abren **proyectos en paralelo** (§4).
 - El número de juegos por partida objetivo cerrado: **35–45**, para que cada lanzamiento importe pero haya
   variedad. A balancear con datos de playtest.
 
