@@ -4,6 +4,7 @@ import { TutorialGuide } from './onboarding/TutorialGuide';
 import { AwardsModal } from './components/AwardsModal';
 import { ConceptionModal } from './components/ConceptionModal';
 import { CrisisModal } from './components/CrisisModal';
+import { DevelopmentModal } from './components/DevelopmentModal';
 import { DilemmaModal } from './components/DilemmaModal';
 import { EraTransition } from './components/EraTransition';
 import { GameOverOverlay } from './components/GameOverOverlay';
@@ -15,7 +16,6 @@ import { ScreenFade } from './components/Motion';
 import { FontScaleSelect, SoundControls } from './components/PreferenceControls';
 import { Toasts } from './components/Toasts';
 import { CreatorsScreen } from './screens/CreatorsScreen';
-import { DevelopmentScreen } from './screens/DevelopmentScreen';
 import { FinancesScreen } from './screens/FinancesScreen';
 import { LegacyScreen } from './screens/LegacyScreen';
 import { MarketScreen } from './screens/MarketScreen';
@@ -37,12 +37,12 @@ import { EraSkinProvider } from './theme/EraSkinProvider';
  * lee estado con selectores finos y despacha acciones (docs/08 §6).
  */
 /**
- * Pantallas navegables con las teclas 1–9 (docs/10 §13, Fase 7G). La 2 abre el
- * modal de concepción (docs/17 U3), que ya no es una pantalla: caso aparte.
+ * Pantallas navegables con las teclas 1–9 (docs/10 §13, Fase 7G). La 2 y la 3
+ * abren los modales de concepción y desarrollo (docs/17 U3 y Fase 8.5), que ya
+ * no son pantallas: van aparte.
  */
 const SCREEN_BY_KEY: Record<string, Screen> = {
   '1': 'estudio',
-  '3': 'desarrollo',
   '4': 'equipo',
   '5': 'mercado',
   '6': 'creadores',
@@ -85,6 +85,9 @@ function useKeyboardShortcuts(): void {
         } else if (s.conceptionOpen) {
           e.preventDefault();
           s.closeConception();
+        } else if (s.devProjectId !== null) {
+          e.preventDefault();
+          s.closeDev();
         } else if (s.menuModal !== null) {
           e.preventDefault();
           s.closeMenuModal();
@@ -100,14 +103,21 @@ function useKeyboardShortcuts(): void {
         s.awardsWeek !== null ||
         s.pendingNotices.length > 0 ||
         s.conceptionOpen ||
+        s.devProjectId !== null ||
         s.menuModal !== null ||
         s.game.community.crises.some((c) => c.status === 'abierta') ||
         s.game.community.dilemmas.length > 0;
       if (decisionOpen) return;
 
-      // La 2 ya no navega: abre el modal de concepción (docs/17 U3).
+      // La 2 y la 3 ya no navegan: abren sus modales (docs/17 U3, Fase 8.5).
       if (e.key === '2') {
         s.openConception();
+        return;
+      }
+      if (e.key === '3') {
+        const project =
+          s.game.projects.find((p) => p.id === s.activeProjectId) ?? s.game.projects[0];
+        if (project !== undefined) s.openDev(project.id);
         return;
       }
 
@@ -154,7 +164,6 @@ export function App() {
 
         <ScreenFade id={screen}>
           {screen === 'estudio' && <StudioScreen />}
-          {screen === 'desarrollo' && <DevelopmentScreen />}
           {screen === 'resena' && <ReviewScreen />}
           {screen === 'equipo' && <TeamScreen />}
           {screen === 'mercado' && <MarketScreen />}
@@ -173,6 +182,7 @@ export function App() {
         {/* La Fase 8.5 (docs/17 U2–U3): la concepción y lo que se sacó de la
             pantalla principal (estantería, historial, partida) son modales. */}
         <ConceptionModal />
+        <DevelopmentModal />
         <MenuModals />
 
         {/* La capa social interrumpe cuando toca decidir (docs/07 §4–§5). */}

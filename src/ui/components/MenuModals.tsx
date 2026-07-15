@@ -48,7 +48,7 @@ function MenuModalShell({
             ✕ Cerrar
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+        <div className="scroll-slim flex-1 overflow-y-auto px-6 py-4">{children}</div>
       </PopIn>
     </div>
   );
@@ -122,11 +122,12 @@ function GamesModalBody() {
 /** El diario del estudio (docs/17 U2): sale del lateral y vive aquí. */
 function HistoryModalBody() {
   const log = useGameStore((s) => s.game.log);
-  const advanceWeek = useGameStore((s) => s.advanceWeek);
 
   if (log.length === 0) {
+    // Sin acción: un modal informativo no mueve el reloj (y desde la Fase 8.5
+    // el tiempo se gobierna solo con la velocidad, sin paso manual).
     return (
-      <EmptyState icon="📜" actionLabel="Avanzar semana" onAction={advanceWeek}>
+      <EmptyState icon="📜">
         El diario del estudio está en blanco: cada semana que avances escribirá aquí su línea.
       </EmptyState>
     );

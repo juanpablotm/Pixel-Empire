@@ -23,6 +23,7 @@ describe('useGameStore — estado + acciones que delegan en core (docs/08 §6)',
       speed: 0,
       screen: 'estudio',
       conceptionOpen: false,
+      devProjectId: null,
       menuModal: null,
       reviewGameId: null,
     });
@@ -88,32 +89,43 @@ describe('useGameStore — estado + acciones que delegan en core (docs/08 §6)',
     useGameStore.getState().setSpeed(0);
   });
 
-  it('startProject crea el proyecto y navega a la pantalla de desarrollo', () => {
+  it('startProject crea el proyecto y abre su ventana de desarrollo (Fase 8.5)', () => {
     useGameStore.getState().startProject(CONCEPT);
-    const { game, screen } = useGameStore.getState();
+    const { game, screen, devProjectId } = useGameStore.getState();
     expect(game.projects).toHaveLength(1);
-    expect(screen).toBe('desarrollo');
+    // El desarrollo ya no es una pantalla: es el modal sobre el estudio.
+    expect(screen).toBe('estudio');
+    expect(devProjectId).toBe(game.projects[0].id);
   });
 
-  it('un cambio de fase de desarrollo pausa el juego', () => {
+  it('un cambio de fase pausa el juego y reabre la ventana de desarrollo (Fase 8.5)', () => {
     useGameStore.getState().startProject(CONCEPT);
-    useGameStore.getState().setSpeed(2);
+    // "Continuar desarrollo": la ventana cierra y el mundo echa a andar.
+    useGameStore.getState().continueDev();
+    expect(useGameStore.getState().devProjectId).toBeNull();
+    expect(useGameStore.getState().speed).toBe(1);
+
     useGameStore.getState().advanceWeek();
     useGameStore.getState().advanceWeek(); // el proyecto pequeño entra en Producción
-    const { game, speed } = useGameStore.getState();
+
+    const { game, speed, devProjectId } = useGameStore.getState();
     expect(game.projects[0].phase).toBe(2);
+    // El hito para el reloj y devuelve la ventana con la fase nueva cargada.
     expect(speed).toBe(0);
+    expect(devProjectId).toBe(game.projects[0].id);
   });
 
   it('al lanzarse un juego pausa y navega a la reseña', () => {
     useGameStore.getState().startProject(CONCEPT);
     for (let i = 0; i < 6; i++) useGameStore.getState().advanceWeek();
 
-    const { game, screen, reviewGameId, speed } = useGameStore.getState();
+    const { game, screen, reviewGameId, speed, devProjectId } = useGameStore.getState();
     expect(game.releasedGames).toHaveLength(1);
     expect(screen).toBe('resena');
     expect(reviewGameId).toBe(game.releasedGames[0].id);
     expect(speed).toBe(0);
+    // El juego ya está en la calle: su ventana de desarrollo no queda colgando.
+    expect(devProjectId).toBeNull();
   });
 
   it('la bancarrota pausa el juego', () => {
@@ -300,13 +312,13 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
       expect(useGameStore.getState().speed).toBe(0);
     });
 
-    it('startProject cierra el modal y aterriza en desarrollo, en pausa', () => {
+    it('startProject cierra la concepción y abre el desarrollo, en pausa', () => {
       useGameStore.getState().openConception();
       useGameStore.getState().startProject({ ...CONCEPT, price: 30 });
 
       const s = useGameStore.getState();
       expect(s.conceptionOpen).toBe(false);
-      expect(s.screen).toBe('desarrollo');
+      expect(s.devProjectId).toBe(s.game.projects[0].id);
       expect(s.speed).toBe(0);
       expect(s.game.projects).toHaveLength(1);
     });
@@ -335,10 +347,12 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
     it('empezar o cargar partida no deja modales abiertos de la anterior', () => {
       useGameStore.getState().openConception();
       useGameStore.getState().openMenuModal('partida');
+      useGameStore.setState({ devProjectId: 'lo-que-sea' });
       useGameStore.getState().newGame(SEED);
 
       expect(useGameStore.getState().conceptionOpen).toBe(false);
       expect(useGameStore.getState().menuModal).toBeNull();
+      expect(useGameStore.getState().devProjectId).toBeNull();
 
       useGameStore.getState().saveGame();
       useGameStore.getState().openMenuModal('historial');

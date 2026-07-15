@@ -96,12 +96,12 @@ export type ImportantNotice =
   | ScaleUpNotice;
 
 /**
- * Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). Desde la Fase 8.5 la
- * concepción ya no es una pantalla: es un modal (docs/17 U3, `conceptionOpen`).
+ * Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). Desde la Fase 8.5 ni la
+ * concepción ni el desarrollo son pantallas: son modales (docs/17 U3,
+ * `conceptionOpen` y `devProjectId`).
  */
 export type Screen =
   | 'estudio'
-  | 'desarrollo'
   | 'resena'
   | 'equipo'
   | 'mercado'
@@ -138,6 +138,14 @@ export interface GameStore {
    * (docs/02 §1). Presentación pura; el proyecto lo crea `startProject`.
    */
   conceptionOpen: boolean;
+  /**
+   * Proyecto cuyo modal de desarrollo está abierto, o null (Fase 8.5). El
+   * desarrollo se juega por FASES: el modal se abre al concebir y cada vez que
+   * el núcleo cambia de fase (el tick ya pausa ahí), se decide el reparto de
+   * esa fase y "Continuar desarrollo" lo cierra y reanuda a x1 — entonces se
+   * ve trabajar a la Oficina Viva hasta el siguiente hito (docs/02 §2).
+   */
+  devProjectId: string | null;
   /**
    * Modal del menú de la barra superior visible, o null (docs/17 U2). No pausa:
    * lo abre el jugador cuando quiere, no interrumpe como los avisos de U4.
@@ -185,6 +193,12 @@ export interface GameStore {
   openConception: () => void;
   /** Cierra el modal de concepción sin crear nada (deja el tiempo en pausa). */
   closeConception: () => void;
+  /** Abre el modal de desarrollo de un proyecto y pausa (Fase 8.5). */
+  openDev: (projectId: string) => void;
+  /** Cierra el modal de desarrollo (sin tocar el reloj). */
+  closeDev: () => void;
+  /** "Continuar desarrollo": cierra el modal y reanuda el tiempo a x1. */
+  continueDev: () => void;
   /** Abre un modal del menú de la barra superior (docs/17 U2). */
   openMenuModal: (modal: MenuModal) => void;
   /** Cierra el modal del menú. */
@@ -407,6 +421,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   tutorialStep: null,
   screen: 'estudio',
   conceptionOpen: false,
+  devProjectId: null,
   menuModal: null,
   reviewGameId: null,
   activeProjectId: null,
@@ -427,10 +442,16 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     // Momentos que piden decisión: el juego pausa y navega (docs/02 §1:
     // "el juego nunca fuerza una decisión importante sin pausa").
     const released = after.releasedGames.length > before.releasedGames.length;
-    const phaseChanged = after.projects.some((p) => {
-      const prev = before.projects.find((q) => q.id === p.id);
-      return prev !== undefined && prev.phase !== p.phase;
-    });
+    // El proyecto que acaba de cambiar de fase: su ventana de desarrollo se
+    // reabre para repartir el esfuerzo de la fase nueva (Fase 8.5, docs/02 §2).
+    // Con varios proyectos en paralelo manda el primero que cruza el hito; los
+    // demás siguen a un clic en sus pestañas dentro del propio modal.
+    const phaseChangedId =
+      after.projects.find((p) => {
+        const prev = before.projects.find((q) => q.id === p.id);
+        return prev !== undefined && prev.phase !== p.phase;
+      })?.id ?? null;
+    const phaseChanged = phaseChangedId !== null;
     const justEnded = after.gameOver !== null && before.gameOver === null;
     const staffLost = after.staff.length < before.staff.length;
     const stageChanged = after.studio.scaleStage !== before.studio.scaleStage;
@@ -542,9 +563,15 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       const latest = after.studio.awards[after.studio.awards.length - 1];
       set({ awardsWeek: latest.week });
     }
+    // Fin de fase → se reabre la ventana de desarrollo con la fase nueva ya
+    // cargada (Fase 8.5): el jugador reparte el esfuerzo y vuelve a continuar.
+    if (phaseChangedId !== null) {
+      set({ devProjectId: phaseChangedId, activeProjectId: phaseChangedId });
+    }
     if (released) {
       const latest = after.releasedGames[after.releasedGames.length - 1];
-      set({ screen: 'resena', reviewGameId: latest.id });
+      // El juego ya está en la calle: su ventana de desarrollo no pinta nada.
+      set({ screen: 'resena', reviewGameId: latest.id, devProjectId: null });
     }
   },
 
@@ -561,6 +588,20 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   },
 
   closeConception: () => set({ conceptionOpen: false }),
+
+  openDev: (projectId) => {
+    gameLoop.setSpeed(0);
+    set({ devProjectId: projectId, activeProjectId: projectId, speed: 0 });
+  },
+
+  closeDev: () => set({ devProjectId: null }),
+
+  continueDev: () => {
+    // El hito ya está decidido: se cierra la ventana y el mundo echa a andar
+    // (x1) para ver trabajar al equipo hasta la siguiente fase (docs/02 §2).
+    gameLoop.setSpeed(1);
+    set({ devProjectId: null, speed: 1 });
+  },
 
   openMenuModal: (modal) => set({ menuModal: modal }),
 
@@ -635,9 +676,16 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     set((s) => {
       const game = startProject(s.game, concept);
       const created = game.projects[game.projects.length - 1];
-      // El modal de concepción cierra al dar luz verde (docs/17 U3): el
-      // jugador aterriza en desarrollo, en pausa, y reanuda cuando quiera.
-      return { game, screen: 'desarrollo', conceptionOpen: false, activeProjectId: created.id };
+      // Al dar luz verde, la concepción cierra y se abre el desarrollo en la
+      // fase de Concepto (docs/17 U3 + Fase 8.5): primera decisión del ciclo,
+      // en pausa, sobre el estudio.
+      return {
+        game,
+        screen: 'estudio',
+        conceptionOpen: false,
+        devProjectId: created.id,
+        activeProjectId: created.id,
+      };
     });
   },
 
@@ -726,6 +774,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       screen: 'legado',
       menuModal: null,
       conceptionOpen: false,
+      devProjectId: null,
     }));
   },
 
@@ -733,7 +782,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   enterTitle: () => {
     gameLoop.setSpeed(0);
-    set({ appMode: 'title', speed: 0, menuModal: null, conceptionOpen: false });
+    set({ appMode: 'title', speed: 0, menuModal: null, conceptionOpen: false, devProjectId: null });
   },
 
   startTutorial: () => set({ tutorialStep: 0 }),
@@ -753,6 +802,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       speed: 0,
       screen: 'estudio',
       conceptionOpen: false,
+      devProjectId: null,
       menuModal: null,
       reviewGameId: null,
       activeProjectId: null,
@@ -770,6 +820,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       speed: 0,
       screen: 'estudio',
       conceptionOpen: false,
+      devProjectId: null,
       menuModal: null,
       reviewGameId: null,
       activeProjectId: null,
@@ -794,6 +845,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         speed: 0,
         screen: 'estudio',
         conceptionOpen: false,
+        devProjectId: null,
         menuModal: null,
         reviewGameId: null,
         activeProjectId: loaded.projects[0]?.id ?? null,

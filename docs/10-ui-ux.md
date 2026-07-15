@@ -251,7 +251,8 @@ isométrico futuro queda documentado en `14` (opcional, no es la dirección actu
 ### 10.1 Vista principal (Estudio / HUD)
 - **Barra superior:** capital (contador animado), fecha (semana/año/era), **Balanza "El Precio"** (§7.4),
   reputación como **constelación** (§I3, desglose en hover), controles de tiempo (pausa/x1/x2/x4) y el
-  **menú ☰** `[DECIDIDO · Fase 8.5, docs/17 U2]`.
+  **menú ☰** `[DECIDIDO · Fase 8.5, docs/17 U2]`. **Sin paso manual** ("+1 semana", retirado en la Fase
+  8.5): el reloj se gobierna con la velocidad y el juego **pausa solo** cuando toca decidir (`02` §1).
 - **Panel central:** la **Oficina Viva** (§5) o el proyecto en curso con su progreso por fases y burbujas.
 - **Los juegos que aún se venden** `[DECIDIDO · Fase 8.5]`: solo el catálogo **vivo**, cada uno con un
   **mini-gráfico** (`Sparkline`) de copias por semana — la cola de ventas de `04` §6, a la vista (Pilar 2).
@@ -272,11 +273,21 @@ Flujo Tema → Género → Plataforma → Público → Tamaño → Nombre, con *
 - El pie fijo lleva Fit + estimación + "Empezar desarrollo"; al dar luz verde se aterriza en desarrollo,
   **en pausa**, y se arranca con **"Continuar desarrollo"** (§10.3).
 
-### 10.3 Desarrollo (fases)
+### 10.3 Desarrollo (fases), en **modal** `[DECIDIDO · Fase 8.5, docs/17 U3]`
 Sliders de reparto de esfuerzo con lectura de balance vs ideal del género; features como **ChoiceCard**;
-progreso, estado de bugs y **burbujas de desarrollo** (§5.4) visibles. Botón **"Continuar desarrollo"**
-`[DECIDIDO · Fase 8.5, docs/17 U3]`: reanuda el tiempo a **x1** sin ir a buscar los controles de la barra
-(se concibe en pausa); con el reloj ya corriendo informa de la velocidad en vez de desaparecer.
+progreso, estado de bugs y **burbujas de desarrollo** (§5.4) visibles.
+
+Es la **ventana del hito de fase**, no una pantalla que se vigila (`02` §2): se abre al concebir y en cada
+cambio de fase (el tick ya pausa ahí), y **"Continuar desarrollo"** la cierra y reanuda a **x1** para ver
+trabajar a la Oficina Viva hasta el siguiente hito. Estructura en **dos columnas**, para que la decisión
+no se pierda en una pila de paneles:
+
+| Zona | Contenido |
+|------|-----------|
+| **Cabecera** | Nombre, género, semana X de Y, stepper de las 3 fases (✔ superadas) y barra de progreso; pestañas si hay varios proyectos |
+| **Columna izquierda — la decisión de ESTA fase** | Reparto de esfuerzo de la fase + su lectura (Diseño/Técnica vs ideal, bugs). En **Concepto**, además, las **features** (única fase donde se eligen) |
+| **Columna derecha — el contexto** | **Equipo asignado** (avatares, factores, crunch) y **Marketing** (Manómetro de Hype + campañas), que **solo abre desde Producción** — antes explica por qué, en vez de enseñar botones muertos |
+| **Pie** | "▶ Continuar desarrollo" + qué va a pasar al pulsarlo |
 
 ### 10.4 Lanzamiento y desglose de reseña
 La **gala de la reseña** (§7.1): reseña por segmento + desglose factor a factor con ✔/~/✘ y veredicto.
@@ -316,8 +327,10 @@ Nuevos (para las innovaciones): `OfficeScene` (§5), `FloatingBubbleLayer` (§5.
 `EraTransition` (§7.6), `ConfettiLayer`, `LegacyMuseum` (§7.7).
 
 De la Fase 8.5 (docs/17 U2–U3): `StudioMenu` (el ☰ de la barra), `MenuModals` (juegos/historial/partida
-sobre un chasis común), `ConceptionModal` (§10.2) y `Sparkline` (mini-gráfico de la cola de ventas, SVG
-por código).
+sobre un chasis común), `ConceptionModal` (§10.2), `DevelopmentModal` (§10.3) y `Sparkline` (mini-gráfico
+de la cola de ventas, SVG por código). Utilidad `.scroll-slim`: la **barra de scroll** de modales y
+listas se pinta con tokens (la del sistema desentonaba con las pieles de era) y nunca estrecha la zona
+de agarre.
 
 Todos temáticos (claro/oscuro **y piel de era**) desde `ui/theme`, y sin lógica de simulación dentro (`08`).
 

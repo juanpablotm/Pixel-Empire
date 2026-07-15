@@ -69,7 +69,9 @@ class Tab {
     this.ws.send(JSON.stringify({ id, method, params }));
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
-      setTimeout(() => reject(new Error(`timeout ${method}`)), 15000);
+      // Generoso: algunas evaluaciones SONDEAN el DOM durante segundos (esperar
+      // a que el fin de fase reabra la ventana con el reloj corriendo de veras).
+      setTimeout(() => reject(new Error(`timeout ${method}`)), 30000);
     });
   }
 
@@ -285,23 +287,108 @@ check(
   `${fitChanged.before} → ${fitChanged.after} (${fitChanged.genero})`,
 );
 
-// ── 4. "Continuar desarrollo" reanuda a x1 (U3) ────────────────────────────
-await tab.goto(`${BASE}/?demo=studio`);
-await tab.clickText('Ver desarrollo');
-await new Promise((r) => setTimeout(r, 400));
-const beforeContinue = await tab.eval(
-  `[...document.querySelectorAll('button')].some((b) => b.textContent.includes('▶ Continuar desarrollo'))`,
+// ── 4. El desarrollo es un modal por fases (U3 + Fase 8.5) ─────────────────
+// Sobre una PARTIDA REAL, no sobre el escaparate: el demo arranca con un
+// proyecto casi terminado que se lanzaría antes de cambiar de fase, y lo que
+// se quiere probar aquí es justo el ciclo fase → continuar → fase.
+await tab.goto(BASE);
+await tab.clickText('✨ Nueva partida');
+await new Promise((r) => setTimeout(r, 500));
+const tutorialUp = await tab.eval(
+  `[...document.querySelectorAll('button')].some((b) => b.textContent.includes('Saltar tutorial'))`,
 );
-check('la ventana de desarrollo ofrece "Continuar desarrollo"', beforeContinue);
-await tab.clickText('▶ Continuar desarrollo');
-const running = await tab.eval(`(() => {
-  const x1 = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '▶ x1');
-  const cont = [...document.querySelectorAll('button')].find((b) => b.textContent.includes('En marcha'));
-  return { x1: x1?.getAttribute('aria-pressed'), etiqueta: cont?.textContent.trim() };
+if (tutorialUp) await tab.clickText('Saltar tutorial');
+
+await tab.clickText('💡 Nuevo juego');
+await new Promise((r) => setTimeout(r, 400));
+await tab.eval(`(() => {
+  const input = document.querySelector('#game-name');
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  setter.call(input, 'Ciclo de Fases');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
 })()`);
-check('"Continuar desarrollo" pone el tiempo en x1', running.x1 === 'true', `x1=${running.x1}`);
-check('y el botón pasa a informar de la marcha', running.etiqueta === '▶ En marcha (x1)', running.etiqueta);
-await tab.shot('capturas/8-5-desarrollo-continuar.png');
+await tab.clickText('Empezar desarrollo');
+await new Promise((r) => setTimeout(r, 500));
+
+const devModal = await tab.eval(`(() => {
+  const d = document.querySelector('[role="dialog"][aria-label^="Desarrollo de"]');
+  if (!d) return null;
+  const texto = d.innerText;
+  const cols = getComputedStyle(d.querySelector('.grid')).gridTemplateColumns.split(' ').length;
+  return {
+    texto,
+    columnas: cols,
+    // La decisión de la fase y el contexto, cada uno en su sitio.
+    esfuerzo: /reparto de esfuerzo/i.test(texto),
+    equipo: /equipo asignado/i.test(texto),
+    marketing: /marketing/i.test(texto),
+    fases: ['Concepto', 'Producción', 'Pulido'].every((f) => texto.includes(f)),
+  };
+})()`);
+check('el desarrollo abre como MODAL', devModal !== null);
+check('con el stepper de las 3 fases', devModal?.fases === true);
+check('reparto de esfuerzo, equipo y marketing dentro',
+  devModal?.esfuerzo && devModal?.equipo && devModal?.marketing);
+check('maquetado en DOS columnas, no en pila', devModal?.columnas === 2, `columnas=${devModal?.columnas}`);
+await tab.shot('capturas/8-5-desarrollo-modal.png');
+
+// La barra de scroll del modal ya no es la del sistema (cambio 1).
+const scrollbar = await tab.eval(`(() => {
+  const body = document.querySelector('[role="dialog"][aria-label^="Desarrollo de"] .scroll-slim');
+  return body ? getComputedStyle(body).scrollbarWidth : null;
+})()`);
+check('la barra de scroll del modal lleva diseño propio', scrollbar === 'thin', `scrollbar-width=${scrollbar}`);
+
+// "Continuar desarrollo": cierra la ventana y el mundo echa a andar a x1.
+await tab.clickText('▶ Continuar desarrollo');
+await new Promise((r) => setTimeout(r, 300));
+const afterContinue = await tab.eval(`(() => {
+  const x1 = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '▶ x1');
+  return {
+    cerrado: document.querySelector('[role="dialog"][aria-label^="Desarrollo de"]') === null,
+    x1: x1?.getAttribute('aria-pressed'),
+    oficina: document.querySelector('main .hero-stage') !== null,
+  };
+})()`);
+check('"Continuar desarrollo" cierra la ventana', afterContinue.cerrado);
+check('…pone el tiempo en x1', afterContinue.x1 === 'true', `x1=${afterContinue.x1}`);
+check('…y deja ver la Oficina Viva trabajando', afterContinue.oficina);
+await tab.shot('capturas/8-5-oficina-trabajando.png');
+
+// Con el reloj corriendo de verdad (x1 = 1 s por semana), el fin de fase
+// reabre la ventana sola: el pacing que pidió el jugador.
+const reopened = await tab.eval(`new Promise((resolve) => {
+  const t0 = Date.now();
+  const probe = () => {
+    const d = document.querySelector('[role="dialog"][aria-label^="Desarrollo de"]');
+    if (d) return resolve({ ok: true, texto: d.innerText, ms: Date.now() - t0 });
+    if (Date.now() - t0 > 15000) return resolve({ ok: false });
+    setTimeout(probe, 250);
+  };
+  probe();
+})`);
+check(
+  'al acabar la fase, la ventana se reabre sola (pacing por fases)',
+  reopened.ok === true,
+  reopened.ok ? `en ${(reopened.ms / 1000).toFixed(1)} s` : 'no reapareció en 15 s',
+);
+check(
+  'y vuelve con la fase nueva cargada (Producción)',
+  /Reparto de esfuerzo — fase de Producción/i.test(reopened.texto ?? ''),
+);
+const pausedOnPhase = await tab.eval(
+  `[...document.querySelectorAll('button')].find((b) => b.textContent.includes('⏸ Pausa'))?.getAttribute('aria-pressed')`,
+);
+check('el hito de fase para el reloj', pausedOnPhase === 'true', `pausa=${pausedOnPhase}`);
+// La ventana acaba de entrar con su spring: se deja asentar antes del retrato.
+await new Promise((r) => setTimeout(r, 700));
+await tab.shot('capturas/8-5-desarrollo-fase-nueva.png');
+
+// ── 4b. Fuera el paso manual del tiempo (cambio 2) ─────────────────────────
+const manualStep = await tab.eval(
+  `[...document.querySelectorAll('button')].some((b) => b.textContent.includes('+1 semana'))`,
+);
+check('"+1 semana" ya no existe en la interfaz', manualStep === false);
 
 // ── 5. El tutorial (7F) sobrevive a la mudanza: su ancla del Fit ahora vive
 //      DENTRO del modal, y la guía (z-35) debe quedar por encima (z-30) ─────

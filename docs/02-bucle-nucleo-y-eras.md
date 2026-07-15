@@ -53,6 +53,15 @@ Durante las fases aparecen:
   tiempo/dinero y puede generar bugs si el equipo no da abasto. Detalle en `03` y `09`.
 - **Decisiones de foco** (los sliders/reparto de esfuerzo) que determinan el balance Diseño/Técnica.
 
+**Ritmo del desarrollo** `[DECIDIDO · Fase 8.5]`: cada fase es un **hito con pausa**, no una pantalla
+que se vigila. La **ventana de desarrollo** (modal, `10` §10.3) se abre al concebir y en **cada cambio
+de fase**; ahí se decide el reparto de esa fase (y, en Concepto, las features). **"Continuar desarrollo"**
+cierra la ventana y reanuda el tiempo a x1: el jugador ve trabajar a la **Oficina Viva** (`10` §5) hasta
+el siguiente hito, cuando el reloj para solo y la ventana vuelve con la fase nueva. Al terminar Pulido el
+juego se lanza y encadena con la gala de reseña. El bucle es: **decidir → mirar → decidir**, en vez de
+una lista de controles siempre a la vista. El núcleo no cambia por esto: `advanceProjects` ya mueve las
+fases y el store ya pausa en ellas (`08` §6).
+
 ### Paso 4 — Monetización y precio ◄ DILEMA MORAL
 Antes de lanzar, el jugador decide el **modelo de negocio** y el **precio**. Aquí entran las palancas
 de codicia/integridad (loot boxes, DLC day-one, pases, precio justo...). Ver `06`.

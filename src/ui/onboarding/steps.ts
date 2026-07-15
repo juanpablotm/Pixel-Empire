@@ -77,7 +77,7 @@ export const tutorialSteps: readonly TutorialStep[] = [
     id: 'tiempo',
     target: 'time-controls',
     title: 'El tiempo manda',
-    body: 'El mundo solo avanza si tú quieres. Dale a ▶ x1 (o a «+1 semana») y mira trabajar a tu fundador.',
+    body: 'El mundo solo avanza si tú quieres. Dale a ▶ x1 y mira trabajar a tu fundador; el juego pausa solo cuando toque decidir.',
     advanceWhen: (s) => s.speed > 0 || s.game.week > 1,
   },
   {

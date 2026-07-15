@@ -245,7 +245,7 @@ function ConceptionForm() {
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+        <div className="scroll-slim flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
           {/* La idea: selectores porque el catálogo crece con cada era. */}
           <div className="grid gap-4 sm:grid-cols-3">
             <SelectField

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createInitialState,
@@ -14,6 +14,16 @@ import { useGameStore } from '../state/store';
 import { App } from './App';
 
 const SEED = 7;
+
+/**
+ * Avanza N semanas. Desde la Fase 8.5 la UI no tiene "+1 semana": el reloj se
+ * gobierna con la velocidad, así que los tests despachan la acción del store.
+ */
+function advanceWeeks(n: number) {
+  act(() => {
+    for (let i = 0; i < n; i++) useGameStore.getState().advanceWeek();
+  });
+}
 
 /** Abre una entrada del menú de la barra superior (docs/17 U2). */
 function openMenu(entry: string) {
@@ -114,9 +124,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     });
 
     // 3. Seis semanas después (proyecto pequeño), el juego se lanza solo.
-    for (let i = 0; i < 6; i++) {
-      fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
-    }
+    advanceWeeks(6);
 
     // 4. Pantalla de reseña: nota media + segmentos + desglose de 6 factores (docs/03 §5, docs/04 §5).
     expect(screen.getByText('Reseña media')).toBeInTheDocument();
@@ -139,7 +147,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     // 5. De vuelta al estudio: el juego vende y se puede repetir el bucle.
     fireEvent.click(screen.getByRole('button', { name: 'Volver al estudio' }));
     expect(screen.getByText(`Reseña ${game.review}/100`)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
+    advanceWeeks(1);
     const updated = useGameStore.getState().game.releasedGames[0];
     expect(updated.totalUnits).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /Nuevo juego/ })).toBeInTheDocument();
@@ -164,7 +172,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     expect(screen.getByRole('button', { name: /Nuevo juego/ })).toBeInTheDocument();
   });
 
-  it('la pantalla de desarrollo muestra el Manómetro de Hype (docs/10 §7.5)', () => {
+  it('el Manómetro de Hype aparece al llegar a Producción, no antes (docs/10 §7.5)', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
     fireEvent.change(screen.getByLabelText('Nombre del juego'), {
@@ -172,6 +180,14 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     });
     fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
 
+    // En Concepto todavía no hay nada que anunciar (Fase 8.5).
+    expect(screen.queryByRole('meter', { name: 'Hype' })).not.toBeInTheDocument();
+    expect(screen.getByText(/las campañas abren en la fase de Producción/i)).toBeInTheDocument();
+
+    // Dos semanas después el proyecto entra en Producción: el hito reabre la
+    // ventana y ya sí hay manómetro.
+    advanceWeeks(2);
+    expect(useGameStore.getState().game.projects[0].phase).toBe(2);
     const gauge = screen.getByRole('meter', { name: 'Hype' });
     expect(gauge).toHaveAttribute('aria-valuenow', '0');
   });
@@ -248,7 +264,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     }
   });
 
-  it('la pantalla de desarrollo muestra el factor de equipo y permite activar el crunch', () => {
+  it('la ventana de desarrollo muestra el factor de equipo y permite activar el crunch', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
     fireEvent.change(screen.getByLabelText('Nombre del juego'), {
@@ -273,9 +289,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
       game: { ...base, studio: { ...base.studio, capital: 0 } },
     });
     render(<App />);
-    for (let i = 0; i < balance.economy.bankruptcyGraceWeeks; i++) {
-      fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
-    }
+    advanceWeeks(balance.economy.bankruptcyGraceWeeks);
     const dialog = screen.getByRole('alertdialog', { name: 'Fin de la partida' });
     expect(within(dialog).getByText('Bancarrota')).toBeInTheDocument();
 
@@ -394,7 +408,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
 
   it('Volver al título pausa la partida y Continuar la retoma (Fase 7F)', () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
+    advanceWeeks(1);
     // Las opciones de partida viven en el menú de la barra (docs/17 U2).
     openMenu('💾 Partida');
     fireEvent.click(screen.getByRole('button', { name: '🏠 Volver al título' }));
@@ -406,7 +420,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
 
   it('guardar y cargar funcionan desde el modal de Partida (docs/17 U2)', () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
+    advanceWeeks(1);
     openMenu('💾 Partida');
     fireEvent.click(screen.getByRole('button', { name: '💾 Guardar' }));
     expect(screen.getByRole('status')).toHaveTextContent('Partida guardada.');
@@ -510,23 +524,50 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
       expect(useGameStore.getState().game.projects).toHaveLength(0);
     });
 
-    it('«Continuar desarrollo» reanuda el tiempo a x1 (docs/17 U3)', () => {
-      render(<App />);
+    /** Concebir un juego deja abierta su ventana de desarrollo, en pausa. */
+    function conceive(name: string) {
       fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
-      fireEvent.change(screen.getByLabelText('Nombre del juego'), {
-        target: { value: 'Pausa y Arranca' },
-      });
+      fireEvent.change(screen.getByLabelText('Nombre del juego'), { target: { value: name } });
       fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
+    }
 
-      // Se aterriza en desarrollo, en pausa: el modal ya cerró.
+    it('el desarrollo se juega por fases: continuar cierra y el fin de fase reabre', () => {
+      render(<App />);
+      conceive('Pausa y Arranca');
+
+      // 1. Concepción cerrada; la ventana de desarrollo abre en Concepto, en pausa.
       expect(screen.queryByRole('dialog', { name: 'Nuevo juego' })).not.toBeInTheDocument();
+      const dev = screen.getByRole('dialog', { name: 'Desarrollo de Pausa y Arranca' });
+      expect(within(dev).getByText(/Reparto de esfuerzo — fase de Concepto/)).toBeInTheDocument();
       expect(useGameStore.getState().speed).toBe(0);
 
+      // 2. "Continuar desarrollo" cierra la ventana y pone el mundo a x1: se ve
+      //    trabajar a la oficina.
       fireEvent.click(screen.getByRole('button', { name: '▶ Continuar desarrollo' }));
+      expect(
+        screen.queryByRole('dialog', { name: 'Desarrollo de Pausa y Arranca' }),
+      ).not.toBeInTheDocument();
       expect(useGameStore.getState().speed).toBe(1);
-      expect(screen.getByRole('button', { name: '▶ En marcha (x1)' })).toBeDisabled();
+
+      // 3. Al terminar la fase, el reloj para y la ventana vuelve con la fase nueva.
+      advanceWeeks(2);
+      expect(useGameStore.getState().speed).toBe(0);
+      const reopened = screen.getByRole('dialog', { name: 'Desarrollo de Pausa y Arranca' });
+      expect(
+        within(reopened).getByText(/Reparto de esfuerzo — fase de Producción/),
+      ).toBeInTheDocument();
 
       useGameStore.getState().setSpeed(0); // no filtrar timers al siguiente test
+    });
+
+    it('la ventana de desarrollo se cierra sola cuando el juego sale a la calle', () => {
+      render(<App />);
+      conceive('Se Lanza Solo');
+
+      advanceWeeks(6);
+      expect(useGameStore.getState().game.releasedGames).toHaveLength(1);
+      expect(useGameStore.getState().devProjectId).toBeNull();
+      expect(screen.getByText('Reseña media')).toBeInTheDocument();
     });
   });
 });

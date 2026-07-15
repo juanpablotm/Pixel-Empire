@@ -25,6 +25,37 @@
   border-radius: var(--radius-control);
 }
 
+/* Barra de scroll con diseño (Fase 8.5): la del sistema desentona con la piel
+   de cada era (un carril gris claro en medio del fósforo verde). Se pinta con
+   TOKENS, así que envejece con la era como el resto de la interfaz. Se aplica
+   donde hay scroll propio: cuerpos de modales, feed y listas largas.
+   Firefox usa scrollbar-width/color; Chrome/Safari, ::-webkit-scrollbar. */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-hi) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background-color: var(--color-line-hi);
+  border-radius: 999px;
+  /* El borde transparente adelgaza el pulgar sin estrechar la zona de agarre. */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.scroll-slim::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ink-faint);
+  background-clip: padding-box;
+}
+.scroll-slim::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Latido del reloj con cada tick (docs/10 §6): la fecha "late" al avanzar
    la semana; el componente re-monta el chip con key={week}. */
 @keyframes tick-beat {

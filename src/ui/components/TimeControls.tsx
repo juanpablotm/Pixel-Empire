@@ -10,12 +10,13 @@ const LABELS: Record<Speed, string> = {
 
 /**
  * Controles de tiempo (docs/02 §1) como control segmentado: Pausa / x1 / x2 /
- * x4 + paso manual. El estado activo usa el verde de acción (tokens 7A).
+ * x4. El estado activo usa el verde de acción (tokens 7A). El paso manual
+ * ("+1 semana") se retiró en la Fase 8.5: el reloj se gobierna con la
+ * velocidad, y el juego pausa solo cuando toca decidir.
  */
 export function TimeControls() {
   const speed = useGameStore((s) => s.speed);
   const setSpeed = useGameStore((s) => s.setSpeed);
-  const advanceWeek = useGameStore((s) => s.advanceWeek);
 
   return (
     <div className="flex flex-wrap items-center gap-2" data-tour="time-controls">
@@ -36,9 +37,6 @@ export function TimeControls() {
           </button>
         ))}
       </div>
-      <button type="button" onClick={advanceWeek} className="btn btn-quiet">
-        +1 semana
-      </button>
     </div>
   );
 }

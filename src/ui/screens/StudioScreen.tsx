@@ -95,7 +95,7 @@ export function StudioScreen() {
         <section className="card">
           <h2 className="card-title">Comunidad</h2>
           <SentimentMeter sentiment={community.sentiment} />
-          <div className="mt-4 max-h-80 overflow-y-auto border-t border-line pt-3">
+          <div className="scroll-slim mt-4 max-h-80 overflow-y-auto border-t border-line pt-3">
             <CommunityFeed
               posts={community.feed}
               urgent={
@@ -232,10 +232,10 @@ function HeroStage() {
   const cap = useGameStore((s) => projectCap(s.game));
   const era = useGameStore((s) => s.game.era);
   const modernUi = useGameStore((s) => s.modernUi);
-  const selectProject = useGameStore((s) => s.selectProject);
-  const goTo = useGameStore((s) => s.goTo);
-  // La concepción es un modal desde la Fase 8.5 (docs/17 U3): abrirlo pausa.
+  // Concepción y desarrollo son modales desde la Fase 8.5 (docs/17 U3):
+  // abrirlos pausa, y el desarrollo se retoma fase a fase desde su ventana.
   const openConception = useGameStore((s) => s.openConception);
+  const openDev = useGameStore((s) => s.openDev);
   const idle = projects.length === 0;
 
   return (
@@ -288,10 +288,7 @@ function HeroStage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    selectProject(project.id);
-                    goTo('desarrollo');
-                  }}
+                  onClick={() => openDev(project.id)}
                   className="btn btn-primary px-3 py-1.5 text-xs"
                 >
                   Ver desarrollo

@@ -199,9 +199,19 @@ uno con un **mini-gráfico** de copias vendidas por semana (refuerza el Pilar 2:
 > y tamaño** siguen como botones (4 opciones fijas, y el tamaño enseña su 🔒 de E1). El veredicto —Fit,
 > estimación y "Empezar desarrollo"— queda fijo en el pie, sin scrollear. La tecla **2** abre el modal en
 > vez de navegar; Esc lo cierra. **"Continuar desarrollo"** (`ContinueDevButton`) reanuda a x1 desde la
-> ventana de desarrollo y, con el tiempo ya corriendo, informa de la velocidad en vez de desaparecer.
-> El tutorial (7F) sigue en pie: sus anclas `new-game`/`fit-meter`/`start-dev` se conservan y la guía
-> (z-35) pinta por encima del modal (z-30).
+> ventana de desarrollo. El tutorial (7F) sigue en pie: sus anclas `new-game`/`fit-meter`/`start-dev` se
+> conservan y la guía (z-35) pinta por encima del modal (z-30).
+>
+> **Ampliación pedida en playtest (misma fase).** El desarrollo también pasa a **modal**
+> (`DevelopmentScreen` → `DevelopmentModal`, fuera del tipo `Screen`, ahora `devProjectId`) y se juega
+> **por fases** (docs/02 §2): la ventana se abre al concebir y en **cada cambio de fase** —el store ya
+> pausaba ahí, así que el núcleo no se toca—, "Continuar desarrollo" la cierra y reanuda a **x1** para
+> ver trabajar a la Oficina Viva, y al terminar Pulido se lanza. Se reestructura en **dos columnas**
+> (izquierda: la decisión de la fase —esfuerzo y, en Concepto, features—; derecha: contexto —equipo y
+> marketing, que solo abre desde Producción—) en vez de la pila vertical que hacía incómoda la pantalla.
+> Además: **"+1 semana" se retira** de los controles de tiempo (el reloj se gobierna con la velocidad y
+> el juego pausa solo cuando toca decidir) y la **barra de scroll** de los modales gana diseño propio
+> con tokens (`.scroll-slim`), porque la del sistema desentonaba con las pieles de era.
 
 ### U4 · Notificaciones de dos niveles (las importantes paran el tiempo) 🎛️ P1 🟡
 *(playtest #8)*
