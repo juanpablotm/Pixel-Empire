@@ -54,8 +54,8 @@ export const tutorialSteps: readonly TutorialStep[] = [
   {
     id: 'fit',
     target: 'fit-meter',
-    title: 'El Fit es tu brújula',
-    body: 'Tema, género, plataforma y público casan mejor o peor. Prueba combinaciones vigilando este medidor: verde promete, rojo avisa.',
+    title: 'El Fit está por descubrir',
+    body: 'Tema, género, plataforma y público casan mejor o peor… pero aún no sabes cómo: nadie te ha dado el mapa. Lanza y aprende del desglose, o investígalo en I+D.',
     nextLabel: 'Entendido',
   },
   {
@@ -69,7 +69,7 @@ export const tutorialSteps: readonly TutorialStep[] = [
     id: 'esfuerzo',
     target: 'focus-sliders',
     title: 'Reparte el esfuerzo',
-    body: 'Mueve un deslizador: cada género pide su propio balance entre diseño y técnica, y la lectura de abajo te dice cómo vas.',
+    body: 'Mueve un deslizador: cada género pide su propio balance entre diseño y técnica. Cuál es el ideal todavía no lo sabes; la reseña te lo dirá.',
     advanceWhen: focusTouched,
     nextLabel: 'Así lo dejo',
   },

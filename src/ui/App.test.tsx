@@ -86,17 +86,25 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     fireEvent.click(pause); // dejarlo pausado para no filtrar timers
   });
 
-  it('el medidor de Fit reacciona en vivo al concepto, sin exponer el número (docs/03)', () => {
+  it('el Fit empieza oculto y, tras investigarlo, reacciona en vivo sin exponer el número (docs/03, docs/17 P2)', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
 
-    // Por defecto: Fantasía × RPG en PC Casero para público Amplio → verde.
-    // Fantasía es tema de partida y RPG género de E1: su Fit se conoce sin
-    // investigar (docs/17 P2, "conoces lo que empiezas").
+    // TODO empieza oculto (docs/17 P2): el pronóstico se gana, no se regala.
+    expect(screen.getByRole('status', { name: 'Fit: Encaje por descubrir' })).toBeInTheDocument();
+
+    // Al investigar la Red de afinidades el medidor se enciende: la UI solo lee
+    // el estado del núcleo (docs/08 §6). Fantasía × RPG en PC Casero para
+    // público Amplio → verde.
+    act(() => {
+      useGameStore.setState((s) => ({
+        game: { ...s.game, research: { ...s.game.research, unlocked: ['redAfinidades'] } },
+      }));
+    });
     expect(screen.getByRole('status', { name: 'Fit: Encaje prometedor' })).toBeInTheDocument();
 
-    // Fantasía × Puzzle para Infantil baja el encaje, sin exponer el número.
-    // El género se elige con un selector desde la Fase 8.5 (docs/17 U3).
+    // Y reacciona al concepto, sin exponer el número: Fantasía × Puzzle para
+    // Infantil baja el encaje. El género se elige con selector desde la 8.5.
     fireEvent.change(screen.getByLabelText('Género'), { target: { value: 'puzzle' } });
     fireEvent.click(screen.getByRole('button', { name: 'Infantil' }));
     expect(screen.getByRole('status', { name: 'Fit: Encaje dudoso' })).toBeInTheDocument();
@@ -403,7 +411,7 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     // avanza porque el estado cambió, no por un "siguiente".
     fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
     expect(useGameStore.getState().tutorialStep).toBe(2);
-    expect(screen.getByText('El Fit es tu brújula')).toBeInTheDocument();
+    expect(screen.getByText('El Fit está por descubrir')).toBeInTheDocument();
   });
 
   it('Volver al título pausa la partida y Continuar la retoma (Fase 7F)', () => {

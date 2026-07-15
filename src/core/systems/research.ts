@@ -5,7 +5,6 @@ import { getResearchNode, researchNodes, researchNodeUnlocks } from '../../data/
 import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
-import type { ProjectSize } from '../model/project';
 import type { MarketKnowledge, ResearchState, StudioCapability } from '../model/research';
 
 /**
@@ -147,36 +146,31 @@ export function marketKnowledge(state: GameState): Record<MarketKnowledge, boole
 }
 
 /**
- * Regla de revelado (docs/17 P2): "conoces lo que empiezas; descubres lo que
- * desbloqueas". Las pistas de tu contenido de PARTIDA (temas starter, géneros
- * de E1, precio de juegos pequeños) están visibles desde el inicio —así el
- * tutorial tiene brújula y el arranque no es un muro—; las de contenido que
- * DESBLOQUEAS luego (temas investigados, géneros de eras futuras, tamaños
- * mayores) empiezan ocultas y se revelan investigando (nodo global) o
- * "Investigar resultados" de un combo lanzado. El desglose a posteriori nunca
- * se paga (Pilar 2, docs/03): esto solo es el pronóstico previo.
+ * Regla de revelado (docs/17 P2): **TODO empieza oculto**. Ninguna pista
+ * predictiva se regala: el estudio novato de 1980 no sabe qué combina con qué,
+ * cuánto vale un juego ni qué pide cada género. Se aprenden de dos formas:
+ *   · investigando el **nodo global** de esa faceta (la revela para todo), o
+ *   · lanzando un juego y pagando **"Investigar resultados"** de ese combo.
+ * Aun con la pista oculta SIEMPRE se puede concebir y lanzar; y el **desglose
+ * de reseña a posteriori nunca se paga** (Pilar 2, docs/03): de tus propios
+ * juegos siempre aprendes. Descubrir es la mecánica, no un muro.
  */
-function isStartingGenre(genreId: string): boolean {
-  return getGenre(genreId).appearsInEra === 'E1';
+
+/** ¿El precio recomendado es visible? (solo tras investigar Análisis de mercado). */
+export function priceRevealed(state: GameState): boolean {
+  return marketKnowledge(state).price;
 }
 
-/** ¿El precio recomendado de un tamaño es visible? (nodo global O juego pequeño). */
-export function priceRevealed(state: GameState, size: ProjectSize): boolean {
-  return marketKnowledge(state).price || size === 'pequeno';
-}
-
-/** ¿El Fit de un combo es preciso? (nodo global · pista del combo · contenido de partida). */
+/** ¿El Fit de un combo es preciso? (nodo global de fit O pista de ese combo). */
 export function fitRevealed(state: GameState, themeId: string, genreId: string): boolean {
   if (marketKnowledge(state).fit) return true;
-  if ((state.research.insights ?? []).includes(insightKey(themeId, genreId))) return true;
-  return isStarterTheme(themeId) && isStartingGenre(genreId);
+  return (state.research.insights ?? []).includes(insightKey(themeId, genreId));
 }
 
-/** ¿El balance ideal de un género es visible? (nodo global · pista del género · género de E1). */
+/** ¿El balance ideal de un género es visible? (nodo global O pista de ese género). */
 export function balanceRevealed(state: GameState, genreId: string): boolean {
   if (marketKnowledge(state).balance) return true;
-  if ((state.research.insights ?? []).some((key) => key.split('|')[1] === genreId)) return true;
-  return isStartingGenre(genreId);
+  return (state.research.insights ?? []).some((key) => key.split('|')[1] === genreId);
 }
 
 /** ¿Ya se aprendió la pista predictiva de este combo lanzado? */

@@ -134,11 +134,11 @@ accionable** ("la próxima, más QA") en vez de frustración opaca.
 Hay que separar dos cosas y **el Pilar 2 protege la segunda**:
 
 - El **atajo PREDICTIVO** (saber *antes* de lanzar): el **medidor de Fit** (Factor A), el **balance
-  ideal** del género (Factor B) y el **precio recomendado**. Estas pistas se **ganan con investigación**
-  (docs/02 §3.2): conoces las de tu contenido de partida (temas starter × géneros de E1, precio de
-  juegos pequeños); las de lo que desbloqueas luego empiezan **ocultas** ("Encaje por descubrir", "❓
-  por investigar") y se revelan con nodos globales de I+D o con **"Investigar resultados"** de un
-  lanzamiento con esa combinación. Aun oculta la pista, **puedes concebir el juego igualmente**.
+  ideal** del género (Factor B) y el **precio recomendado**. Estas pistas **empiezan TODAS ocultas**
+  ("Encaje por descubrir", "❓ por investigar") y se **ganan con investigación** (docs/02 §3.2): con los
+  nodos globales de I+D o con **"Investigar resultados"** de un lanzamiento con esa combinación. Nada
+  se regala al empezar: el estudio de 1980 va a ciegas y el mapa del mercado se conquista. Aun oculta
+  la pista, **puedes concebir el juego igualmente**: no bloquea, solo no adivina por ti.
 - La **explicación A POSTERIORI**: el **desglose de reseña** de §5 se muestra **SIEMPRE, completo y
   legible**, con o sin investigación. Nunca se paga. Siempre aprendes de tus propios juegos; descubrir
   combos es una mecánica satisfactoria, no un muro opaco. El principio rector de arriba sigue en pie:

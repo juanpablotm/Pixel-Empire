@@ -107,14 +107,19 @@ pero cuestan 💡 (más caros cuanto más tardía la era). Así la investigació
 ### 3.2 El conocimiento del mercado se gana (docs/17 P2) `[DECIDIDO · baseline v1]`
 
 Las **pistas predictivas** —medidor de **Fit** (tema×género), **precio recomendado** y **balance
-Diseño/Técnica ideal** del género— siguen la regla **"conoces lo que empiezas; descubres lo que
-desbloqueas"**: las de tu contenido de partida (temas starter × géneros de E1, precio de juegos
-pequeños) son visibles desde el inicio; las de lo que desbloqueas luego empiezan **ocultas** y se
-revelan de dos formas: (a) **nodos globales de I+D** (Inteligencia de mercado) que revelan una faceta
-para todo; (b) tras lanzar un juego, **"Investigar resultados"** (gasta 💡) aprende el atajo predictivo
-de ESA combinación. Es transparencia con **Pilar 2** intacto: el **desglose de reseña** de tus propios
-lanzamientos es **siempre legible** (ver `03`); solo se paga saberlo *antes*, nunca la explicación
-*después*.
+Diseño/Técnica ideal** del género— **empiezan TODAS ocultas**. Nada se regala: el estudio novato de
+1980 no sabe qué combina con qué, cuánto vale un juego ni qué pide cada género. El arranque es
+deliberadamente a ciegas y el conocimiento se **gana** de dos formas:
+
+- **Nodos globales de I+D** (rama *Inteligencia de mercado*): revelan una faceta para todo y para
+  siempre. Compiten en 💡 con motores/QA: saber es una inversión con coste de oportunidad.
+- **"Investigar resultados"** de un juego ya lanzado (gasta 💡): aprende el atajo predictivo de ESA
+  combinación (su Fit y el balance ideal de su género). Es la vía orgánica: aprendes de lo que haces.
+
+Aun con la pista oculta **siempre puedes concebir y lanzar**: nada se bloquea. Y el **Pilar 2** queda
+intacto: el **desglose de reseña** de tus propios lanzamientos es **siempre legible** (ver `03`). Solo
+se paga saberlo *antes*, nunca la explicación *después* — así descubrir el mapa del mercado es la
+recompensa del Pilar 5, no un muro.
 
 ## 4. Progresión de escala (las 4 etapas de estudio) `[DECIDIDO]`
 

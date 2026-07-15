@@ -337,6 +337,22 @@ export function applyDemoFromQuery(): boolean {
     seed(knowledgeDemo(), 'investigacion', null);
     return true;
   }
+  // El arranque A CIEGAS (docs/17 P2): partida recién fundada con el modal de
+  // concepción abierto — Fit "por descubrir" y precio de referencia oculto.
+  if (demo === 'aciegas') {
+    useGameStore.setState({
+      game: createInitialState(DEMO_SEED),
+      screen: 'estudio',
+      speed: 0,
+      reviewGameId: null,
+      activeProjectId: null,
+      appMode: 'game',
+      sessionActive: true,
+      tutorialStep: null,
+      conceptionOpen: true,
+    });
+    return true;
+  }
   // Los avisos importantes que pausan el tiempo (docs/17 U4): el modal de P&L
   // al frente. `&era=E4` reviste el estudio de fondo con su piel.
   if (demo === 'aviso') {

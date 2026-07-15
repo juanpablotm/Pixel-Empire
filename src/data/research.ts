@@ -28,9 +28,9 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     id: 'estudioGeneros',
     name: 'Estudio de géneros',
     description:
-      'Diseccionas qué hace grande a cada género (también los de eras futuras): revela su balance Diseño/Técnica ideal en la mesa de desarrollo.',
+      'Diseccionas qué hace grande a cada género: revela su balance Diseño/Técnica ideal en la mesa de desarrollo.',
     cost: 10,
-    era: 'E2',
+    era: 'E1',
     reveals: 'balance',
   },
   {

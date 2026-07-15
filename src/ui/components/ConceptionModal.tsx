@@ -180,11 +180,12 @@ function ConceptionForm() {
   const estimate = estimateProject(size, platformId);
   const canStart = name.trim() !== '';
 
-  // Conocimiento de mercado (docs/17 P2): el atajo PREDICTIVO se paga. Si no lo
-  // has investigado, el Fit sale "oculto" y el precio recomendado no se muestra;
-  // aun así puedes concebir el juego (el desglose posterior siempre enseña).
+  // Conocimiento de mercado (docs/17 P2): el atajo PREDICTIVO se paga y TODO
+  // empieza oculto. Sin investigar, el Fit sale "oculto" y el precio recomendado
+  // no se muestra; aun así puedes concebir el juego, y el desglose posterior
+  // siempre enseña (Pilar 2).
   const fitKnown = fitRevealed(game, themeId, genreId);
-  const priceKnown = priceRevealed(game, size);
+  const priceKnown = priceRevealed(game);
 
   const pricing = balance.economy.pricing;
   const recommended = balance.economy.priceBySize[size];

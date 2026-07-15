@@ -132,11 +132,11 @@ inicio y se **desbloquean** con investigación:
 **Toca:** `03` (medidor de Fit/transparencia), `02` §3 (investigación), `16`.
 
 > **✅ Implementado (Fase 8.4).** Tres facetas revelables —`fit` (medidor de Fit), `balance` (ideal
-> Diseño/Técnica del género), `price` (precio recomendado)— con la regla **"conoces lo que empiezas;
-> descubres lo que desbloqueas"**: las pistas del contenido de partida (temas starter × géneros de E1,
-> precio de juegos pequeños) están visibles desde el inicio —el tutorial tiene brújula—; las de lo que
-> DESBLOQUEAS luego empiezan ocultas. Se revelan por **dos vías**: (a) **nodos globales** de I+D con
-> campo `reveals` (`analisisMercado`→price, `estudioGeneros`→balance, `redAfinidades`→fit); (b)
+> Diseño/Técnica del género), `price` (precio recomendado)— y **TODAS empiezan ocultas** `[DECIDIDO]`:
+> nada se regala (ni el combo de partida), porque el arranque a ciegas hace el progreso satisfactorio
+> (Pilar 5). El tutorial lo enseña como bucle de descubrimiento ("El Fit está por descubrir: lanza y
+> aprende del desglose, o investígalo"). Se revelan por **dos vías**: (a) **nodos globales** de I+D con
+> campo `reveals` (`analisisMercado`→price E1, `estudioGeneros`→balance E1, `redAfinidades`→fit E2); (b)
 > **"Investigar resultados"** de un juego lanzado (`researchInsight`, gasta `insightCost` = 4 💡), que
 > aprende el combo concreto (fit tema×género + balance del género), guardado en `research.insights`.
 > Helpers puros `fitRevealed`/`balanceRevealed`/`priceRevealed` (core/systems/research); la UI solo

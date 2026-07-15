@@ -274,19 +274,32 @@ describe('P1: temas gateados por investigación (docs/17)', () => {
 });
 
 describe('P2: conocimiento de mercado que se gana (docs/17)', () => {
-  it('conoces lo que empiezas: starter × género de E1, y el precio pequeño', () => {
+  it('TODO empieza oculto: ni el combo de partida se regala (docs/17 P2)', () => {
+    // El estudio novato de 1980 no sabe nada: ni su tema de partida con su
+    // género de partida. Descubrir es la mecánica (Pilar 5).
     const s = createInitialState(SEED);
-    expect(fitRevealed(s, 'fantasia', 'rpg')).toBe(true); // starter × E1
-    expect(balanceRevealed(s, 'rpg')).toBe(true); // género de E1
-    expect(priceRevealed(s, 'pequeno')).toBe(true); // tamaño de partida
+    expect(fitRevealed(s, 'fantasia', 'rpg')).toBe(false);
+    expect(balanceRevealed(s, 'rpg')).toBe(false);
+    expect(priceRevealed(s)).toBe(false);
+    // …pero se puede concebir igual: la pista oculta no bloquea nada.
+    expect(() =>
+      startProject(s, {
+        name: 'A ciegas',
+        themeId: 'fantasia',
+        genreId: 'rpg',
+        platformId: 'pcCasero',
+        audience: 'amplio',
+        size: 'pequeno',
+      }),
+    ).not.toThrow();
   });
 
-  it('lo que desbloqueas empieza oculto y se revela con los nodos globales', () => {
+  it('lo oculto se revela con los nodos globales', () => {
     const s = atEra('E5', 200);
-    // Precio de tamaños mayores: oculto hasta Análisis de mercado.
-    expect(priceRevealed(s, 'grande')).toBe(false);
-    expect(priceRevealed(buyResearch(s, 'analisisMercado'), 'grande')).toBe(true);
-    // Balance de un género de era posterior: oculto hasta Estudio de géneros.
+    // Precio recomendado: oculto hasta Análisis de mercado.
+    expect(priceRevealed(s)).toBe(false);
+    expect(priceRevealed(buyResearch(s, 'analisisMercado'))).toBe(true);
+    // Balance ideal del género: oculto hasta Estudio de géneros.
     expect(balanceRevealed(s, 'shooter')).toBe(false);
     expect(balanceRevealed(buyResearch(s, 'estudioGeneros'), 'shooter')).toBe(true);
     // Fit de un combo de contenido desbloqueado: oculto hasta Red de afinidades.

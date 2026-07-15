@@ -97,10 +97,11 @@ motores propios y capacidades de estudio (marketing avanzado, formación). Mucho
   **desbloqueas el resto con 💡**. Pasar de era **no regala temas**: los **habilita** para investigarlos
   (coste creciente por era). Decides en qué se especializa tu estudio.
 - **Conocimiento de mercado que se gana:** las **pistas predictivas** (medidor de Fit, precio
-  recomendado, balance ideal del género) siguen la regla "conoces lo que empiezas; descubres lo que
-  desbloqueas". Se revelan con **nodos globales** de Inteligencia de mercado o con **"Investigar
-  resultados"** de un lanzamiento (aprende ese combo). El **desglose de reseña siempre es legible**
-  (Pilar 2): solo se paga saberlo *antes*, no la explicación *después*.
+  recomendado, balance ideal del género) **empiezan TODAS ocultas** — empiezas a ciegas, y el mapa del
+  mercado se conquista. Se revelan con **nodos globales** de Inteligencia de mercado o con **"Investigar
+  resultados"** de un lanzamiento (aprende ese combo). Nunca bloquean: siempre puedes lanzar. Y el
+  **desglose de reseña siempre es legible** (Pilar 2): solo se paga saberlo *antes*, no la explicación
+  *después*.
 
 ### 3.4 Ritmo objetivo `[baseline v1]` (doc `02` §6)
 
