@@ -23,6 +23,8 @@ import { HypeGauge } from '../components/HypeGauge';
  * lectura del balance Diseño/Técnica frente al ideal del género, features como
  * tarjetas (solo en Concepto, filtradas por era/investigación) y estado de
  * bugs. Con varios proyectos en paralelo (docs/02 §4) se elige con pestañas.
+ * Desde la Fase 8.5 (docs/17 U3), "Continuar desarrollo" reanuda el tiempo a x1
+ * sin volver al estudio: se concibe en pausa y se arranca desde aquí.
  * Los cálculos viven en core/.
  */
 
@@ -46,6 +48,34 @@ function factorColor(value: number): string {
   return 'text-danger';
 }
 
+/**
+ * "Continuar desarrollo" (docs/17 U3): se concibe en pausa, y desde aquí se
+ * reanuda el reloj a x1 sin tener que buscar los controles de la barra. Con el
+ * tiempo ya corriendo, informa de la velocidad en vez de desaparecer (el botón
+ * no baila de sitio). Solo despacha `setSpeed`; el bucle vive en el store.
+ */
+function ContinueDevButton() {
+  const speed = useGameStore((s) => s.speed);
+  const setSpeed = useGameStore((s) => s.setSpeed);
+  const running = speed > 0;
+
+  return (
+    <button
+      type="button"
+      disabled={running}
+      onClick={() => setSpeed(1)}
+      title={
+        running
+          ? 'El tiempo ya corre: el juego se cocina solo'
+          : 'Reanuda el tiempo a x1 y deja trabajar al equipo'
+      }
+      className={running ? 'btn btn-quiet cursor-default' : 'btn btn-primary px-4 py-2'}
+    >
+      {running ? `▶ En marcha (x${speed})` : '▶ Continuar desarrollo'}
+    </button>
+  );
+}
+
 export function DevelopmentScreen() {
   const game = useGameStore((s) => s.game);
   const activeProjectId = useGameStore((s) => s.activeProjectId);
@@ -60,15 +90,12 @@ export function DevelopmentScreen() {
   const setCrunch = useGameStore((s) => s.setCrunch);
   const launchMarketing = useGameStore((s) => s.launchMarketing);
   const goTo = useGameStore((s) => s.goTo);
+  const openConception = useGameStore((s) => s.openConception);
 
   if (!project) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
-        <EmptyState
-          icon="🎮"
-          actionLabel="💡 Nuevo juego"
-          onAction={() => goTo('concepcion')}
-        >
+        <EmptyState icon="🎮" actionLabel="💡 Nuevo juego" onAction={openConception}>
           La mesa de desarrollo está libre: en cuanto concibas un juego, aquí vivirán
           sus fases, su reparto de esfuerzo y sus bugs.
         </EmptyState>
@@ -169,10 +196,12 @@ export function DevelopmentScreen() {
             style={{ transform: `scaleX(${projectProgress(project)})` }}
           />
         </div>
-        <p className="mt-2 text-sm text-ink-mute">
-          Semana {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)} · deja correr el
-          tiempo para avanzar
-        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-ink-mute">
+            Semana {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)}
+          </p>
+          <ContinueDevButton />
+        </div>
         {/* Manómetro de Hype (docs/04 §4): crece desde Producción, más con la moda. */}
         <div className="mt-4 border-t border-line pt-4">
           <HypeGauge hype={project.hype} />

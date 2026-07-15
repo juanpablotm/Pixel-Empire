@@ -1,11 +1,25 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createInitialState, generateCandidates, type Employee } from '../core';
+import {
+  createInitialState,
+  generateCandidates,
+  startProject,
+  type Employee,
+  type ReleasedGame,
+} from '../core';
 import { balance } from '../data/balance';
+import { defaultMonetization } from '../data/monetization';
+import { platforms } from '../data/platforms';
 import { useGameStore } from '../state/store';
 import { App } from './App';
 
 const SEED = 7;
+
+/** Abre una entrada del menú de la barra superior (docs/17 U2). */
+function openMenu(entry: string) {
+  fireEvent.click(screen.getByRole('button', { name: '☰ Menú' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(entry) }));
+}
 
 function resetStore() {
   useGameStore.getState().setSpeed(0);
@@ -17,6 +31,8 @@ function resetStore() {
     sessionActive: true,
     tutorialStep: null,
     screen: 'estudio',
+    conceptionOpen: false,
+    menuModal: null,
     reviewGameId: null,
     eraTransition: null,
     awardsWeek: null,
@@ -70,8 +86,8 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     expect(screen.getByRole('status', { name: 'Fit: Encaje prometedor' })).toBeInTheDocument();
 
     // Fantasía × Puzzle para Infantil baja el encaje, sin exponer el número.
-    // (El nombre del botón incluye la flecha de tendencia.)
-    fireEvent.click(screen.getByRole('button', { name: /Puzzle/ }));
+    // El género se elige con un selector desde la Fase 8.5 (docs/17 U3).
+    fireEvent.change(screen.getByLabelText('Género'), { target: { value: 'puzzle' } });
     fireEvent.click(screen.getByRole('button', { name: 'Infantil' }));
     expect(screen.getByRole('status', { name: 'Fit: Encaje dudoso' })).toBeInTheDocument();
   });
@@ -379,6 +395,8 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
   it('Volver al título pausa la partida y Continuar la retoma (Fase 7F)', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
+    // Las opciones de partida viven en el menú de la barra (docs/17 U2).
+    openMenu('💾 Partida');
     fireEvent.click(screen.getByRole('button', { name: '🏠 Volver al título' }));
 
     expect(useGameStore.getState().speed).toBe(0);
@@ -386,15 +404,129 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     expect(screen.getByText('Semana 2 · 1980')).toBeInTheDocument();
   });
 
-  it('guardar y cargar funcionan desde la pantalla del estudio', () => {
+  it('guardar y cargar funcionan desde el modal de Partida (docs/17 U2)', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: '+1 semana' }));
+    openMenu('💾 Partida');
     fireEvent.click(screen.getByRole('button', { name: '💾 Guardar' }));
     expect(screen.getByRole('status')).toHaveTextContent('Partida guardada.');
 
+    // Empezar de cero cierra el modal: se aterriza en el estudio nuevo.
     fireEvent.click(screen.getByRole('button', { name: '✨ Nueva partida' }));
+    expect(screen.queryByRole('dialog', { name: 'Partida' })).not.toBeInTheDocument();
+    expect(screen.getByText('Semana 1 · 1980')).toBeInTheDocument();
+
+    // Cargar también cierra: la confirmación es ver la partida de vuelta.
+    openMenu('💾 Partida');
     fireEvent.click(screen.getByRole('button', { name: '📂 Cargar' }));
-    expect(screen.getByRole('status')).toHaveTextContent('Partida cargada.');
+    expect(screen.queryByRole('dialog', { name: 'Partida' })).not.toBeInTheDocument();
     expect(screen.getByText('Semana 2 · 1980')).toBeInTheDocument();
+  });
+
+  describe('Fase 8.5 — pantalla principal limpia y creación en modal (docs/17 U2–U3)', () => {
+    /** Un juego lanzado listo para la estantería, con su cola de ventas. */
+    function releasedGame(patch: Partial<ReleasedGame>): ReleasedGame {
+      const base = createInitialState(SEED);
+      const game = startProject(base, {
+        name: 'Retro Quest',
+        themeId: 'fantasia',
+        genreId: 'rpg',
+        platformId: platforms[0].id,
+        audience: 'amplio',
+        size: 'pequeno',
+        price: 30,
+        monetization: defaultMonetization(),
+      });
+      const project = game.projects[0];
+      return {
+        ...project,
+        quality: 70,
+        review: 70,
+        reviewsBySegment: { critica: 70 },
+        reviewMarket: { saturation: 0, trendFit: 0, eraCap: 100, expectation: 0 },
+        hypeAtRelease: 0,
+        saturationAtRelease: 0,
+        verdict: 'Un buen juego.',
+        breakdown: {} as ReleasedGame['breakdown'],
+        lines: [],
+        releaseWeek: 1,
+        weeklySales: [100, 80, 60],
+        totalUnits: 240,
+        totalRevenue: 7_200,
+        mtxRevenue: 0,
+        salesActive: true,
+        ...patch,
+      } as ReleasedGame;
+    }
+
+    it('la principal solo lista lo que aún se vende; el retirado vive en el menú', () => {
+      const base = createInitialState(SEED);
+      useGameStore.setState({
+        game: {
+          ...base,
+          projects: [],
+          releasedGames: [
+            releasedGame({ id: 'vivo', name: 'Sigue Vendiendo', salesActive: true }),
+            releasedGame({ id: 'muerto', name: 'Ya Retirado', salesActive: false }),
+          ],
+        },
+      });
+      render(<App />);
+
+      // La pantalla principal enseña solo lo vivo, con su mini-gráfico.
+      expect(screen.getByText('A la venta')).toBeInTheDocument();
+      expect(screen.getByText('Sigue Vendiendo')).toBeInTheDocument();
+      expect(screen.queryByText('Ya Retirado')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('img', { name: 'Copias por semana de Sigue Vendiendo' }),
+      ).toBeInTheDocument();
+
+      // La estantería completa está a un clic, en el modal del menú.
+      openMenu('🕹️ Juegos lanzados');
+      const dialog = screen.getByRole('dialog', { name: 'Juegos lanzados' });
+      expect(within(dialog).getByText('Ya Retirado')).toBeInTheDocument();
+      expect(within(dialog).getByText('fuera de tiendas')).toBeInTheDocument();
+    });
+
+    it('el historial sale de la pantalla y se abre desde el menú', () => {
+      render(<App />);
+      expect(screen.queryByText('Historial')).not.toBeInTheDocument();
+
+      openMenu('📜 Historial');
+      expect(screen.getByRole('dialog', { name: 'Historial' })).toBeInTheDocument();
+    });
+
+    it('la concepción es un modal que pausa el tiempo y se cancela sin crear nada', () => {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: '▶ x1' }));
+
+      fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
+      expect(screen.getByRole('dialog', { name: 'Nuevo juego' })).toBeInTheDocument();
+      // Abrir la concepción pausa: ninguna decisión con el reloj corriendo.
+      expect(useGameStore.getState().speed).toBe(0);
+
+      fireEvent.click(screen.getByRole('button', { name: '✕ Cancelar' }));
+      expect(screen.queryByRole('dialog', { name: 'Nuevo juego' })).not.toBeInTheDocument();
+      expect(useGameStore.getState().game.projects).toHaveLength(0);
+    });
+
+    it('«Continuar desarrollo» reanuda el tiempo a x1 (docs/17 U3)', () => {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: /Nuevo juego/ }));
+      fireEvent.change(screen.getByLabelText('Nombre del juego'), {
+        target: { value: 'Pausa y Arranca' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
+
+      // Se aterriza en desarrollo, en pausa: el modal ya cerró.
+      expect(screen.queryByRole('dialog', { name: 'Nuevo juego' })).not.toBeInTheDocument();
+      expect(useGameStore.getState().speed).toBe(0);
+
+      fireEvent.click(screen.getByRole('button', { name: '▶ Continuar desarrollo' }));
+      expect(useGameStore.getState().speed).toBe(1);
+      expect(screen.getByRole('button', { name: '▶ En marcha (x1)' })).toBeDisabled();
+
+      useGameStore.getState().setSpeed(0); // no filtrar timers al siguiente test
+    });
   });
 });

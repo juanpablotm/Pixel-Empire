@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { projectCap, projectProgress, projectTotalWeeks, visibleReview } from '../../core';
 import { useGameStore } from '../../state/store';
 import { getDevPhase } from '../../data/devPhases';
@@ -10,16 +10,18 @@ import { EmptyState } from '../components/EmptyState';
 import { StaggerGroup, StaggerItem } from '../components/Motion';
 import { OfficeScene } from '../components/OfficeScene';
 import { ReputationRadar } from '../components/ReputationRadar';
-import { SavePanel } from '../components/SavePanel';
 import { SentimentMeter } from '../components/SentimentMeter';
+import { Sparkline } from '../components/Sparkline';
 import { skinFor } from '../theme/eraSkins';
 
 /**
  * Vista principal del estudio (docs/10 §10.1, jerarquía de la Fase 7A): un
  * escenario HERO central protagonista —donde en la 7B vivirá la Oficina
  * Viva— con el proyecto en curso como marquesina, una fila compacta de
- * accesos, la estantería de juegos lanzados y el lateral social. La UI solo
- * muestra; el estado viene de core/.
+ * accesos, los juegos que AÚN SE VENDEN con su cola de ventas, y el lateral
+ * social. Desde la Fase 8.5 (docs/17 U2) la estantería completa, el historial
+ * y las opciones de partida viven en el menú de la barra superior: la pantalla
+ * principal enseña solo lo vivo. La UI solo muestra; el estado viene de core/.
  */
 
 /** Lo más popular ahora mismo (solo presentación; el estado viene de core/). */
@@ -30,14 +32,9 @@ function hottest(trends: Record<string, { pop: number }>): string | null {
 }
 
 export function StudioScreen() {
-  const releasedGames = useGameStore((s) => s.game.releasedGames);
-  const firstProject = useGameStore((s) => s.game.projects[0] ?? null);
   const market = useGameStore((s) => s.game.market);
   const community = useGameStore((s) => s.game.community);
-  const log = useGameStore((s) => s.game.log);
   const goTo = useGameStore((s) => s.goTo);
-  const openReview = useGameStore((s) => s.openReview);
-  const advanceWeek = useGameStore((s) => s.advanceWeek);
 
   const hotGenre = hottest(market.genres);
   const hotTheme = hottest(market.themes);
@@ -86,65 +83,7 @@ export function StudioScreen() {
           </div>
         </section>
 
-        <section className="card">
-          <h2 className="card-title">Juegos lanzados</h2>
-          {releasedGames.length === 0 ? (
-            <EmptyState icon="🕹️">
-              {firstProject !== null ? (
-                <>
-                  La estantería espera su primer juego: «{firstProject.name}» está en el
-                  horno y estrenará el hueco.
-                </>
-              ) : (
-                'La estantería espera tu primer lanzamiento. Concibe un juego en el escenario de arriba y ponle nombre.'
-              )}
-            </EmptyState>
-          ) : (
-            <StaggerGroup tag="ul" className="flex flex-col gap-2">
-              {[...releasedGames].reverse().map((game) => (
-                <StaggerItem
-                  tag="li"
-                  key={game.id}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-line bg-raised/60 px-3 py-2"
-                >
-                  <span className="font-medium text-ink-hi">{game.name}</span>
-                  {visibleReview(game, community) < game.review ? (
-                    <span
-                      className="text-sm font-semibold text-danger"
-                      title={`Review bombing en curso: la nota real es ${game.review}/100`}
-                    >
-                      💣 Nota visible {visibleReview(game, community)}/100
-                    </span>
-                  ) : (
-                    <span className="font-mono text-sm tabular-nums text-ink-mute">
-                      Reseña {game.review}/100
-                    </span>
-                  )}
-                  <span className="text-sm text-ink-mute">
-                    {game.totalUnits.toLocaleString('es-ES')} uds ·{' '}
-                    {formatMoney(game.totalRevenue)}
-                  </span>
-                  <span className="text-xs text-ink-faint">
-                    {game.salesActive ? 'a la venta' : 'fuera de tiendas'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => openReview(game.id)}
-                    className="btn btn-quiet px-2 py-1 text-xs ml-auto"
-                  >
-                    Ver reseña
-                  </button>
-                </StaggerItem>
-              ))}
-            </StaggerGroup>
-          )}
-        </section>
-
-        <section className="card">
-          <h2 className="card-title">Partida</h2>
-          <SavePanel />
-          <RetireButton />
-        </section>
+        <OnSaleShelf />
       </div>
 
       <aside className="flex flex-col gap-6">
@@ -166,28 +105,120 @@ export function StudioScreen() {
             />
           </div>
         </section>
-        <section className="card flex-1">
-          <h2 className="card-title">Historial</h2>
-          {log.length === 0 ? (
-            <EmptyState icon="📜" compact actionLabel="Avanzar semana" onAction={advanceWeek}>
-              El diario del estudio está en blanco: cada semana que avances escribirá aquí
-              su línea.
-            </EmptyState>
-          ) : (
-            <ul className="flex flex-col gap-2 text-sm">
-              {[...log].reverse().map((entry, i) => (
-                <li key={`${entry.week}-${i}`} className="flex gap-2">
-                  <span className="shrink-0 tabular-nums text-ink-faint">S{entry.week}</span>
-                  <span className={entry.type === 'moral' ? 'text-warn' : 'text-ink'}>
-                    {entry.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </aside>
     </main>
+  );
+}
+
+/**
+ * Los juegos que AÚN SE VENDEN (docs/17 U2), cada uno con el mini-gráfico de
+ * copias por semana: la cola de ventas de docs/04 §6, a la vista (Pilar 2). Lo
+ * retirado no ocupa sitio aquí: vive en el modal "Juegos lanzados" del menú.
+ * `salesActive` lo decide core/systems/sales.ts; la UI solo filtra por él.
+ */
+function OnSaleShelf() {
+  // El selector devuelve la referencia del estado y el filtro vive en el render:
+  // filtrar DENTRO del selector crearía un array nuevo por render y Zustand,
+  // que compara por referencia, re-renderizaría en bucle.
+  const releasedGames = useGameStore((s) => s.game.releasedGames);
+  const firstProject = useGameStore((s) => s.game.projects[0] ?? null);
+  const community = useGameStore((s) => s.game.community);
+  const openReview = useGameStore((s) => s.openReview);
+  const openMenuModal = useGameStore((s) => s.openMenuModal);
+
+  // `salesActive` lo decide el núcleo al caer bajo el umbral de ventas.
+  const onSale = releasedGames.filter((g) => g.salesActive);
+  const releasedCount = releasedGames.length;
+
+  return (
+    <section className="card">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="card-title mb-0">A la venta</h2>
+        {releasedCount > 0 && (
+          <button
+            type="button"
+            onClick={() => openMenuModal('juegos')}
+            className="btn btn-quiet px-2 py-1 text-xs"
+          >
+            🕹️ Ver los {releasedCount} lanzados
+          </button>
+        )}
+      </div>
+
+      <div className="mt-3">
+        {onSale.length === 0 ? (
+          <EmptyState icon="🕹️">
+            {releasedCount > 0 ? (
+              <>
+                Ningún juego sigue en tiendas: la caja depende de lo próximo que lances. Tu
+                catálogo entero está en el menú, en «Juegos lanzados».
+              </>
+            ) : firstProject !== null ? (
+              <>
+                El mostrador espera su primer juego: «{firstProject.name}» está en el horno y
+                estrenará el hueco.
+              </>
+            ) : (
+              'El mostrador espera tu primer lanzamiento. Concibe un juego en el escenario de arriba y ponle nombre.'
+            )}
+          </EmptyState>
+        ) : (
+          <StaggerGroup tag="ul" className="flex flex-col gap-2">
+            {[...onSale].reverse().map((game) => {
+              const lastWeek = game.weeklySales[game.weeklySales.length - 1] ?? 0;
+              return (
+                <StaggerItem
+                  tag="li"
+                  key={game.id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-line bg-raised/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-ink-hi">{game.name}</p>
+                    {visibleReview(game, community) < game.review ? (
+                      <span
+                        className="text-sm font-semibold text-danger"
+                        title={`Review bombing en curso: la nota real es ${game.review}/100`}
+                      >
+                        💣 Nota visible {visibleReview(game, community)}/100
+                      </span>
+                    ) : (
+                      <span className="font-mono text-sm tabular-nums text-ink-mute">
+                        Reseña {game.review}/100
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="ml-auto flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-mono text-sm tabular-nums text-ink">
+                        {lastWeek.toLocaleString('es-ES')} uds
+                      </p>
+                      <p className="text-xs text-ink-faint">esta semana</p>
+                    </div>
+                    <Sparkline
+                      values={game.weeklySales}
+                      title={`Copias por semana de ${game.name}`}
+                    />
+                  </div>
+
+                  <div className="w-full text-xs text-ink-faint sm:w-auto">
+                    {game.totalUnits.toLocaleString('es-ES')} uds · {formatMoney(game.totalRevenue)}{' '}
+                    en total
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openReview(game.id)}
+                    className="btn btn-quiet px-2 py-1 text-xs"
+                  >
+                    Ver reseña
+                  </button>
+                </StaggerItem>
+              );
+            })}
+          </StaggerGroup>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -203,6 +234,8 @@ function HeroStage() {
   const modernUi = useGameStore((s) => s.modernUi);
   const selectProject = useGameStore((s) => s.selectProject);
   const goTo = useGameStore((s) => s.goTo);
+  // La concepción es un modal desde la Fase 8.5 (docs/17 U3): abrirlo pausa.
+  const openConception = useGameStore((s) => s.openConception);
   const idle = projects.length === 0;
 
   return (
@@ -226,7 +259,7 @@ function HeroStage() {
             <button
               type="button"
               data-tour="new-game"
-              onClick={() => goTo('concepcion')}
+              onClick={openConception}
               className="btn btn-primary px-6 py-3 text-base"
             >
               💡 Nuevo juego
@@ -268,7 +301,7 @@ function HeroStage() {
             {projects.length < cap && (
               <button
                 type="button"
-                onClick={() => goTo('concepcion')}
+                onClick={openConception}
                 className="btn btn-ghost self-start border-line bg-panel/85"
               >
                 💡 Nuevo juego
@@ -344,30 +377,3 @@ function ReputationCard() {
   );
 }
 
-/** Cerrar el estudio para contemplar el Legado (docs/06 §6), con confirmación. */
-function RetireButton() {
-  const retire = useGameStore((s) => s.retire);
-  const gameOver = useGameStore((s) => s.game.gameOver);
-  const [confirming, setConfirming] = useState(false);
-  if (gameOver) return null;
-
-  return (
-    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
-      {confirming ? (
-        <>
-          <span className="text-sm text-ink-mute">¿Cerrar el estudio para siempre?</span>
-          <button type="button" onClick={retire} className="btn btn-danger">
-            Sí, ver el Legado
-          </button>
-          <button type="button" onClick={() => setConfirming(false)} className="btn btn-quiet">
-            Cancelar
-          </button>
-        </>
-      ) : (
-        <button type="button" onClick={() => setConfirming(true)} className="btn btn-ghost">
-          🏛️ Retirarse y ver el Legado
-        </button>
-      )}
-    </div>
-  );
-}

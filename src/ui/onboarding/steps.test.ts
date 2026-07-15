@@ -51,7 +51,8 @@ describe('tutorial — avanza por acción real (docs/13 7F)', () => {
     const when = stepById('nuevo-juego').advanceWhen!;
 
     expect(when(storeWith(fresh))).toBe(false);
-    expect(when(storeWith(fresh, { screen: 'concepcion' }))).toBe(true);
+    // Desde la Fase 8.5 la concepción es un modal, no una pantalla (docs/17 U3).
+    expect(when(storeWith(fresh, { conceptionOpen: true }))).toBe(true);
     expect(when(storeWith(startProject(fresh, concept)))).toBe(true);
   });
 
@@ -59,7 +60,7 @@ describe('tutorial — avanza por acción real (docs/13 7F)', () => {
     const fresh = createInitialState(SEED);
     const when = stepById('empezar-desarrollo').advanceWhen!;
 
-    expect(when(storeWith(fresh, { screen: 'concepcion' }))).toBe(false);
+    expect(when(storeWith(fresh, { conceptionOpen: true }))).toBe(false);
     expect(when(storeWith(startProject(fresh, concept)))).toBe(true);
   });
 

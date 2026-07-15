@@ -250,17 +250,33 @@ isométrico futuro queda documentado en `14` (opcional, no es la dirección actu
 
 ### 10.1 Vista principal (Estudio / HUD)
 - **Barra superior:** capital (contador animado), fecha (semana/año/era), **Balanza "El Precio"** (§7.4),
-  reputación como **constelación** (§I3, desglose en hover), controles de tiempo (pausa/x1/x2/x4).
+  reputación como **constelación** (§I3, desglose en hover), controles de tiempo (pausa/x1/x2/x4) y el
+  **menú ☰** `[DECIDIDO · Fase 8.5, docs/17 U2]`.
 - **Panel central:** la **Oficina Viva** (§5) o el proyecto en curso con su progreso por fases y burbujas.
+- **Los juegos que aún se venden** `[DECIDIDO · Fase 8.5]`: solo el catálogo **vivo**, cada uno con un
+  **mini-gráfico** (`Sparkline`) de copias por semana — la cola de ventas de `04` §6, a la vista (Pilar 2).
+  Lo retirado no ocupa sitio: vive en el modal de Juegos lanzados.
 - **Panel lateral:** **Feed de la comunidad** (§7.3) + notificaciones/alertas (crisis, renuncias, ofertas).
+- **Menú ☰ → modales** `[DECIDIDO · Fase 8.5, docs/17 U2]`: **Juegos lanzados** (estantería completa),
+  **Historial** (el diario del estudio) y **Partida** (guardar, cargar, nueva, volver al título, retirarse,
+  ver legado). No hacía falta verlos siempre, así que se abren a demanda. **No pausan** el tiempo (los
+  pide el jugador); los que interrumpen son los avisos importantes de §6.1.
 
-### 10.2 Concepción de proyecto (asistente)
+### 10.2 Concepción de proyecto (asistente, en **modal**) `[DECIDIDO · Fase 8.5, docs/17 U3]`
 Flujo Tema → Género → Plataforma → Público → Tamaño → Nombre, con **medidor de Fit** en vivo
 (verde/ámbar/rojo, sin exponer el número crudo; `03`). Resumen de coste/tiempo estimado.
+- Es un **modal** sobre el estudio, y **abrirlo pausa** el tiempo (`02` §1).
+- **Tema, género y plataforma** se eligen con **selectores** (el catálogo crece con cada era; listarlo
+  entero abruma), con su tendencia ↑→↓ en la etiqueta. **Público y tamaño** son botones: pocas opciones
+  fijas, y el tamaño muestra atenuado su requisito 🔒 (docs/17 E1).
+- El pie fijo lleva Fit + estimación + "Empezar desarrollo"; al dar luz verde se aterriza en desarrollo,
+  **en pausa**, y se arranca con **"Continuar desarrollo"** (§10.3).
 
 ### 10.3 Desarrollo (fases)
 Sliders de reparto de esfuerzo con lectura de balance vs ideal del género; features como **ChoiceCard**;
-progreso, estado de bugs y **burbujas de desarrollo** (§5.4) visibles.
+progreso, estado de bugs y **burbujas de desarrollo** (§5.4) visibles. Botón **"Continuar desarrollo"**
+`[DECIDIDO · Fase 8.5, docs/17 U3]`: reanuda el tiempo a **x1** sin ir a buscar los controles de la barra
+(se concibe en pausa); con el reloj ya corriendo informa de la velocidad en vez de desaparecer.
 
 ### 10.4 Lanzamiento y desglose de reseña
 La **gala de la reseña** (§7.1): reseña por segmento + desglose factor a factor con ✔/~/✘ y veredicto.
@@ -298,6 +314,10 @@ Nuevos (para las innovaciones): `OfficeScene` (§5), `FloatingBubbleLayer` (§5.
 `ReviewRevealSequence` (§7.1), `StreamPanel` + `LiveChat` (§7.2), `CommunityFeed` (§7.3),
 `MoralScale` ("El Precio", §7.4), `ReputationRadar` (§I3), `HypeGauge` (§7.5), `EraSkinProvider` (§8),
 `EraTransition` (§7.6), `ConfettiLayer`, `LegacyMuseum` (§7.7).
+
+De la Fase 8.5 (docs/17 U2–U3): `StudioMenu` (el ☰ de la barra), `MenuModals` (juegos/historial/partida
+sobre un chasis común), `ConceptionModal` (§10.2) y `Sparkline` (mini-gráfico de la cola de ventas, SVG
+por código).
 
 Todos temáticos (claro/oscuro **y piel de era**) desde `ui/theme`, y sin lógica de simulación dentro (`08`).
 

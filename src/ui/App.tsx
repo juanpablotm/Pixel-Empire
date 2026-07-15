@@ -2,17 +2,18 @@ import { useEffect } from 'react';
 import { useGameStore, type Screen } from '../state/store';
 import { TutorialGuide } from './onboarding/TutorialGuide';
 import { AwardsModal } from './components/AwardsModal';
+import { ConceptionModal } from './components/ConceptionModal';
 import { CrisisModal } from './components/CrisisModal';
 import { DilemmaModal } from './components/DilemmaModal';
 import { EraTransition } from './components/EraTransition';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { Hud } from './components/Hud';
 import { ImportantNoticeModal } from './components/ImportantNoticeModal';
+import { MenuModals } from './components/MenuModals';
 import { MoralTint } from './components/MoralScale';
 import { ScreenFade } from './components/Motion';
 import { FontScaleSelect, SoundControls } from './components/PreferenceControls';
 import { Toasts } from './components/Toasts';
-import { ConceptionScreen } from './screens/ConceptionScreen';
 import { CreatorsScreen } from './screens/CreatorsScreen';
 import { DevelopmentScreen } from './screens/DevelopmentScreen';
 import { FinancesScreen } from './screens/FinancesScreen';
@@ -27,18 +28,20 @@ import { EraSkinProvider } from './theme/EraSkinProvider';
 
 /**
  * Raíz de la UI: pantalla de título (Fase 7F) o la partida — HUD persistente
- * + la pantalla activa (docs/10 §10.1–10.10) + los overlays (crisis, dilemas,
- * transición de era, gala de premios, game over), todo envuelto en la piel de
- * la era actual (docs/10 §8). Desde la 7D la navegación transiciona con
- * ScreenFade y los eventos notifican con toasts; desde la 7F la capa de guía
- * del tutorial acompaña la primera partida. El cambio título ↔ partida es un
- * remontaje por rama (entrada animada, sin AnimatePresence). Solo lee estado
- * con selectores finos y despacha acciones (docs/08 §6).
+ * + la pantalla activa (docs/10 §10.1–10.10) + los overlays (concepción,
+ * menú, crisis, dilemas, transición de era, gala de premios, game over), todo
+ * envuelto en la piel de la era actual (docs/10 §8). Desde la 7D la navegación
+ * transiciona con ScreenFade y los eventos notifican con toasts; desde la 7F la
+ * capa de guía del tutorial acompaña la primera partida. El cambio título ↔
+ * partida es un remontaje por rama (entrada animada, sin AnimatePresence). Solo
+ * lee estado con selectores finos y despacha acciones (docs/08 §6).
  */
-/** Pantallas navegables con las teclas 1–9 (docs/10 §13, Fase 7G). */
+/**
+ * Pantallas navegables con las teclas 1–9 (docs/10 §13, Fase 7G). La 2 abre el
+ * modal de concepción (docs/17 U3), que ya no es una pantalla: caso aparte.
+ */
 const SCREEN_BY_KEY: Record<string, Screen> = {
   '1': 'estudio',
-  '2': 'concepcion',
   '3': 'desarrollo',
   '4': 'equipo',
   '5': 'mercado',
@@ -50,9 +53,10 @@ const SCREEN_BY_KEY: Record<string, Screen> = {
 
 /**
  * Navegación por teclado (docs/10 §13): Espacio pausa/reanuda, 1–9 cambian
- * de pantalla y Esc cierra los avisos que no exigen decisión (transición de
- * era, gala). Nunca interfiere con formularios, botones enfocados, modales
- * de decisión (crisis/dilemas) ni con el tutorial.
+ * de pantalla (la 2 abre la concepción, docs/17 U3) y Esc cierra lo que no
+ * exige decisión (transición de era, gala, concepción y modales del menú).
+ * Nunca interfiere con formularios, botones enfocados, modales de decisión
+ * (crisis/dilemas) ni con el tutorial.
  */
 function useKeyboardShortcuts(): void {
   useEffect(() => {
@@ -78,20 +82,34 @@ function useKeyboardShortcuts(): void {
         } else if (s.awardsWeek !== null) {
           e.preventDefault();
           s.dismissAwards();
+        } else if (s.conceptionOpen) {
+          e.preventDefault();
+          s.closeConception();
+        } else if (s.menuModal !== null) {
+          e.preventDefault();
+          s.closeMenuModal();
         }
         return;
       }
 
-      // Con una decisión o un aviso importante en pantalla, el teclado no salta
-      // por encima (no reanuda el tiempo bajo el modal, docs/17 U4).
+      // Con una decisión, un aviso importante o un modal abierto, el teclado no
+      // salta por encima (no reanuda el tiempo bajo el modal, docs/17 U4).
       const decisionOpen =
         s.game.gameOver !== null ||
         s.eraTransition !== null ||
         s.awardsWeek !== null ||
         s.pendingNotices.length > 0 ||
+        s.conceptionOpen ||
+        s.menuModal !== null ||
         s.game.community.crises.some((c) => c.status === 'abierta') ||
         s.game.community.dilemmas.length > 0;
       if (decisionOpen) return;
+
+      // La 2 ya no navega: abre el modal de concepción (docs/17 U3).
+      if (e.key === '2') {
+        s.openConception();
+        return;
+      }
 
       if (e.key === ' ') {
         // Sobre un control, Espacio es "activar", no "pausar".
@@ -136,7 +154,6 @@ export function App() {
 
         <ScreenFade id={screen}>
           {screen === 'estudio' && <StudioScreen />}
-          {screen === 'concepcion' && <ConceptionScreen />}
           {screen === 'desarrollo' && <DevelopmentScreen />}
           {screen === 'resena' && <ReviewScreen />}
           {screen === 'equipo' && <TeamScreen />}
@@ -152,6 +169,11 @@ export function App() {
 
         {/* Los eventos avisan sin interrumpir (docs/10 §6). */}
         <Toasts />
+
+        {/* La Fase 8.5 (docs/17 U2–U3): la concepción y lo que se sacó de la
+            pantalla principal (estantería, historial, partida) son modales. */}
+        <ConceptionModal />
+        <MenuModals />
 
         {/* La capa social interrumpe cuando toca decidir (docs/07 §4–§5). */}
         <DilemmaModal />

@@ -48,7 +48,8 @@ export const tutorialSteps: readonly TutorialStep[] = [
     target: 'new-game',
     title: 'Todo empieza con una idea',
     body: 'Pulsa «💡 Nuevo juego» para concebir tu primer título.',
-    advanceWhen: (s) => s.screen === 'concepcion' || s.game.projects.length > 0,
+    // La concepción es un modal desde la Fase 8.5 (docs/17 U3).
+    advanceWhen: (s) => s.conceptionOpen || s.game.projects.length > 0,
   },
   {
     id: 'fit',

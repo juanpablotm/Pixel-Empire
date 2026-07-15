@@ -170,12 +170,38 @@ no ocupen pantalla siempre. La **pantalla principal** muestra solo los **juegos 
 uno con un **mini-gráfico** de copias vendidas por semana (refuerza el Pilar 2: ves la cola de ventas).
 **Toca:** `10` (layout/pantallas).
 
+> **✅ Implementado (Fase 8.5).** El menú (`StudioMenu`) vive en la **barra superior**, junto a los
+> controles de tiempo: así se llega desde cualquier pantalla y la principal queda limpia de verdad. Sus
+> tres entradas abren modales (`MenuModals`): **Juegos lanzados** (la estantería al completo, también lo
+> retirado), **Historial** (el diario, que sale del lateral) y **Partida** (`SavePanel` + Ver legado +
+> Retirarse con confirmación). Estado de presentación en el store (`menuModal` + `openMenuModal`/
+> `closeMenuModal`); **no pausan el tiempo** —los abre el jugador, no le interrumpen como los avisos de
+> U4— y ceden el paso a lo que sí exige decisión. Empezar/cargar partida los cierra: no queda un modal
+> obsoleto de la partida anterior. La principal titula ahora **"A la venta"** y filtra por `salesActive`
+> (lo decide `core/systems/sales.ts`; la UI solo lee el campo), con `Sparkline` —SVG por código,
+> docs/10 §9— pintando `weeklySales` y las uds de la última semana.
+
+
+
 ### U3 · Creación de juego en modal, con selectores y "continuar desarrollo" 🎛️ P2 🟡
 *(playtest #6)*
 **Cambio:** la pantalla de concepción pasa a **modal**. Como habrá muchos temas/géneros/consolas, usar
 **selectores/menús de elección** (no listar todo de golpe). En la ventana de desarrollo, añadir un botón
 **"Continuar desarrollo"** que reanuda y pone el tiempo en **x1**.
 **Toca:** `10` (UI concepción/desarrollo), `02` §2.
+
+> **✅ Implementado (Fase 8.5).** `ConceptionScreen` → `ConceptionModal`: la concepción deja de ser una
+> pantalla (fuera del tipo `Screen`) y pasa a `conceptionOpen` + `openConception`/`closeConception`.
+> **Abrirla pausa** (docs/02 §1: ninguna decisión importante con el reloj corriendo), y el formulario se
+> monta/desmonta con el modal (cerrar y reabrir empieza de cero). **Tema, género y plataforma** usan
+> `<select>` nativos (teclado, accesibles y escalan al catálogo que crece por era), con la tendencia
+> ↑→↓ y la etapa de la plataforma en la etiqueta de cada opción y una línea de detalle debajo; **público
+> y tamaño** siguen como botones (4 opciones fijas, y el tamaño enseña su 🔒 de E1). El veredicto —Fit,
+> estimación y "Empezar desarrollo"— queda fijo en el pie, sin scrollear. La tecla **2** abre el modal en
+> vez de navegar; Esc lo cierra. **"Continuar desarrollo"** (`ContinueDevButton`) reanuda a x1 desde la
+> ventana de desarrollo y, con el tiempo ya corriendo, informa de la velocidad en vez de desaparecer.
+> El tutorial (7F) sigue en pie: sus anclas `new-game`/`fit-meter`/`start-dev` se conservan y la guía
+> (z-35) pinta por encima del modal (z-30).
 
 ### U4 · Notificaciones de dos niveles (las importantes paran el tiempo) 🎛️ P1 🟡
 *(playtest #8)*

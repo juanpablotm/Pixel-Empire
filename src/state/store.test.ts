@@ -22,6 +22,8 @@ describe('useGameStore — estado + acciones que delegan en core (docs/08 §6)',
       game: createInitialState(SEED),
       speed: 0,
       screen: 'estudio',
+      conceptionOpen: false,
+      menuModal: null,
       reviewGameId: null,
     });
   });
@@ -287,5 +289,61 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
 
     useGameStore.getState().dismissNotice();
     expect(useGameStore.getState().pendingNotices).toHaveLength(0);
+  });
+
+  describe('Fase 8.5 — modales de concepción y menú (docs/17 U2–U3)', () => {
+    it('openConception pausa el tiempo (docs/02 §1: ninguna decisión con el reloj corriendo)', () => {
+      useGameStore.getState().setSpeed(4);
+      useGameStore.getState().openConception();
+
+      expect(useGameStore.getState().conceptionOpen).toBe(true);
+      expect(useGameStore.getState().speed).toBe(0);
+    });
+
+    it('startProject cierra el modal y aterriza en desarrollo, en pausa', () => {
+      useGameStore.getState().openConception();
+      useGameStore.getState().startProject({ ...CONCEPT, price: 30 });
+
+      const s = useGameStore.getState();
+      expect(s.conceptionOpen).toBe(false);
+      expect(s.screen).toBe('desarrollo');
+      expect(s.speed).toBe(0);
+      expect(s.game.projects).toHaveLength(1);
+    });
+
+    it('closeConception cierra sin crear nada', () => {
+      useGameStore.getState().openConception();
+      useGameStore.getState().closeConception();
+
+      expect(useGameStore.getState().conceptionOpen).toBe(false);
+      expect(useGameStore.getState().game.projects).toHaveLength(0);
+    });
+
+    it('los modales del menú se abren y cierran sin tocar el tiempo', () => {
+      useGameStore.getState().setSpeed(2);
+      useGameStore.getState().openMenuModal('juegos');
+
+      expect(useGameStore.getState().menuModal).toBe('juegos');
+      // A diferencia de los avisos importantes (U4), estos no interrumpen.
+      expect(useGameStore.getState().speed).toBe(2);
+
+      useGameStore.getState().closeMenuModal();
+      expect(useGameStore.getState().menuModal).toBeNull();
+      useGameStore.getState().setSpeed(0);
+    });
+
+    it('empezar o cargar partida no deja modales abiertos de la anterior', () => {
+      useGameStore.getState().openConception();
+      useGameStore.getState().openMenuModal('partida');
+      useGameStore.getState().newGame(SEED);
+
+      expect(useGameStore.getState().conceptionOpen).toBe(false);
+      expect(useGameStore.getState().menuModal).toBeNull();
+
+      useGameStore.getState().saveGame();
+      useGameStore.getState().openMenuModal('historial');
+      expect(useGameStore.getState().loadGame()).toBe(true);
+      expect(useGameStore.getState().menuModal).toBeNull();
+    });
   });
 });

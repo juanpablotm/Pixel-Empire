@@ -7,13 +7,15 @@ import { BrandLockup } from '../theme/BrandMark';
 import { MoralScale } from './MoralScale';
 import { RollingNumber } from './Motion';
 import { ReputationRadar } from './ReputationRadar';
+import { StudioMenu } from './StudioMenu';
 import { TimeControls } from './TimeControls';
 
 /**
  * Barra superior persistente (docs/10 §10.1): marca, fecha, era, etapa,
  * capital (dorado del eje Capital), Balanza "El Precio" (§7.4), reputación
- * como constelación (I3) y controles de tiempo. Solo lee estado; los
- * cálculos viven en core/.
+ * como constelación (I3), controles de tiempo y el menú desplegable de la
+ * Fase 8.5 (docs/17 U2: juegos, historial y partida en modales, para que no
+ * ocupen la pantalla principal). Solo lee estado; los cálculos viven en core/.
  */
 export function Hud() {
   const week = useGameStore((s) => s.game.week);
@@ -100,8 +102,9 @@ export function Hud() {
         )}
       </div>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-3">
         <TimeControls />
+        <StudioMenu />
       </div>
     </header>
   );

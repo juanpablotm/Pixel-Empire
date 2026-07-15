@@ -90,7 +90,27 @@ function studioDemo(): GameState {
   const base = createInitialState(DEMO_SEED);
   const staff = demoStaff(base, 7);
   const project = demoProject(staff.map((e) => e.id));
+  // Un catálogo con las dos caras de docs/17 U2: lo que aún vende (con cola,
+  // para el mini-gráfico) y lo retirado, que solo debe salir en el modal.
   const released = makeReleasedGame(88, 1520);
+  const secondHit: ReleasedGame = {
+    ...makeReleasedGame(74, 1498),
+    id: 'demo-game-2',
+    name: 'Ciudad Neón',
+    themeId: 'cyberpunk',
+    weeklySales: [88000, 61000, 44000, 33000, 27000, 22000, 19000, 16000, 14000, 12000, 11000, 9800],
+    totalUnits: 356_800,
+    totalRevenue: 12_400_000,
+  };
+  const retired: ReleasedGame = {
+    ...makeReleasedGame(63, 1402),
+    id: 'demo-game-0',
+    name: 'Garaje Racer',
+    weeklySales: [9000, 5000, 2000, 400],
+    totalUnits: 16_400,
+    totalRevenue: 410_000,
+    salesActive: false,
+  };
   return {
     ...base,
     week: 1526,
@@ -111,7 +131,7 @@ function studioDemo(): GameState {
     },
     staff,
     projects: [project],
-    releasedGames: [released],
+    releasedGames: [retired, secondHit, released],
     community: { ...base.community, sentiment: 68, feed: demoFeed },
     log: [
       { week: 1525, type: 'comunidad', text: 'El hype por «Némesis Solar» sigue creciendo.' },

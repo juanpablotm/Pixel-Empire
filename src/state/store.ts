@@ -95,10 +95,12 @@ export type ImportantNotice =
   | BankruptcyNotice
   | ScaleUpNotice;
 
-/** Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). */
+/**
+ * Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). Desde la Fase 8.5 la
+ * concepción ya no es una pantalla: es un modal (docs/17 U3, `conceptionOpen`).
+ */
 export type Screen =
   | 'estudio'
-  | 'concepcion'
   | 'desarrollo'
   | 'resena'
   | 'equipo'
@@ -107,6 +109,12 @@ export type Screen =
   | 'investigacion'
   | 'finanzas'
   | 'legado';
+
+/**
+ * Modal abierto desde el menú de la barra superior (docs/17 U2). Presentación
+ * pura: saca de la pantalla principal lo que no hace falta ver siempre.
+ */
+export type MenuModal = 'juegos' | 'historial' | 'partida';
 
 export interface GameStore {
   game: GameState;
@@ -124,6 +132,17 @@ export interface GameStore {
   tutorialStep: number | null;
   /** Pantalla visible. */
   screen: Screen;
+  /**
+   * true si el modal de concepción está abierto (docs/17 U3). Abrirlo pausa el
+   * tiempo: ninguna decisión importante se toma con el reloj corriendo
+   * (docs/02 §1). Presentación pura; el proyecto lo crea `startProject`.
+   */
+  conceptionOpen: boolean;
+  /**
+   * Modal del menú de la barra superior visible, o null (docs/17 U2). No pausa:
+   * lo abre el jugador cuando quiere, no interrumpe como los avisos de U4.
+   */
+  menuModal: MenuModal | null;
   /** Juego cuya reseña se muestra en la pantalla de reseña. */
   reviewGameId: string | null;
   /** Proyecto seleccionado en las pantallas de desarrollo/creadores (multi-proyecto). */
@@ -162,6 +181,14 @@ export interface GameStore {
   setSpeed: (speed: Speed) => void;
   /** Navega a una pantalla. */
   goTo: (screen: Screen) => void;
+  /** Abre el modal de concepción (docs/17 U3) y pausa el tiempo. */
+  openConception: () => void;
+  /** Cierra el modal de concepción sin crear nada (deja el tiempo en pausa). */
+  closeConception: () => void;
+  /** Abre un modal del menú de la barra superior (docs/17 U2). */
+  openMenuModal: (modal: MenuModal) => void;
+  /** Cierra el modal del menú. */
+  closeMenuModal: () => void;
   /** Abre la reseña de un juego lanzado. */
   openReview: (gameId: string) => void;
   /** Selecciona el proyecto activo para las pantallas de proyecto. */
@@ -379,6 +406,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   sessionActive: false,
   tutorialStep: null,
   screen: 'estudio',
+  conceptionOpen: false,
+  menuModal: null,
   reviewGameId: null,
   activeProjectId: null,
   eraTransition: null,
@@ -526,6 +555,17 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   goTo: (screen) => set({ screen }),
 
+  openConception: () => {
+    gameLoop.setSpeed(0);
+    set({ conceptionOpen: true, speed: 0 });
+  },
+
+  closeConception: () => set({ conceptionOpen: false }),
+
+  openMenuModal: (modal) => set({ menuModal: modal }),
+
+  closeMenuModal: () => set({ menuModal: null }),
+
   openReview: (gameId) => set({ screen: 'resena', reviewGameId: gameId }),
 
   selectProject: (projectId) => set({ activeProjectId: projectId }),
@@ -595,7 +635,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     set((s) => {
       const game = startProject(s.game, concept);
       const created = game.projects[game.projects.length - 1];
-      return { game, screen: 'desarrollo', activeProjectId: created.id };
+      // El modal de concepción cierra al dar luz verde (docs/17 U3): el
+      // jugador aterriza en desarrollo, en pausa, y reanuda cuando quiera.
+      return { game, screen: 'desarrollo', conceptionOpen: false, activeProjectId: created.id };
     });
   },
 
@@ -678,14 +720,20 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   retire: () => {
     gameLoop.setSpeed(0);
     markSandboxUnlocked();
-    set((s) => ({ game: retireStudio(s.game), speed: 0, screen: 'legado' }));
+    set((s) => ({
+      game: retireStudio(s.game),
+      speed: 0,
+      screen: 'legado',
+      menuModal: null,
+      conceptionOpen: false,
+    }));
   },
 
   enterGame: () => set({ appMode: 'game', sessionActive: true }),
 
   enterTitle: () => {
     gameLoop.setSpeed(0);
-    set({ appMode: 'title', speed: 0 });
+    set({ appMode: 'title', speed: 0, menuModal: null, conceptionOpen: false });
   },
 
   startTutorial: () => set({ tutorialStep: 0 }),
@@ -704,6 +752,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       game: createInitialState(seed),
       speed: 0,
       screen: 'estudio',
+      conceptionOpen: false,
+      menuModal: null,
       reviewGameId: null,
       activeProjectId: null,
       eraTransition: null,
@@ -719,6 +769,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       game: createSandboxState(seed, era),
       speed: 0,
       screen: 'estudio',
+      conceptionOpen: false,
+      menuModal: null,
       reviewGameId: null,
       activeProjectId: null,
       eraTransition: null,
@@ -741,6 +793,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         game: loaded,
         speed: 0,
         screen: 'estudio',
+        conceptionOpen: false,
+        menuModal: null,
         reviewGameId: null,
         activeProjectId: loaded.projects[0]?.id ?? null,
         eraTransition: null,
