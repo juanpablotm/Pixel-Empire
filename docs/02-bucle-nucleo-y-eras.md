@@ -170,7 +170,15 @@ muertos en E5. Y cada era sube el "listón de calidad esperado" por el público 
 **1 tick = 1 semana, siempre.** La duración de un juego la fija **solo su tamaño** (pequeño 6 ·
 mediano 18 · grande 42 · AAA 120 semanas de calendario, `balance.development.phaseWeeksBySize`).
 Meter más gente **no acorta el plazo**: lo que hace la capacidad del equipo (personas + motores
-propios + crunch, menos el burnout) es decidir **cómo de bien se ejecuta dentro de ese plazo**.
+propios, menos el burnout) es decidir **cómo de bien se ejecuta dentro de ese plazo**.
+
+**La única excepción es el crunch** (`balance.staff.crunch.weeksPerTick`, baseline 2): dobles turnos
+sacan **2 semanas de trabajo por semana real**, así que el juego sale en la mitad de tiempo. Es
+deliberado que sea la única vía de comprimir el plazo, porque es una decisión **explícita, acotada y
+que se paga**: todo lo que se acumula por semana escala igual (el **doble de deuda de bugs**), más el
+desgaste de moral, energía y lealtad — y el crunch sostenido lleva al **burnout**, que hunde la
+ejecución. Es la palanca de codicia de `05`/`06` hecha tiempo: *sales antes, pero peor y quemando a
+la gente*. La plantilla, en cambio, nunca compra calendario.
 
 Se modela con la **dotación relativa**: `crewRatio = capacidad / plantilla esperada del tamaño`
 (la esperada es el `minStaff` del gate de tamaño, docs/17 E1: 1/3/8/15). Con la plantilla justa vale

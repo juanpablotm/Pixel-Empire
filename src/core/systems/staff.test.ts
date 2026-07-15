@@ -433,14 +433,17 @@ describe('acciones del jugador (docs/05 §6)', () => {
 });
 
 describe('crunch: empujón a corto plazo, deuda a largo (CA docs/11 Fase 2)', () => {
-  it('empuja la ejecución (no el calendario) y degrada moral, energía y lealtad', () => {
+  it('con dobles turnos el plazo avanza al doble, y degrada moral, energía y lealtad', () => {
     const base = startProject(createInitialState(SEED), CONCEPT);
-    const normal = runTicks(base, 3);
-    const crunched = runTicks(setCrunch(base, true), 3);
+    // 2 ticks: con crunch van 4 de las 6 semanas del pequeño (sin lanzar aún).
+    const normal = runTicks(base, 2);
+    const crunched = runTicks(setCrunch(base, true), 2);
 
-    // El calendario no se comprime: una semana es una semana (docs/02 §1). Lo
-    // que da el crunch es más trabajo hecho DENTRO del mismo plazo.
-    expect(crunched.projects[0].weeksSpent).toBe(normal.projects[0].weeksSpent);
+    // El crunch es la ÚNICA vía de comprimir el plazo (docs/02 §6.1): dobles
+    // turnos = 2 semanas de trabajo por semana real. La plantilla no lo hace.
+    expect(crunched.projects[0].weeksSpent).toBe(
+      normal.projects[0].weeksSpent * balance.staff.crunch.weeksPerTick,
+    );
     expect(crunched.projects[0].designPoints).toBeGreaterThan(normal.projects[0].designPoints);
 
     // Deuda: el fundador acaba peor en las tres barras.
@@ -451,16 +454,15 @@ describe('crunch: empujón a corto plazo, deuda a largo (CA docs/11 Fase 2)', ()
     expect(fCrunched.loyalty).toBeLessThan(fNormal.loyalty);
   });
 
-  it('con crunch el juego sale el mismo día, con más bugs y peor equipo → menos calidad', () => {
+  it('con crunch el juego sale antes, con más bugs y peor equipo → menos calidad', () => {
     const base = startProject(createInitialState(SEED), CONCEPT);
     const normal = runUntilRelease(base);
     const crunched = runUntilRelease(setCrunch(base, true));
 
     const gNormal = normal.releasedGames[0];
     const gCrunched = crunched.releasedGames[0];
-    // La fecha la fija el tamaño, no la prisa: quemar al equipo ya no adelanta
-    // el lanzamiento. Su precio (bugs y moral) sigue intacto.
-    expect(gCrunched.releaseWeek).toBe(gNormal.releaseWeek);
+    // El trato del crunch: adelanta el lanzamiento…
+    expect(gCrunched.releaseWeek).toBeLessThan(gNormal.releaseWeek);
     expect(gCrunched.breakdown.bugLevel).toBeGreaterThan(gNormal.breakdown.bugLevel);
     expect(gCrunched.breakdown.teamFactor).toBeLessThan(gNormal.breakdown.teamFactor);
     expect(gCrunched.quality).toBeLessThan(gNormal.quality);

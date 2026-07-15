@@ -60,7 +60,7 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 | Precio por juego | 20–60 💰 según tamaño/era |
 | Coste base por tamaño (docs/17 E1) | 500 / 2.000 / 8.000 / 40.000 💰 (Pequeño/Mediano/Grande/AAA), cobrado al iniciar |
 | Requisito por tamaño (docs/17 E1) | plantilla mín. 1 / 3 / 8 / 15 · etapa mín. Garaje / Estudio pequeño / Consolidado / **Corporación** |
-| Duración por tamaño (docs/02 §6.1) | 6 / 18 / 42 / **120** semanas de calendario. 1 tick = 1 semana **siempre**: la plantilla no acorta el plazo, mejora la ejecución (`crewRatio`, tope 1,5×) |
+| Duración por tamaño (docs/02 §6.1) | 6 / 18 / 42 / **120** semanas de calendario. 1 tick = 1 semana; la plantilla no acorta el plazo, mejora la ejecución (`crewRatio`, tope 1,5×). El **crunch** es la única excepción: 2 semanas de trabajo por tick (sale en la mitad, con el doble de bugs y desgaste) |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |

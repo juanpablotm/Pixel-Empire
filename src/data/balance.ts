@@ -424,6 +424,16 @@ export const balance = {
     },
     /** Crunch: +output a corto, −moral/energía/lealtad; palanca de codicia (docs/05 §6). */
     crunch: {
+      /**
+       * Semanas de TRABAJO que el equipo saca en una semana real de calendario
+       * al crunchear (docs/02 §6.1): dobles turnos = el proyecto avanza 2 de su
+       * plazo por cada semana que pasa, así que sale en la mitad de tiempo. Es
+       * la ÚNICA vía de comprimir el plazo, y es una decisión explícita que se
+       * paga: todo lo que se acumula por semana escala igual (el doble de deuda
+       * de bugs), más el desgaste de moral/energía/lealtad de abajo. La
+       * plantilla, en cambio, nunca acorta el calendario.
+       */
+      weeksPerTick: 2,
       outputBoost: 1.25,
       energyDrain: 10,
       moraleDrain: 4,

@@ -512,6 +512,13 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
     qa += effort * aspect.qaWeight;
   }
 
+  // Semanas de TRABAJO que salen esta semana real: 1, o las de dobles turnos si
+  // hay crunch (docs/02 §6.1). Es la única forma de comprimir el plazo —y la
+  // eliges tú—; la plantilla nunca lo acorta. Todo lo que se acumula por semana
+  // escala con esto, así que el crunch también dobla la deuda de bugs: sale
+  // antes, pero peor. Si no escalase, crunchear saldría gratis.
+  const advance = project.crunch ? balance.staff.crunch.weeksPerTick : 1;
+
   // Bugs semanales (solo Concepto/Producción): los genera el ritmo del proyecto
   // y la prisa del crunch, no el número de cabezas (docs/03 factor D). Los
   // rasgos entran como media del equipo (la sensibilidad es de su composición,
@@ -527,27 +534,28 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
     project.phase < 3
       ? Math.max(
           0,
-          balance.development.baseBugsPerWeek +
+          (balance.development.baseBugsPerWeek +
             (project.crunch ? balance.staff.crunch.extraBugsPerWeek : 0) +
             traitBugs +
-            balance.development.understaffBugsPerWeek * Math.max(0, 1 - crewRatio),
+            balance.development.understaffBugsPerWeek * Math.max(0, 1 - crewRatio)) *
+            advance,
         )
       : 0;
 
-  // El calendario es el calendario: 1 tick = 1 semana (docs/02 §1).
-  const weeksSpent = project.weeksSpent + 1;
+  const weeksSpent = project.weeksSpent + advance;
   let worked: Project = {
     ...project,
     weeksSpent,
-    designPoints: project.designPoints + design * crewRatio,
-    techPoints: project.techPoints + tech * crewRatio,
+    designPoints: project.designPoints + design * crewRatio * advance,
+    techPoints: project.techPoints + tech * crewRatio * advance,
     // El QA profesional rinde más (docs/02 §3: capacidad qaEfficiency).
     qaInvested:
       project.qaInvested +
       qa *
         balance.development.qaReductionPerWeek *
         crewRatio *
-        capabilityBonus(state, 'qaEfficiency'),
+        capabilityBonus(state, 'qaEfficiency') *
+        advance,
     bugDebt: project.bugDebt + weeklyBugs,
   };
 

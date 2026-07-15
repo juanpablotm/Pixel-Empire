@@ -107,9 +107,12 @@ motores propios y capacidades de estudio (marketing avanzado, formación). Mucho
 
 - Partida completa E1→E7: **8–10 horas**; **35–45 juegos** en total.
 - Juego pequeño de garaje: **6 semanas**. Mediano 18 · grande 42 · **AAA 120** (~2,3 años). La
-  duración la fija **solo el tamaño**: **1 tick = 1 semana siempre** y meter más gente **no acorta el
-  plazo** — la capacidad del equipo (personas, motores, crunch) decide cómo de **bien** se ejecuta
-  dentro de él, con rendimientos decrecientes (docs `02` §6.1). Para producir más, proyectos en paralelo.
+  duración la fija **solo el tamaño**: **1 tick = 1 semana** y meter más gente **no acorta el plazo**
+  — la capacidad del equipo (personas, motores) decide cómo de **bien** se ejecuta dentro de él, con
+  rendimientos decrecientes (docs `02` §6.1). Para producir más, proyectos en paralelo.
+- **El crunch es la única forma de comprimir el plazo:** dobles turnos = 2 semanas de trabajo por
+  semana real, así que el juego sale en **la mitad de tiempo**… con el **doble de deuda de bugs**,
+  moral/energía/lealtad por los suelos y el burnout esperando. La palanca de codicia hecha tiempo.
 - Reparto orientativo (las eras tempranas van más rápidas; las tardías, más lentas por proyectos grandes):
 
 | Tramo | % de la partida | Juegos aprox. | Etapa de escala típica |
