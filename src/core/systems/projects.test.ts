@@ -173,18 +173,19 @@ function filler(id: string): Employee {
   };
 }
 
-/** Estudio Corporación (etapa 4) con plantilla suficiente para el AAA (docs/17 E1). */
+/** Estudio Corporación (etapa 5) con plantilla suficiente para el AAA (docs/18 V4-b). */
 function corpStudio(): GameState {
   const base = createInitialState(SEED);
+  const minStaff = balance.development.sizeGate.aaa.minStaff;
   return {
     ...base,
-    studio: { ...base.studio, scaleStage: 4, capital: 2_000_000 },
-    staff: [base.staff[0], ...Array.from({ length: 14 }, (_, i) => filler(`e${i}`))],
+    studio: { ...base.studio, scaleStage: 5, capital: 2_000_000 },
+    staff: [base.staff[0], ...Array.from({ length: minStaff - 1 }, (_, i) => filler(`e${i}`))],
   };
 }
 
 describe('gate de tamaño de proyecto (docs/17 E1)', () => {
-  it('el AAA está bloqueado hasta ser Corporación (etapa 4)', () => {
+  it('el AAA está bloqueado hasta ser Corporación (etapa 5)', () => {
     const garage = createInitialState(SEED);
     expect(sizeBlockReason(garage, 'aaa')).toMatch(/Corporación/);
     expect(() => startProject(garage, { ...CONCEPT, size: 'aaa' })).toThrow(/Corporación/);

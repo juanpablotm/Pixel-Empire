@@ -226,7 +226,6 @@ export {
 export type { DilemmaChoice } from './systems/community';
 export { computeLegacy, retireStudio } from './systems/legacy';
 export {
-  advanceScale,
   advanceStaff,
   applyReleaseMorale,
   computeSynergy,
@@ -234,14 +233,18 @@ export {
   computeTeamOutput,
   createFounder,
   crunchSensitivity,
+  expandBlockReason,
+  expandStudio,
   fireEmployee,
   generateCandidates,
   hireBlockReason,
   hireCandidate,
   hiringCost,
   motivateEmployee,
+  refreshCandidatePool,
   salaryTierOf,
   scaleStageInfo,
+  scaleUpgradeCost,
   setCrunch,
   staffCap,
   teamInnovationBonus,

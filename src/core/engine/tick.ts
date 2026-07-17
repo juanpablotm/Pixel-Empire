@@ -10,7 +10,7 @@ import { advancePolicies } from '../systems/policies';
 import { advanceProjects } from '../systems/projects';
 import { advanceResearch } from '../systems/research';
 import { advanceSales } from '../systems/sales';
-import { advanceScale, advanceStaff } from '../systems/staff';
+import { advanceStaff, refreshCandidatePool } from '../systems/staff';
 
 /**
  * Streams del PRNG separados por sistema, para que un sistema no altere la
@@ -28,10 +28,11 @@ const AWARDS_STREAM = 7 << 20;
  * devuelve un estado nuevo (docs/08 §4).
  *
  * Fase 6: mercado → proyectos (todos) → personal → políticas → ventas →
- * dilema moral → comunidad → economía → investigación → premios → escala,
- * y al avanzar la semana, la transición de era (docs/02 §5). La comunidad va
- * tras el paso moral para dramatizar como crisis los escándalos recién
- * estallados (docs/06). Tras la bancarrota o el retiro, el mundo se congela.
+ * dilema moral → comunidad → economía → investigación → premios → pool de
+ * contratación, y al avanzar la semana, la transición de era (docs/02 §5). La
+ * comunidad va tras el paso moral para dramatizar como crisis los escándalos
+ * recién estallados (docs/06). Tras la bancarrota o el retiro, el mundo se
+ * congela. La etapa de escala NO avanza aquí: se compra (expandStudio, 8.8).
  */
 export function tick(state: GameState): GameState {
   if (state.gameOver) return state;
@@ -53,7 +54,7 @@ export function tick(state: GameState): GameState {
   s = advanceEconomy(s);
   s = advanceResearch(s);
   s = advanceAwards(s, awardsRng);
-  s = advanceScale(s);
+  s = refreshCandidatePool(s);
 
   return advanceEras({ ...s, week: s.week + 1 });
 }

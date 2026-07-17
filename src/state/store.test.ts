@@ -208,15 +208,15 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
     expect(pendingNotices.some((n) => n.kind === 'bankruptcyWarning')).toBe(true);
   });
 
-  it('subir de etapa de escala encola un aviso', () => {
-    const base = createInitialState(SEED);
+  it('cruzar el umbral de ampliación encola el aviso; la etapa NO sube sola (docs/18 V4-c)', () => {
+    // Un juego recién lanzado que ingresa esta semana: el tick cruza el umbral.
+    const base = stateWithReleasedGame();
+    const req = balance.staff.scale.requirementsByStage[2];
     useGameStore.setState({
       game: {
         ...base,
-        studio: {
-          ...base.studio,
-          capital: balance.staff.scale.stage2CapitalThreshold + 10_000,
-        },
+        projects: [],
+        studio: { ...base.studio, capital: req.capital - 100 },
       },
       pendingNotices: [],
     });
@@ -224,9 +224,23 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
     useGameStore.getState().advanceWeek();
 
     const { game, pendingNotices } = useGameStore.getState();
-    expect(game.studio.scaleStage).toBe(2);
+    // Desde 8.8 el avance se compra: el tick solo avisa de que ya se puede.
+    expect(game.studio.scaleStage).toBe(1);
+    expect(game.studio.capital).toBeGreaterThanOrEqual(req.capital);
     const notice = pendingNotices.find((n) => n.kind === 'scaleUp');
-    expect(notice).toMatchObject({ kind: 'scaleUp', stage: 2 });
+    expect(notice).toMatchObject({
+      kind: 'scaleUp',
+      stage: 2,
+      cost: balance.staff.scale.upgradeCostByStage[2],
+    });
+
+    // Y la compra desde la cronología sube la etapa pagando el desembolso.
+    const before = useGameStore.getState().game.studio.capital;
+    useGameStore.getState().expandStudio();
+    expect(useGameStore.getState().game.studio.scaleStage).toBe(2);
+    expect(useGameStore.getState().game.studio.capital).toBe(
+      before - balance.staff.scale.upgradeCostByStage[2],
+    );
   });
 
   it('una renuncia encola un aviso importante', () => {
@@ -292,7 +306,7 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
     useGameStore.setState({
       pendingNotices: [
         { id: 1, kind: 'bankruptcyWarning', graceWeeks: 8 },
-        { id: 2, kind: 'scaleUp', stage: 2, stageName: 'Estudio pequeño' },
+        { id: 2, kind: 'scaleUp', stage: 2, stageName: 'Estudio pequeño', cost: 10_000 },
       ],
     });
 

@@ -100,7 +100,10 @@ const demoFeed: CommunityPost[] = [
 /** Estado de escaparate: la vista principal con la Oficina Viva a pleno rendimiento. */
 function studioDemo(): GameState {
   const base = createInitialState(DEMO_SEED);
-  const staff = demoStaff(base, 7);
+  // 8 personas: justo el requisito de plantilla de la etapa 4 (docs/18 V4-c),
+  // así ?demo=cronologia&eje=escala luce el botón "Ampliar estudio" habilitado
+  // (con 1,84M de caja también cumple el capital) y la oficina sale llena.
+  const staff = demoStaff(base, 8);
   const project = demoProject(staff.map((e) => e.id));
   // Un catálogo con las dos caras de docs/17 U2: lo que aún vende (con cola,
   // para el mini-gráfico) y lo retirado, que solo debe salir en el modal.
@@ -277,7 +280,7 @@ function noticeQueue(): ImportantNotice[] {
     },
     { id: 2, kind: 'staffLeft', employeeName: 'Marta Navarro', role: 'Técnica' },
     { id: 3, kind: 'bankruptcyWarning', graceWeeks: 8 },
-    { id: 4, kind: 'scaleUp', stage: 4, stageName: 'Corporación' },
+    { id: 4, kind: 'scaleUp', stage: 4, stageName: 'Estudio grande', cost: 750_000 },
   ];
 }
 

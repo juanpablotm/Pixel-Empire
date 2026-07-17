@@ -111,9 +111,11 @@ function NoticeBody({ notice }: { notice: ImportantNotice }) {
     case 'scaleUp':
       return (
         <p className="mt-4 text-sm text-ink">
-          Tu estudio asciende a <span className="font-semibold text-ok">{notice.stageName}</span>.
-          Creces: más plantilla, más proyectos en paralelo y más control sobre cómo diriges. El
-          camino de la nada a la megacorporación avanza.
+          Cumples los requisitos para convertir el estudio en{' '}
+          <span className="font-semibold text-ok">{notice.stageName}</span>. La ampliación no es
+          gratis: cuesta <span className="font-semibold text-capital">{formatMoney(notice.cost)}</span>{' '}
+          y subirá los gastos fijos semanales. Cuando quieras dar el paso, el botón está en la
+          cronología de escala.
         </p>
       );
   }
@@ -122,6 +124,14 @@ function NoticeBody({ notice }: { notice: ImportantNotice }) {
 export function ImportantNoticeModal() {
   const notice = useGameStore((s) => s.pendingNotices[0] ?? null);
   const dismiss = useGameStore((s) => s.dismissNotice);
+  const openTimeline = useGameStore((s) => s.openTimeline);
+  // "Ver la cronología": el aviso de ampliación encadena con la superficie
+  // donde vive el botón de compra (docs/18 V4-c), como el beat de era con la
+  // cronología de eras. Presentación pura: solo navegación.
+  const accept = () => {
+    if (notice?.kind === 'scaleUp') openTimeline('escala');
+    dismiss();
+  };
   // Cede el paso a decisiones duras y beats con superficie propia: espera.
   const blocked = useGameStore(
     (s) =>
@@ -158,7 +168,7 @@ export function ImportantNoticeModal() {
         <NoticeBody notice={notice} />
 
         <div className="mt-6 flex justify-end">
-          <button type="button" autoFocus onClick={dismiss} className={acceptButtonClass(spec.accent)}>
+          <button type="button" autoFocus onClick={accept} className={acceptButtonClass(spec.accent)}>
             {spec.acceptLabel}
           </button>
         </div>

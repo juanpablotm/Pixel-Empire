@@ -3,6 +3,7 @@ import {
   hiringCost,
   policiesUnlocked,
   salaryTierOf,
+  scaleStageInfo,
   staffCap,
   type Employee,
   type SalaryPolicy,
@@ -219,8 +220,8 @@ export function TeamScreen() {
         {scaleStage === 1 ? (
           <p className="rounded-lg border border-dashed border-line-hi bg-panel/40 p-4 text-sm text-ink-mute">
             En el garaje no cabe nadie más. Reúne{' '}
-            {formatMoney(balance.staff.scale.stage2CapitalThreshold)} para mudarte a una oficina
-            pequeña y empezar a contratar.
+            {formatMoney(scaleStageInfo(2).requires?.capital ?? 0)} y compra la ampliación en la
+            cronología de escala para mudarte a una oficina pequeña y empezar a contratar.
           </p>
         ) : candidates.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line-hi bg-panel/40 p-4 text-sm text-ink-mute">

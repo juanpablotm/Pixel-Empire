@@ -237,7 +237,7 @@ describe('CA de Fase 6: la progresión larga E1→E7 (docs/11)', () => {
 
 describe('el listón de calidad sube con las eras (docs/02 §5 y docs/04 §5)', () => {
   it('eraStandard no crece y capByEraSize no decrece a lo largo de las eras', () => {
-    const sizes: ProjectSize[] = ['pequeno', 'mediano', 'grande', 'aaa'];
+    const sizes: ProjectSize[] = ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'];
     for (let i = 1; i < eraOrder.length; i++) {
       const prev = eraOrder[i - 1];
       const cur = eraOrder[i];

@@ -9,9 +9,9 @@ import type { MonetizationConfig } from '../core/model/moral';
 import type { ProjectSize } from '../core/model/project';
 import type { Employee } from '../core/model/staff';
 import { resolveDilemma, respondToCrisis, type DilemmaChoice } from '../core/systems/community';
-import { weeklyFixedCosts } from '../core/systems/economy';
+import { availableCredit, repayLoan, takeLoan, weeklyFixedCosts } from '../core/systems/economy';
 import { lootBoxesBanned } from '../core/systems/morale';
-import { sizeBlockReason, startProject, toggleFeature } from '../core/systems/projects';
+import { estimateProject, sizeBlockReason, startProject, toggleFeature } from '../core/systems/projects';
 import { computeFit } from '../core/systems/quality';
 import {
   buyResearch,
@@ -21,6 +21,9 @@ import {
   themeResearchStatus,
 } from '../core/systems/research';
 import {
+  expandBlockReason,
+  expandStudio,
+  hireBlockReason,
   hireCandidate,
   hiringCost,
   motivateEmployee,
@@ -64,6 +67,8 @@ export interface Philosophy {
   teamTargetByEra: readonly number[];
   /** Techo de tamaño de proyecto que este arquetipo persigue. */
   sizeAmbition: 'indie' | 'media' | 'aaa';
+  /** Etapa de escala máxima que compra (docs/18 V4-c): la identidad manda. */
+  stageAmbition: 1 | 2 | 3 | 4 | 5;
   crisisResponse: CrisisResponseId;
   dilemma: Record<DilemmaKind, DilemmaChoice>;
 }
@@ -78,23 +83,32 @@ export const INDIE: Philosophy = {
   care: true,
   // Con el gate de tamaños (docs/17 E1) el mediano exige 3 personas: el indie
   // llega a 3 pronto para no quedarse encerrado en pequeños, y sigue siendo de
-  // culto (≤6). Es la adaptación que haría un jugador listo al nuevo baseline.
+  // culto (≤6, lo que exige comprar la etapa 3 — su techo por identidad).
   teamTargetByEra: [1, 3, 3, 4, 5, 6, 6],
   sizeAmbition: 'indie',
+  stageAmbition: 3,
   crisisResponse: 'disculpa',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
 
-/** Fábrica AAA: crecer agresivo y exprimir la monetización (sin suicidarse). */
+/**
+ * Fábrica AAA: crecer agresivo y exprimir la monetización (sin suicidarse).
+ * Con las 5 etapas (docs/18 V4) su ambición llega hasta la Corporación y los
+ * 40 de plantilla que exige el AAA — es quien estresa el overhead grande.
+ * `care: true` por puro CINISMO, no por bondad: con el burn de la etapa 5
+ * (docs/18 V4-d), un AAA mediocre quema millones — el talento es maquinaria y
+ * la maquinaria se engrasa. Su codicia sigue intacta en precio, cajas y MTX.
+ */
 export const FACTORY: Philosophy = {
   name: 'fábrica AAA',
   priceMult: 1.1,
   aggressiveness: 0.7,
   useLootBoxes: true,
   useDlc: true,
-  care: false,
-  teamTargetByEra: [1, 3, 6, 9, 12, 13, 14],
+  care: true,
+  teamTargetByEra: [1, 4, 8, 12, 16, 40, 44],
   sizeAmbition: 'aaa',
+  stageAmbition: 5,
   crisisResponse: 'silencio',
   dilemma: { leakAlpha: 'capitalizar', sobreHype: 'prometer' },
 };
@@ -107,37 +121,40 @@ export const STUDIO: Philosophy = {
   useLootBoxes: false,
   useDlc: true,
   care: true,
-  teamTargetByEra: [1, 3, 5, 7, 9, 11, 12],
+  teamTargetByEra: [1, 3, 5, 8, 10, 15, 16],
   sizeAmbition: 'media',
+  stageAmbition: 4,
   crisisResponse: 'corporativo',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
 
 /** Tamaños de menor a mayor: para bajar al mayor permitido por el gate (E1). */
-const SIZE_ORDER: readonly ProjectSize[] = ['pequeno', 'mediano', 'grande', 'aaa'];
+const SIZE_ORDER: readonly ProjectSize[] = ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'];
+
+/** Techo de tamaño por ambición del arquetipo (identidad, no capacidad). */
+const SIZE_CEILING: Record<Philosophy['sizeAmbition'], ProjectSize> = {
+  indie: 'mediano',
+  media: 'muyGrande',
+  aaa: 'aaa',
+};
 
 /**
- * Tamaño de proyecto según ambición, era, plantilla y caja: los arquetipos
- * crecen en TAMAÑO con las eras (docs/02 §6: un AAA de E6 dura años), no en
- * cadencia. El indie de culto se queda en pequeño/mediano por identidad. El
- * tamaño deseado se BAJA al mayor permitido por el gate (docs/17 E1: coste base,
- * plantilla y etapa mínimas), así el bot nunca intenta un tamaño bloqueado —
- * como un jugador que ve el AAA atenuado hasta ser Corporación.
+ * Tamaño de proyecto: el mayor que (a) no supere el techo de ambición del
+ * arquetipo, (b) pase el gate real (docs/17 E1: plantilla + etapa mínimas,
+ * vía sizeBlockReason — como el jugador que ve los tamaños atenuados) y
+ * (c) la caja aguante EL PROYECTO ENTERO: coste estimado más ~3/4 de los
+ * costes fijos de toda su duración. Con el overhead de 8.8 (docs/18 V4-d) la
+ * trampa mortal es empezar un AAA de 120 semanas que la caja no puede
+ * terminar; el bot no la pisa — si no le llega, baja de tamaño solo.
  */
 function pickSize(state: GameState, phil: Philosophy): ProjectSize {
-  const staff = state.staff.length;
-  const capital = state.studio.capital;
-  const era = eraIndex(state.era);
-  let desired: ProjectSize = 'pequeno';
-  if (phil.sizeAmbition === 'aaa' && era >= 4 && staff >= 12 && capital > 600_000) {
-    desired = 'aaa';
-  } else if (phil.sizeAmbition !== 'indie' && era >= 2 && staff >= 6 && capital > 200_000) {
-    desired = 'grande';
-  } else if (era >= 1 && staff >= 2 && capital > 40_000) {
-    desired = 'mediano';
-  }
-  for (let i = SIZE_ORDER.indexOf(desired); i >= 0; i--) {
-    if (sizeBlockReason(state, SIZE_ORDER[i]) === null) return SIZE_ORDER[i];
+  const ceiling = SIZE_ORDER.indexOf(SIZE_CEILING[phil.sizeAmbition]);
+  for (let i = ceiling; i > 0; i--) {
+    const size = SIZE_ORDER[i];
+    if (sizeBlockReason(state, size) !== null) continue;
+    const estimate = estimateProject(size, 'pcCasero');
+    const cushion = estimate.cost + 0.75 * estimate.weeks * weeklyFixedCosts(state);
+    if (state.studio.capital > cushion) return size;
   }
   return 'pequeno';
 }
@@ -153,6 +170,7 @@ const BREATHER_BY_SIZE: Record<ProjectSize, number> = {
   pequeno: 2,
   mediano: 3,
   grande: 4,
+  muyGrande: 5,
   aaa: 6,
 };
 
@@ -256,10 +274,60 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
   return next;
 }
 
+/**
+ * Compra la ampliación de estudio cuando el núcleo la habilita (docs/18 V4-c),
+ * hasta el techo de ambición del arquetipo: el indie no quiere una torre. Con
+ * prudencia de jugador listo: no basta cumplir el umbral — se compra cuando el
+ * desembolso SOBRA por encima del requisito, para no quedarse sin caja de
+ * producción justo al estrenar una oficina más cara de mantener.
+ */
+function maybeExpand(state: GameState, phil: Philosophy): GameState {
+  const stage = state.studio.scaleStage;
+  if (stage >= phil.stageAmbition || stage >= 5) return state;
+  if (expandBlockReason(state) !== null) return state;
+  const target = (stage + 1) as 2 | 3 | 4 | 5;
+  // Tras pagar debe quedar ~1 año del coste fijo NUEVO (el overhead de la
+  // etapa comprada, docs/18 V4-d): mudarse a una oficina que no puedes
+  // mantener es la trampa clásica — el bot no cae en ella.
+  const newWeeklyFixed =
+    weeklyFixedCosts(state) +
+    balance.economy.upkeepExtraByStage[target] -
+    balance.economy.upkeepExtraByStage[stage];
+  const cost = balance.staff.scale.upgradeCostByStage[target];
+  if (state.studio.capital - cost < 52 * newWeeklyFixed) return state;
+  return expandStudio(state);
+}
+
+/**
+ * Gestión de la línea de crédito (docs/06 §4), como un jugador solvente: si
+ * hay un proyecto en vuelo y el runway se acorta, pide un préstamo puente en
+ * vez de dejar que la bancarrota se coma el juego a medias; cuando la caja
+ * sobra, amortiza para dejar de pagar el ~1 %/semana.
+ */
+function manageLoans(state: GameState): GameState {
+  const fixed = weeklyFixedCosts(state);
+  if (
+    state.projects.length > 0 &&
+    state.studio.capital < 8 * fixed &&
+    availableCredit(state) > 0
+  ) {
+    return takeLoan(state, Math.min(availableCredit(state), 26 * fixed));
+  }
+  if (
+    state.loanPrincipal > 0 &&
+    state.studio.capital > state.loanPrincipal + 52 * fixed
+  ) {
+    return repayLoan(state, state.loanPrincipal);
+  }
+  return state;
+}
+
 /** Contrata del pool si el arquetipo quiere crecer y la caja lo sostiene. */
 function maybeHire(state: GameState, phil: Philosophy): GameState {
   const target = phil.teamTargetByEra[eraIndex(state.era)];
   if (state.studio.scaleStage < 2 || state.staff.length >= target) return state;
+  // El aforo de la etapa manda (docs/17 B1): sin hueco, no se intenta.
+  if (hireBlockReason(state) !== null) return state;
   if (state.candidates.length === 0) return state;
   // El más hábil en su especialidad, prefiriendo especialidades que faltan.
   const staffBySpec = new Map<string, number>();
@@ -365,7 +433,10 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
   for (const crisis of state.community.crises.filter((c) => c.status === 'abierta')) {
     state = respondToCrisis(state, crisis.id, phil.crisisResponse);
   }
-  // 2. Estudio: investigación, plantilla, cuidado y rotación de energía.
+  // 2. Estudio: ampliación (se compra, docs/18 V4-c), crédito, investigación,
+  // plantilla, cuidado y rotación de energía.
+  state = maybeExpand(state, phil);
+  state = manageLoans(state);
   state = maybeResearch(state);
   state = maybeHire(state, phil);
   state = maybeCare(state, phil);

@@ -21,7 +21,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -210,6 +210,25 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       },
     };
   },
+  // v9 (Fase 8.4) → v10 (Fase 8.8): la escala pasa de 4 a 5 etapas y el avance
+  // se compra (docs/18 V4). Mapeo por identidad de rol, NO destructivo:
+  // 1 Garaje → 1 · 2 Estudio pequeño → 2 · 3 Consolidado → 3 "Estudio" ·
+  // 4 Corporación → 5 Corporación (una corporación no se degrada; asume el
+  // overhead nuevo — el rediseño va precisamente contra su "riesgo cero").
+  // Si la plantilla o los proyectos en vuelo superan los aforos nuevos, no se
+  // recorta nada: los topes solo bloquean CRECER (patrón docs/17 B1), y los
+  // gates de tamaño solo validan al INICIAR un proyecto, así que ningún juego
+  // a medias se corrompe.
+  9: (file) => ({
+    saveVersion: 10,
+    state: {
+      ...file.state,
+      studio: {
+        ...file.state.studio,
+        scaleStage: file.state.studio.scaleStage >= 4 ? 5 : file.state.studio.scaleStage,
+      },
+    },
+  }),
 };
 
 /**

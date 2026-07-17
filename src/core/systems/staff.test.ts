@@ -14,6 +14,7 @@ import {
   computeSynergy,
   computeTeamFactor,
   computeTeamOutput,
+  expandStudio,
   fireEmployee,
   generateCandidates,
   hireBlockReason,
@@ -607,16 +608,25 @@ describe('la moral reacciona al lanzamiento (docs/05 §4)', () => {
   });
 });
 
-describe('escala: Garaje → Estudio pequeño (docs/02 §4)', () => {
-  it('al alcanzar el hito de capital el estudio se muda y aparece el pool', () => {
+describe('escala: Garaje → Estudio pequeño (docs/02 §4, compra desde 8.8)', () => {
+  it('el hito de capital ya no muda solo: la ampliación se compra (docs/18 V4-c)', () => {
     const base = createInitialState(SEED);
     const rich: GameState = {
       ...base,
-      studio: { ...base.studio, capital: balance.staff.scale.stage2CapitalThreshold + 1_000 },
+      studio: {
+        ...base.studio,
+        capital: balance.staff.scale.requirementsByStage[2].capital + 1_000,
+      },
     };
-    const after = tick(rich);
+    // El tick no asciende: cumplir el umbral solo habilita el botón.
+    expect(tick(rich).studio.scaleStage).toBe(1);
+    // Comprar la ampliación sí: paga el coste, sube la etapa y llega el pool.
+    const after = expandStudio(rich);
     expect(after.studio.scaleStage).toBe(2);
-    expect(after.candidates).toHaveLength(balance.staff.candidates.poolSize);
+    expect(after.studio.capital).toBe(
+      rich.studio.capital - balance.staff.scale.upgradeCostByStage[2],
+    );
+    expect(after.candidates).toHaveLength(balance.staff.scale.poolSizeByStage[2]);
     expect(after.log.some((e) => e.type === 'estudio')).toBe(true);
   });
 

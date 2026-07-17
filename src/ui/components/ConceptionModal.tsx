@@ -42,7 +42,7 @@ import { TrendArrow } from './TrendArrow';
  */
 
 const AUDIENCES: Audience[] = ['hardcore', 'amplio', 'casual', 'infantil'];
-const SIZES: ProjectSize[] = ['pequeno', 'mediano', 'grande', 'aaa'];
+const SIZES: ProjectSize[] = ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'];
 
 /** Flecha de tendencia en texto: dentro de un <option> no caben componentes. */
 const TREND_MARK: Record<string, string> = { sube: '↑', baja: '↓', estable: '→' };

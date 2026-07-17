@@ -113,9 +113,10 @@ La escena es un **termómetro del estudio**; el jugador "siente" los stats sin l
 | **Nueva era** | La oficina se re-decora (muebles, hardware, tamaño) al cambiar de era |
 
 ### 5.3 Crece con la escala (`02` §4)
-Garaje (un escritorio y un sofá viejo) → estudio pequeño (una sala) → consolidado (open space con
-varios equipos) → corporación (planta con salas y cristales). El *zoom* de la cámara se aleja conforme
-creces: refuerza físicamente el "de la nada a megacorporación".
+Garaje (un escritorio y un sofá viejo) → estudio pequeño (una sala) → estudio (open space con dos
+equipos) → estudio grande (planta con sala de cristal y servidores) → corporación (la torre: tres
+filas, doble sala y granja de servidores). El *zoom* de la cámara se aleja conforme creces: refuerza
+físicamente el "de la nada a megacorporación".
 
 ### 5.4 Las Burbujas de Desarrollo `[DECIDIDO]` (homenaje a GDT, mejorado)
 Durante el desarrollo, de los escritorios ascienden **orbes** que suben y se desvanecen (CSS keyframes:
@@ -328,13 +329,17 @@ barra superior**; la de eras, además, **se abre sola** al final del beat de era
   trazo grueso y **pulso**, **futuros** con borde punteado y "?". Un hilo los une y se tiñe de verde en
   el tramo recorrido. Navegable con ratón (hover/clic) y con teclado (`←`/`→`, patrón *tablist*).
 - **Panel inferior** con el nodo elegido. **Eras:** nombre, años y novedades (plataformas + negocio);
-  los futuros dicen "???" —el misterio se mantiene—. **Escala:** rol, foco de decisiones y **requisitos**
-  (capital + plantilla) más aforo y proyectos en paralelo; los futuros **sí** los enseñan: una etapa es
-  un objetivo al que apuntar, no una sorpresa.
-- **Ni pausan ni deciden nada** (criterio de la Fase 8.5): los abre el jugador y se cierran con Esc.
-  Los datos se **derivan** del núcleo (`eraNovelties`, `scaleStageInfo`) — los requisitos que se enseñan
-  son los que comprueba `advanceScale`, y las novedades, las que canta el beat (`08` §6: la UI no
-  calcula reglas).
+  los futuros dicen "???" —el misterio se mantiene—. **Escala:** rol, foco de decisiones, **requisitos**
+  (capital + plantilla) y **coste de ampliación** más aforo y proyectos en paralelo; los futuros **sí**
+  los enseñan: una etapa es un objetivo al que apuntar, no una sorpresa.
+- **La escala se COMPRA aquí (docs/18 V4-c, Fase 8.8):** el nodo de la etapa siguiente lleva el botón
+  **"Ampliar estudio (coste: X 💰)"** — habilitado cuando el núcleo dice que se cumple el requisito
+  (`expandBlockReason === null`), atenuado con su motivo si no. Al abrir la cronología con la compra
+  disponible, la selección arranca en ese nodo (es a lo que manda el aviso "puedes ampliar" de U4).
+- **Ni pausan ni deciden nada más** (criterio de la Fase 8.5): los abre el jugador y se cierran con Esc.
+  Los datos se **derivan** del núcleo (`eraNovelties`, `scaleStageInfo`, `expandBlockReason`) — los
+  requisitos y el coste que se enseñan son los que valida `expandStudio`, y las novedades, las que canta
+  el beat (`08` §6: la UI no calcula reglas).
 
 **Dos trampas de las pieles**, resueltas en el CSS (§8): el estado del nodo **no puede depender del
 tono** (hay pieles cuyo acento *es* verde —E5 esmeralda, E1 fósforo— y el actual se confundiría con los

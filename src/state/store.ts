@@ -5,6 +5,8 @@ import {
   createGameLoop,
   createInitialState,
   createSandboxState,
+  expandBlockReason,
+  expandStudio,
   fireEmployee,
   hireCandidate,
   launchMarketingCampaign,
@@ -17,6 +19,7 @@ import {
   retireStudio,
   setCrunch,
   setFocus,
+  scaleUpgradeCost,
   setPolicies,
   startProject,
   takeLoan,
@@ -83,11 +86,19 @@ export interface BankruptcyNotice {
   /** Semanas de gracia antes de la bancarrota (docs/06 §1). */
   graceWeeks: number;
 }
+/**
+ * Desde 8.8 la etapa se COMPRA (docs/18 V4-c): este aviso ya no celebra una
+ * subida automática, sino que CUMPLES LOS REQUISITOS para ampliar — te manda
+ * a la cronología de escala, donde vive el botón "Ampliar estudio".
+ */
 export interface ScaleUpNotice {
   id: number;
   kind: 'scaleUp';
+  /** La etapa que puedes comprar (la siguiente a la actual). */
   stage: ScaleStage;
   stageName: string;
+  /** El desembolso de la ampliación (para decidir con datos). */
+  cost: number;
 }
 export type ImportantNotice =
   | MarketExitNotice
@@ -249,6 +260,11 @@ export interface GameStore {
   /** Acciones de personal (docs/05 §6; delegan en core/systems/staff.ts). */
   hire: (candidateId: string) => void;
   fire: (employeeId: string) => void;
+  /**
+   * Compra la ampliación a la etapa siguiente (docs/18 V4-c). Vive en la
+   * cronología de escala: el botón "Ampliar estudio (coste: X 💰)".
+   */
+  expandStudio: () => void;
   train: (employeeId: string, specialty: Specialty) => void;
   motivate: (employeeId: string, kind: MotivationKind) => void;
   toggleAssignment: (employeeId: string, projectId?: string) => void;
@@ -472,7 +488,6 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const phaseChanged = phaseChangedId !== null;
     const justEnded = after.gameOver !== null && before.gameOver === null;
     const staffLost = after.staff.length < before.staff.length;
-    const stageChanged = after.studio.scaleStage !== before.studio.scaleStage;
     // La capa social también pausa (docs/07): crisis con reloj y dilemas.
     const openCrises = (s: GameState) =>
       s.community.crises.filter((c) => c.status === 'abierta').length;
@@ -528,13 +543,17 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       });
     }
 
-    // Desbloqueo de etapa de escala (docs/02 §4).
-    if (after.studio.scaleStage > before.studio.scaleStage) {
+    // La ampliación de estudio pasa a estar DISPONIBLE (docs/18 V4-c): desde
+    // 8.8 la etapa se compra, así que el hito notificable es cruzar el umbral
+    // (capital + plantilla). Solo el flanco de subida: sin repetir cada semana.
+    if (expandBlockReason(before) !== null && expandBlockReason(after) === null) {
+      const target = (after.studio.scaleStage + 1) as ScaleStage;
       notices.push({
         id: nextNoticeId++,
         kind: 'scaleUp',
-        stage: after.studio.scaleStage,
-        stageName: stageLabels[after.studio.scaleStage],
+        stage: target,
+        stageName: stageLabels[target],
+        cost: scaleUpgradeCost(target as Exclude<ScaleStage, 1>),
       });
     }
 
@@ -542,7 +561,6 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       released ||
       justEnded ||
       staffLost ||
-      stageChanged ||
       crisisErupted ||
       dilemmaFired ||
       eraChanged ||
@@ -729,6 +747,10 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   fire: (employeeId) => {
     set((s) => ({ game: fireEmployee(s.game, employeeId) }));
+  },
+
+  expandStudio: () => {
+    set((s) => ({ game: expandStudio(s.game) }));
   },
 
   train: (employeeId, specialty) => {

@@ -43,6 +43,23 @@ export function celebrateHit(): void {
 }
 
 /**
+ * La ampliación del estudio (docs/18 V4-c): un estallido breve al comprar la
+ * etapa siguiente desde la cronología de escala. Más brindis que gala
+ * (~45 partículas a escala 1): el momento grande sigue siendo el hitazo.
+ */
+export function celebrateExpansion(): void {
+  const count = Math.round(45 * particleScale());
+  if (count === 0) return;
+  burst({
+    particleCount: count,
+    spread: 75,
+    startVelocity: 32,
+    origin: { x: 0.5, y: 0.45 },
+    colors: BRAND_COLORS,
+  });
+}
+
+/**
  * La gala anual de premios (docs/06 §7): una lluvia dorada, más ceremonia
  * que fiesta. ~70 partículas a escala 1.
  */

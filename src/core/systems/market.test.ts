@@ -304,7 +304,7 @@ describe('hype pasivo — la meseta lo desacopla de la duración (docs/18 V3)', 
   it('CA: ningún tamaño llega solo a la zona roja, por mucho que dure el desarrollo', () => {
     // 200 semanas es más del doble que el AAA más largo: si el pasivo pudiera
     // desbocarse por tiempo, aquí se vería.
-    for (const size of ['pequeno', 'mediano', 'grande', 'aaa'] as const) {
+    for (const size of ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'] as const) {
       const hype = passiveHypeAfter(size, 200);
       expect(hype).toBeLessThan(balance.market.hype.overHypeThreshold);
       expect(hype).toBeLessThanOrEqual(cap);
@@ -468,12 +468,15 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
       ...base,
       studio: {
         ...base.studio,
-        // El AAA exige Corporación (docs/17 E1): 20+ en nómina y etapa 4.
-        scaleStage: 4,
-        capital: 5_000_000,
+        // El AAA exige Corporación (docs/18 V4-b): etapa 5 y 40 en nómina.
+        // Caja para las ~200 semanas del test: con el overhead de 8.8 una
+        // corporación de 40 nóminas quema ~63k 💰/semana — con menos caja
+        // quebraría a medio desarrollo y el juego nunca saldría.
+        scaleStage: 5,
+        capital: 15_000_000,
         awardHype: balance.awards.rewards.hypeCap,
       },
-      staff: [...base.staff, mediaStar(), ...team(19)],
+      staff: [...base.staff, mediaStar(), ...team(39)],
     };
     s = startProject(s, { ...CONCEPT, size: 'aaa' });
     // Que se cueza muchas semanas: solo el fundador y la estrella en el proyecto
@@ -500,12 +503,12 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
   });
 
   it('acumular con el manómetro ya en el tope lo deja en el tope, no por encima', () => {
-    // El AAA exige Corporación (docs/17 E1): etapa 4 y 20+ en nómina.
+    // El AAA exige Corporación (docs/18 V4-b): etapa 5 y 40 en nómina.
     const base = createInitialState(SEED);
     const corp: GameState = {
       ...base,
-      studio: { ...base.studio, scaleStage: 4 },
-      staff: [...base.staff, ...team(20)],
+      studio: { ...base.studio, scaleStage: 5 },
+      staff: [...base.staff, ...team(40)],
     };
     let s = startProject(corp, { ...CONCEPT, size: 'aaa' });
     // Forzar Producción (el hype ya corre) y saturar el manómetro; una semana más.

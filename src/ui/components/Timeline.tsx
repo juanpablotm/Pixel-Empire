@@ -1,24 +1,28 @@
 import { useState, type ReactNode } from 'react';
-import { eraNovelties, scaleStageInfo } from '../../core';
+import { expandBlockReason, scaleStageInfo, eraNovelties } from '../../core';
 import { eraIndex, eraOrder, eras, getEra } from '../../data/eras';
 import { stageFocus, stageLabels, stageRoles } from '../../data/staffTexts';
 import { useGameStore, type TimelineKind } from '../../state/store';
+import { celebrateExpansion } from '../confetti';
 import { formatMoney } from '../format';
 import { PopIn } from './Motion';
 
 /**
  * Las cronologías de los dos ejes de progreso (docs/17 U1, docs/16 §3):
- * las 7 ERAS históricas y las 4 ETAPAS de escala. Overlay sobre el estudio
+ * las 7 ERAS históricas y las 5 ETAPAS de escala. Overlay sobre el estudio
  * (telón semitransparente: el mundo sigue ahí detrás), barra de nodos
  * hexagonales y panel inferior con el detalle del nodo elegido.
  *
  * Estados del nodo: superado (verde), actual (acento de la era, con pulso) y
  * futuro (punteado). Las eras futuras son "???" —el misterio se mantiene—;
  * las etapas futuras SÍ enseñan sus requisitos: son un objetivo al que apuntar.
+ * Desde 8.8 la etapa se COMPRA (docs/18 V4-c): el nodo de la etapa siguiente
+ * lleva el botón "Ampliar estudio (coste: X 💰)", habilitado cuando el núcleo
+ * dice que se cumplen los requisitos (expandBlockReason).
  *
  * Presentación pura (docs/08 §6): lee estado con selectores finos y deriva el
- * contenido de cada nodo del núcleo (`eraNovelties`, `scaleStageInfo`), que es
- * la misma fuente que usan el beat de transición y `advanceScale`. No calcula
+ * contenido de cada nodo del núcleo (`eraNovelties`, `scaleStageInfo`,
+ * `expandBlockReason`), la misma fuente que valida `expandStudio`. No calcula
  * ninguna regla de juego. No pausa el tiempo (criterio de la Fase 8.5: lo abre
  * el jugador; solo los avisos de U4 interrumpen).
  */
@@ -105,7 +109,33 @@ function useEraNodes(): TimelineNode[] {
   });
 }
 
-const stages = [1, 2, 3, 4] as const;
+const stages = [1, 2, 3, 4, 5] as const;
+
+/**
+ * El botón de compra del nodo de la etapa SIGUIENTE (docs/18 V4-c): cumplir el
+ * requisito solo habilita; ampliar se paga. El motivo del bloqueo lo elige el
+ * núcleo (expandBlockReason); aquí solo se muestra y se atenúa el botón.
+ */
+function ExpandButton({ cost }: { cost: number }) {
+  const blocked = useGameStore((s) => expandBlockReason(s.game));
+  const expand = useGameStore((s) => s.expandStudio);
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        disabled={blocked !== null}
+        onClick={() => {
+          expand();
+          celebrateExpansion();
+        }}
+        className="btn btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Ampliar estudio (coste: {formatMoney(cost)})
+      </button>
+      {blocked !== null && <span className="text-sm text-warn">{blocked}</span>}
+    </div>
+  );
+}
 
 function useScaleNodes(): TimelineNode[] {
   const stage = useGameStore((s) => s.game.studio.scaleStage);
@@ -113,6 +143,7 @@ function useScaleNodes(): TimelineNode[] {
   return stages.map((s, i) => {
     const status = statusOf(i, stage - 1);
     const info = scaleStageInfo(s);
+    const isNext = s === stage + 1;
     return {
       key: String(s),
       // La escala no se oculta: es un objetivo al que apuntar, no un misterio.
@@ -126,7 +157,7 @@ function useScaleNodes(): TimelineNode[] {
           <p className="text-sm text-ink">{stageFocus[s]}</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-mute">
             <span>
-              <span className="text-ink-faint">Se desbloquea con:</span>{' '}
+              <span className="text-ink-faint">Requisito:</span>{' '}
               {info.requires === null
                 ? 'el inicio de la partida'
                 : [
@@ -136,6 +167,11 @@ function useScaleNodes(): TimelineNode[] {
                     .filter((r) => r !== null)
                     .join(' + ')}
             </span>
+            {info.upgradeCost !== null && status === 'future' && (
+              <span>
+                <span className="text-ink-faint">Ampliación:</span> {formatMoney(info.upgradeCost)}
+              </span>
+            )}
             <span>
               <span className="text-ink-faint">Aforo:</span>{' '}
               {info.staffCap === 1 ? 'solo tú' : `${info.staffCap} personas`}
@@ -144,6 +180,7 @@ function useScaleNodes(): TimelineNode[] {
               <span className="text-ink-faint">Proyectos a la vez:</span> {info.projectCap}
             </span>
           </div>
+          {isNext && info.upgradeCost !== null && <ExpandButton cost={info.upgradeCost} />}
         </div>
       ),
     };
@@ -159,12 +196,15 @@ function TimelineOverlay({
   subtitle,
   nodes,
   monoSubtitle = false,
+  initialSelected,
 }: {
   title: string;
   subtitle: string;
   nodes: TimelineNode[];
   /** Los años de una era piden mono (son un dato); el rol de una etapa, no. */
   monoSubtitle?: boolean;
+  /** Nodo seleccionado al abrir; por defecto, el actual. */
+  initialSelected?: number;
 }) {
   const close = useGameStore((s) => s.closeTimeline);
   const currentIndex = Math.max(
@@ -172,8 +212,9 @@ function TimelineOverlay({
     nodes.findIndex((n) => n.status === 'current'),
   );
   // La selección es local: mirar la cronología no es un cambio de partida.
-  // Arranca en el nodo actual — el hito que se acaba de celebrar.
-  const [selected, setSelected] = useState(currentIndex);
+  // Arranca en el nodo actual — el hito que se acaba de celebrar — salvo que
+  // quien abre pida otro (la escala arranca en el nodo comprable, 8.8).
+  const [selected, setSelected] = useState(initialSelected ?? currentIndex);
   const node = nodes[selected] ?? nodes[currentIndex];
 
   const move = (delta: number) => {
@@ -309,12 +350,16 @@ function EraTimeline() {
 
 function ScaleTimeline() {
   const stage = useGameStore((s) => s.game.studio.scaleStage);
+  const canExpand = useGameStore((s) => expandBlockReason(s.game) === null);
   const nodes = useScaleNodes();
   return (
     <TimelineOverlay
       title="Cronología de escala"
       subtitle={`Del garaje a la megacorporación. Tu estudio es hoy: ${stageLabels[stage]}.`}
       nodes={nodes}
+      // Con la ampliación comprable, se abre mirando el nodo con el botón
+      // (docs/18 V4-c): es a lo que te manda el aviso "puedes ampliar".
+      initialSelected={canExpand ? Math.min(nodes.length - 1, stage) : undefined}
     />
   );
 }

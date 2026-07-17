@@ -1,6 +1,13 @@
 import { balance } from '../../data/balance';
 import { getGenre } from '../../data/genres';
-import { firstNames, hireBlockedLabels, lastNames, specialtyLabels } from '../../data/staffTexts';
+import {
+  expandBlockedLabels,
+  expandLogTexts,
+  firstNames,
+  hireBlockedLabels,
+  lastNames,
+  specialtyLabels,
+} from '../../data/staffTexts';
 import { traits as allTraits, getTrait } from '../../data/traits';
 import { appendLog } from '../engine/log';
 import { makeRng, type Rng } from '../engine/rng';
@@ -797,87 +804,121 @@ function levelUpSkills(
 }
 
 // ---------------------------------------------------------------------------
-// Escala: las 4 etapas, del garaje a la corporación (docs/02 §4)
+// Escala: las 5 etapas, del garaje a la corporación (docs/02 §4, docs/18 V4)
 // ---------------------------------------------------------------------------
 
+/** Etapa siguiente a la actual, o null si ya se está en la cima. */
+function nextStage(stage: ScaleStage): Exclude<ScaleStage, 1> | null {
+  return stage >= 5 ? null : ((stage + 1) as Exclude<ScaleStage, 1>);
+}
+
+/** Coste de COMPRAR la entrada a una etapa (docs/18 V4-c); la 1 no se compra. */
+export function scaleUpgradeCost(stage: Exclude<ScaleStage, 1>): number {
+  return balance.staff.scale.upgradeCostByStage[stage];
+}
+
 /**
- * Lo que hace falta para ENTRAR en una etapa, y lo que esa etapa te da
- * (docs/02 §4). Los umbrales son los mismos que comprueba `advanceScale`:
- * la cronología de escala (docs/17 U1) los enseña sin duplicar números.
- * La etapa 1 es el punto de partida, así que no tiene requisito.
+ * Lo que hace falta tener para poder COMPRAR una etapa (requires), lo que
+ * cuesta la ampliación (upgradeCost) y lo que esa etapa te da (docs/02 §4).
+ * Los números son los mismos que valida `expandStudio`: la cronología de
+ * escala (docs/17 U1) los enseña sin duplicarlos. La etapa 1 es el punto de
+ * partida: ni requisito ni coste.
  */
 export interface ScaleStageInfo {
   requires: { capital: number; staff: number } | null;
+  /** El desembolso de la ampliación; null en la etapa inicial. */
+  upgradeCost: number | null;
   staffCap: number;
   projectCap: number;
 }
 
 export function scaleStageInfo(stage: ScaleStage): ScaleStageInfo {
   const { scale } = balance.staff;
-  const requires: Record<ScaleStage, { capital: number; staff: number } | null> = {
-    1: null,
-    2: { capital: scale.stage2CapitalThreshold, staff: 0 },
-    3: scale.stage3,
-    4: scale.stage4,
-  };
   return {
-    requires: requires[stage],
+    requires: stage === 1 ? null : scale.requirementsByStage[stage],
+    upgradeCost: stage === 1 ? null : scale.upgradeCostByStage[stage],
     staffCap: scale.staffCapByStage[stage],
     projectCap: scale.projectCapByStage[stage],
   };
 }
 
 /**
- * Transición de etapa por hitos (capital y tamaño de plantilla) y refresco
- * periódico del pool de candidatos (su tamaño crece con la etapa). Cada
- * transición es uno de los grandes momentos de recompensa (docs/02 §4).
+ * Motivo estructural por el que NO se puede comprar la ampliación a la etapa
+ * siguiente, o null si se puede (docs/18 V4-c). Único punto de verdad, patrón
+ * hireBlockReason/sizeBlockReason: la UI muestra este texto junto al botón
+ * "Ampliar estudio" y lo deshabilita; expandStudio lo valida. Cumplir el
+ * requisito solo HABILITA la compra: el desembolso (upgradeCost) se paga al
+ * ampliar. Requisito de capital > coste, así pagar nunca deja la caja en rojo.
  */
-export function advanceScale(state: GameState): GameState {
+export function expandBlockReason(state: GameState): string | null {
+  if (state.gameOver) return expandBlockedLabels.gameOver;
+  const target = nextStage(state.studio.scaleStage);
+  if (target === null) return expandBlockedLabels.maxStage;
+  const req = balance.staff.scale.requirementsByStage[target];
+  if (state.studio.capital < req.capital) {
+    return expandBlockedLabels.capital(`${req.capital.toLocaleString('es-ES')} 💰`);
+  }
+  if (state.staff.length < req.staff) {
+    return expandBlockedLabels.staff(req.staff);
+  }
+  return null;
+}
+
+/**
+ * Acción: AMPLIAR el estudio a la etapa siguiente (docs/18 V4-c). El avance ya
+ * no es gratis ni automático: se compra desde la cronología de escala, pagando
+ * el desembolso de la ampliación, y solo a la etapa inmediata (sin saltos).
+ * Cada ampliación es uno de los grandes momentos de recompensa (docs/02 §4);
+ * de propina refresca el pool de candidatos (crece con la etapa).
+ */
+export function expandStudio(state: GameState): GameState {
+  const blocked = expandBlockReason(state);
+  if (blocked) throw new Error(blocked);
+  const target = nextStage(state.studio.scaleStage);
+  if (target === null) throw new Error(expandBlockedLabels.maxStage);
+
+  const { scale } = balance.staff;
+  const cost = scaleUpgradeCost(target);
+  const next: GameState = {
+    ...state,
+    studio: {
+      ...state.studio,
+      capital: state.studio.capital - cost,
+      scaleStage: target,
+    },
+  };
+  return appendLog(
+    {
+      ...next,
+      candidates: generateCandidates(
+        next.seed,
+        next.week,
+        next.studio.reputation.empleador,
+        scale.poolSizeByStage[target],
+      ),
+    },
+    'estudio',
+    `${expandLogTexts[target](scale.staffCapByStage[target], scale.projectCapByStage[target])} (Ampliación: −${cost.toLocaleString('es-ES')} 💰.)`,
+  );
+}
+
+/**
+ * Refresco periódico del pool de candidatos en el tick (su tamaño crece con
+ * la etapa). Es lo único que quedó del viejo `advanceScale`: desde 8.8 la
+ * etapa no avanza sola — se compra con `expandStudio`.
+ */
+export function refreshCandidatePool(state: GameState): GameState {
   const { scale, candidates } = balance.staff;
-
-  const employerRep = state.studio.reputation.empleador;
-  const refresh = (s: GameState): GameState['candidates'] =>
-    generateCandidates(s.seed, s.week, employerRep, scale.poolSizeByStage[s.studio.scaleStage]);
-
-  const stage = state.studio.scaleStage;
-
-  if (stage === 1 && state.studio.capital >= scale.stage2CapitalThreshold) {
-    const next: GameState = { ...state, studio: { ...state.studio, scaleStage: 2 } };
-    return appendLog(
-      { ...next, candidates: refresh(next) },
-      'estudio',
-      `El estudio sale del garaje a una oficina pequeña: ya puedes contratar (hasta ${scale.staffCapByStage[2]} personas).`,
-    );
-  }
-
-  if (
-    stage === 2 &&
-    state.studio.capital >= scale.stage3.capital &&
-    state.staff.length >= scale.stage3.staff
-  ) {
-    const next: GameState = { ...state, studio: { ...state.studio, scaleStage: 3 } };
-    return appendLog(
-      { ...next, candidates: refresh(next) },
-      'estudio',
-      `Estudio consolidado: open space, varios equipos y hasta ${scale.projectCapByStage[3]} proyectos en paralelo. Ahora diriges (docs/02 §4).`,
-    );
-  }
-
-  if (
-    stage === 3 &&
-    state.studio.capital >= scale.stage4.capital &&
-    state.staff.length >= scale.stage4.staff
-  ) {
-    const next: GameState = { ...state, studio: { ...state.studio, scaleStage: 4 } };
-    return appendLog(
-      { ...next, candidates: refresh(next) },
-      'estudio',
-      `CORPORACIÓN: la planta entera es tuya. Hasta ${scale.projectCapByStage[4]} proyectos, ${scale.staffCapByStage[4]} personas y gestión por políticas. Eres el magnate.`,
-    );
-  }
-
-  if (stage >= 2 && state.week % candidates.refreshWeeks === 0) {
-    return { ...state, candidates: refresh(state) };
+  if (state.studio.scaleStage >= 2 && state.week % candidates.refreshWeeks === 0) {
+    return {
+      ...state,
+      candidates: generateCandidates(
+        state.seed,
+        state.week,
+        state.studio.reputation.empleador,
+        scale.poolSizeByStage[state.studio.scaleStage],
+      ),
+    };
   }
   return state;
 }

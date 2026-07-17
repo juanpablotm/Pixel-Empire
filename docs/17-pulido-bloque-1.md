@@ -58,6 +58,13 @@ bloqueados se muestran atenuados con su requisito ("Necesitas ser Corporación")
 > (etapa 4). Su plantilla mínima se alinea al umbral real de esa etapa (`stage4.staff` = 15, no 20) para
 > que ser Corporación baste, sin "dead zone". El núcleo lo valida con `sizeBlockReason` (puro, único
 > punto de verdad) y la UI atenúa los tamaños bloqueados con su requisito (docs/08 §6).
+>
+> **♻️ Revisado (Fase 8.8, docs/18 V4).** Los tamaños pasan de 4 a **5** (entra el **Muy grande** entre
+> Grande y AAA) y la escala, de 4 a **5 etapas que se compran**. Números vigentes: coste base
+> 500/2.000/8.000/**60.000**/**250.000** 💰; plantilla mínima 1/3/8/**15**/**40**; etapa mínima
+> Garaje / E. pequeño / Estudio / **E. grande** / **Corporación (etapa 5)**. La alineación "sin dead
+> zone" del AAA se rompe adrede: te haces Corporación con 20 y contratas hacia los 40 que exige el AAA
+> (aforo 100). El `crewRatio` del AAA espera esa organización.
 
 ### E2 · Rediseño del marketing (campañas escalonadas y castigo por sobre-hype) ⚖️ P1 🔴
 *(playtest #7, parte diseño)*

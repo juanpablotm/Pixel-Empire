@@ -68,22 +68,26 @@ el "listón de calidad" esperado y desbloquea plataformas, géneros, features y 
 | **E6** | Servicios y streamers | ~2016–2023 | Streaming, early access, cloud | Loot boxes, pases de batalla, games-as-a-service |
 | **E7** | El futuro cercano | ~2024+ | Realidad mixta, IA generativa, nubes | Modelos emergentes (satíricos) |
 
-### 3.2 Etapas de escala del estudio `[baseline v1]` (doc `02` §4)
+### 3.2 Etapas de escala del estudio `[baseline v1 · rediseñado en Fase 8.8]` (doc `02` §4, doc `18` V4)
 
-Transversal a las eras. Cada etapa cambia *qué decisiones tomas* y se desbloquea al cumplir hitos de
-capital + plantilla:
+Transversal a las eras. Cada etapa cambia *qué decisiones tomas*. Desde la Fase 8.8 son **5 etapas**
+y el avance **SE COMPRA**: cumplir el requisito (capital + plantilla) solo **habilita** el botón
+"Ampliar estudio" de la cronología de escala; la ampliación se paga.
 
-| Etapa | Aforo | Eres... | Se desbloquea con | Proyectos a la vez | Foco de decisiones |
-|-------|-------|---------|-------------------|--------------------|--------------------|
-| **1. Garaje** | 1 (tú) | Creador | Inicio de la partida | 1 | Haces el juego con tus manos |
-| **2. Estudio pequeño** | 8 | Líder de equipo | 15k 💰 | 1 | Contratar, asignar, gestionar moral |
-| **3. Estudio consolidado** | 40 | Director | 120k 💰 + 5 en plantilla | 3 | Múltiples equipos/proyectos, portfolio |
-| **4. Corporación** | 200 | Magnate | 800k 💰 + 15 en plantilla | 6 | Estrategia macro, gestión por políticas |
+| Etapa | Aforo | Eres... | Requisito (habilita) | Coste de ampliar | Overhead/sem | Proyectos a la vez |
+|-------|:---:|---------|----------------------|:---:|:---:|:---:|
+| **1. Garaje** | 1 (tú) | Creador | Inicio de la partida | — | +0 | 1 |
+| **2. Estudio pequeño** | 4 | Líder de equipo | 25k 💰 | 10k 💰 | +300 | 1 |
+| **3. Estudio** | 10 | Director | 200k 💰 + 4 en plantilla | 100k 💰 | +1.500 | 2 |
+| **4. Estudio grande** | 25 | Ejecutivo | 1,5M 💰 + 8 en plantilla | 750k 💰 | +7.000 | 4 |
+| **5. Corporación** | 100 | Magnate | 8M 💰 + 20 en plantilla | 4M 💰 | +30.000 | 8 |
 
-Los umbrales **viven en `data/balance.ts`** (`staff.scale`) y son los que comprueba `advanceScale`; la
-**cronología de escala** (docs/10 §10.11) los lee de ahí, así que lo que se enseña es lo que se aplica.
-*Nota de la Fase 8.6:* la tabla decía antes ~50k/500k/5M "orientativos"; se alinea con el balance real,
-que las Fases 6 y 8.3 dejaron más bajo por viabilidad (los bots no llegaban a Corporación).
+Umbrales, costes y aforos **viven en `data/balance.ts`** (`staff.scale`, `economy.upkeepExtraByStage`)
+y son los que valida `expandStudio`; la **cronología de escala** (docs/10 §10.11) los lee de ahí, así
+que lo que se enseña es lo que se aplica. El **overhead creciente** (docs/18 V4-d) mata el "punto
+dulce": una Corporación quema ~1,5M 💰/año solo en infraestructura — sostenerla exige seguir sacando
+éxitos. Los umbrales están escalonados para que Corporación aterrice hacia **E5–E6** (verificado con
+los bots de docs/08 §8: la fábrica AAA la compra en E6).
 
 ### 3.3 Investigación y desbloqueos (doc `02` §3)
 
@@ -106,10 +110,11 @@ motores propios y capacidades de estudio (marketing avanzado, formación). Mucho
 ### 3.4 Ritmo objetivo `[baseline v1]` (doc `02` §6)
 
 - Partida completa E1→E7: **8–10 horas**; **35–45 juegos** en total.
-- Juego pequeño de garaje: **6 semanas**. Mediano 18 · grande 42 · **AAA 120** (~2,3 años). La
-  duración la fija **solo el tamaño**: **1 tick = 1 semana** y meter más gente **no acorta el plazo**
-  — la capacidad del equipo (personas, motores) decide cómo de **bien** se ejecuta dentro de él, con
-  rendimientos decrecientes (docs `02` §6.1). Para producir más, proyectos en paralelo.
+- Juego pequeño de garaje: **6 semanas**. Mediano 18 · grande 42 · muy grande 72 · **AAA 120**
+  (~2,3 años). La duración la fija **solo el tamaño**: **1 tick = 1 semana** y meter más gente
+  **no acorta el plazo** — la capacidad del equipo (personas, motores) decide cómo de **bien** se
+  ejecuta dentro de él, con rendimientos decrecientes (docs `02` §6.1). Para producir más, proyectos
+  en paralelo.
 - **El crunch es la única forma de comprimir el plazo:** dobles turnos = 2 semanas de trabajo por
   semana real, así que el juego sale en **la mitad de tiempo**… con el **doble de deuda de bugs**,
   moral/energía/lealtad por los suelos y el burnout esperando. La palanca de codicia hecha tiempo.
@@ -118,8 +123,8 @@ motores propios y capacidades de estudio (marketing avanzado, formación). Mucho
 | Tramo | % de la partida | Juegos aprox. | Etapa de escala típica |
 |-------|-----------------|---------------|------------------------|
 | E1–E2 | ~25% | 10–14 | Garaje → Estudio pequeño |
-| E3–E4 | ~35% | 12–16 | Estudio pequeño → Consolidado |
-| E5–E6 | ~30% | 8–12 | Consolidado → Corporación |
+| E3–E4 | ~35% | 12–16 | Estudio → Estudio grande |
+| E5–E6 | ~30% | 8–12 | Estudio grande → Corporación |
 | E7 | ~10% | 3–5 | Corporación |
 
 ---
@@ -298,8 +303,10 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 |----------|------------|
 | Capital inicial (garaje) | 10.000 💰 |
 | Precio por juego | 20–60 💰 según tamaño/era |
-| Coste base por tamaño | 500 / 2.000 / 8.000 / 40.000 💰 (Pequeño/Mediano/Grande/AAA), fijo al iniciar |
-| Requisito por tamaño | plantilla mín. 1 / 3 / 8 / 15 · etapa mín. Garaje / E. pequeño / Consolidado / **Corporación** (AAA) |
+| Coste base por tamaño | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
+| Requisito por tamaño | plantilla mín. 1 / 3 / 8 / 15 / 40 · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** (AAA) |
+| Ampliar el estudio (docs/18 V4-c) | coste 10k / 100k / 750k / 4M 💰 a etapa 2/3/4/5; requiere 25k / 200k+4 / 1,5M+8 / 8M+20 (capital+plantilla) |
+| Overhead semanal por etapa (docs/18 V4-d) | +0 / +300 / +1.500 / +7.000 / +30.000 💰 sobre el fijo base |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
@@ -309,7 +316,8 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 | Préstamos | hasta ~6 meses de costes fijos; interés ~1%/semana |
 
 El **tamaño** es una decisión con peso: coste base fijo + plantilla y etapa mínimas (el AAA solo como
-Corporación). Bancarrota sostenida (sin poder pagar salarios) = **game over**.
+Corporación de 40+). La **escala también**: cada ampliación se compra y encarece la semana — un estudio
+grande sin éxitos se desangra. Bancarrota sostenida (sin poder pagar salarios) = **game over**.
 
 ---
 

@@ -29,7 +29,12 @@ export const balance = {
    * la era que se quiera. Solo datos: la simulación es exactamente la misma.
    */
   sandbox: {
-    initialCapital: 1_000_000,
+    /**
+     * Caja de sobra también para COMPRAR etapas (docs/18 V4-c): con el avance
+     * de pago, experimentar con una Corporación exige cubrir su requisito de
+     * 8M + el desembolso. En sandbox no hay presión: se empieza pudiendo todo.
+     */
+    initialCapital: 20_000_000,
     researchPoints: 200,
   },
 
@@ -38,25 +43,44 @@ export const balance = {
     initialCapital: 10_000,
     /** Coste fijo semanal del garaje (luz, alquiler...); infraestructura de docs/06 §4. */
     weeklyUpkeep: 100,
-    /** Alquiler extra sobre el coste fijo del garaje según etapa de escala (docs/02 §4). */
-    upkeepExtraByStage: { 1: 0, 2: 150, 3: 600, 4: 2_000 } satisfies Record<ScaleStage, number>,
+    /**
+     * Alquiler/infraestructura extra semanal por etapa de escala (docs/02 §4,
+     * docs/18 V4-d): cada etapa QUEMA considerablemente más. Un estudio grande
+     * no es riesgo cero: sostenerlo exige seguir sacando éxitos. Esto mata el
+     * "punto dulce" invencible (una Corporación quema ~1,5M 💰/año solo en
+     * infraestructura, antes de nóminas).
+     */
+    upkeepExtraByStage: {
+      1: 0,
+      2: 300,
+      3: 1_500,
+      4: 7_000,
+      5: 30_000,
+    } satisfies Record<ScaleStage, number>,
     /** Coste de desarrollo: ~500 💰 por persona·semana [DECIDIDO, docs/12 §6]. */
     devCostPerPersonWeek: 500,
     /** Precio recomendado por tamaño, dentro del rango 20–60 💰 [DECIDIDO, docs/12 §6]. */
-    priceBySize: { pequeno: 20, mediano: 30, grande: 45, aaa: 60 } satisfies Record<
-      ProjectSize,
-      number
-    >,
+    priceBySize: {
+      pequeno: 20,
+      mediano: 30,
+      grande: 45,
+      muyGrande: 50,
+      aaa: 60,
+    } satisfies Record<ProjectSize, number>,
     /**
-     * Coste base fijo por tamaño (docs/17 E1): se cobra AL INICIAR el proyecto,
-     * además de la licencia de plataforma y del coste por persona·semana. Hace
-     * que ir a lo grande sea una decisión con peso económico, no solo de tiempo.
-     * Escala fuerte: un AAA compromete presupuesto de corporación de entrada.
+     * Coste base fijo por tamaño (docs/17 E1, escalado en 8.8): se cobra AL
+     * INICIAR el proyecto, además de la licencia de plataforma y del coste por
+     * persona·semana. Hace que ir a lo grande sea una decisión con peso
+     * económico, no solo de tiempo. Escala fuerte: un AAA compromete
+     * presupuesto de corporación de entrada (40k era ruido para una caja de 8M).
      */
-    sizeBaseCost: { pequeno: 500, mediano: 2_000, grande: 8_000, aaa: 40_000 } satisfies Record<
-      ProjectSize,
-      number
-    >,
+    sizeBaseCost: {
+      pequeno: 500,
+      mediano: 2_000,
+      grande: 8_000,
+      muyGrande: 60_000,
+      aaa: 250_000,
+    } satisfies Record<ProjectSize, number>,
     /** Semanas consecutivas en negativo antes de la bancarrota (docs/06 §1: "sostenido"). */
     bankruptcyGraceWeeks: 8,
 
@@ -288,10 +312,13 @@ export const balance = {
      * Calibrado a docs/02 §6: juego pequeño de garaje 6 semanas (~4–8) y AAA
      * de 120 semanas (~2,3 años, dentro del "2–3 años").
      */
-    phaseWeeksBySize: { pequeno: 2, mediano: 6, grande: 14, aaa: 40 } satisfies Record<
-      ProjectSize,
-      number
-    >,
+    phaseWeeksBySize: {
+      pequeno: 2,
+      mediano: 6,
+      grande: 14,
+      muyGrande: 24,
+      aaa: 40,
+    } satisfies Record<ProjectSize, number>,
     /**
      * Dotación relativa (crewRatio = output / plantilla esperada del tamaño, con
      * la esperada = sizeGate[size].minStaff). Con la plantilla justa vale 1: el
@@ -302,19 +329,20 @@ export const balance = {
     /** Deuda de bugs extra por semana con el equipo a media dotación (× (1 − crewRatio)). */
     understaffBugsPerWeek: 0.05,
     /**
-     * Requisitos por tamaño de proyecto (docs/17 E1): plantilla mínima y etapa
-     * de escala mínima. El AAA queda bloqueado hasta Corporación (etapa 4). La
-     * UI atenúa los tamaños bloqueados con su requisito; el núcleo lo valida en
-     * startProject (sizeBlockReason). El coste base va en economy.sizeBaseCost.
+     * Requisitos por tamaño de proyecto (docs/17 E1, docs/18 V4-b): plantilla
+     * mínima y etapa de escala mínima. El "Muy grande" pide Estudio grande; el
+     * AAA queda bloqueado hasta Corporación (etapa 5) y exige una organización
+     * de 40 personas — su crewRatio espera esa plantilla: intentarlo con menos
+     * lo deja a medio cocer. La UI atenúa los tamaños bloqueados con su
+     * requisito; el núcleo lo valida en startProject (sizeBlockReason). El
+     * coste base va en economy.sizeBaseCost.
      */
     sizeGate: {
       pequeno: { minStaff: 1, minStage: 1 },
       mediano: { minStaff: 3, minStage: 2 },
       grande: { minStaff: 8, minStage: 3 },
-      // El AAA se desbloquea al ser Corporación (etapa 4); su plantilla mínima se
-      // alinea con el umbral de esa etapa (staff.scale.stage4.staff = 15) para
-      // que ser Corporación baste, sin "dead zone" entre 15 y 20 (docs/17 E1).
-      aaa: { minStaff: 15, minStage: 4 },
+      muyGrande: { minStaff: 15, minStage: 4 },
+      aaa: { minStaff: 40, minStage: 5 },
     } satisfies Record<ProjectSize, { minStaff: number; minStage: ScaleStage }>,
     /** Deuda de bugs acumulada por semana de Concepto/Producción (docs/03 factor D). */
     baseBugsPerWeek: 0.02,
@@ -328,10 +356,13 @@ export const balance = {
     /** Ponderación de las partes del Fit (docs/03 factor A). */
     fitWeights: { themeGenre: 0.5, genrePlatform: 0.25, audience: 0.25 },
     /** objetivoAlcance(tamaño): suma de valorCalidad de features para featureScore = 1 (docs/03 factor C). */
-    featureScopeTarget: { pequeno: 4, mediano: 8, grande: 14, aaa: 22 } satisfies Record<
-      ProjectSize,
-      number
-    >,
+    featureScopeTarget: {
+      pequeno: 4,
+      mediano: 8,
+      grande: 14,
+      muyGrande: 18,
+      aaa: 22,
+    } satisfies Record<ProjectSize, number>,
     /** innovationMod: rango 0.9–1.15 [DECIDIDO, docs/12 §3]. */
     innovation: {
       min: 0.9,
@@ -347,13 +378,13 @@ export const balance = {
      * juego pequeño ya no puede ser una obra maestra absoluta.
      */
     capByEraSize: {
-      E1: { pequeno: 85, mediano: 85, grande: 85, aaa: 85 },
-      E2: { pequeno: 88, mediano: 88, grande: 88, aaa: 88 },
-      E3: { pequeno: 88, mediano: 91, grande: 91, aaa: 91 },
-      E4: { pequeno: 90, mediano: 93, grande: 94, aaa: 94 },
-      E5: { pequeno: 92, mediano: 95, grande: 96, aaa: 96 },
-      E6: { pequeno: 93, mediano: 96, grande: 98, aaa: 98 },
-      E7: { pequeno: 94, mediano: 97, grande: 100, aaa: 100 },
+      E1: { pequeno: 85, mediano: 85, grande: 85, muyGrande: 85, aaa: 85 },
+      E2: { pequeno: 88, mediano: 88, grande: 88, muyGrande: 88, aaa: 88 },
+      E3: { pequeno: 88, mediano: 91, grande: 91, muyGrande: 91, aaa: 91 },
+      E4: { pequeno: 90, mediano: 93, grande: 94, muyGrande: 94, aaa: 94 },
+      E5: { pequeno: 92, mediano: 95, grande: 96, muyGrande: 96, aaa: 96 },
+      E6: { pequeno: 93, mediano: 96, grande: 98, muyGrande: 98, aaa: 98 },
+      E7: { pequeno: 94, mediano: 97, grande: 100, muyGrande: 100, aaa: 100 },
     } satisfies Record<EraId, Record<ProjectSize, number>>,
   },
 
@@ -569,21 +600,38 @@ export const balance = {
     },
 
     /**
-     * Las 4 etapas de escala (docs/02 §4): hitos de transición, aforo de
-     * plantilla y proyectos en paralelo por etapa. Las etapas grandes se
-     * desbloquean por capital + tamaño de plantilla (hitos legibles).
+     * Las 5 etapas de escala (docs/02 §4, docs/18 V4-a/c). Cumplir el
+     * REQUISITO (capital + plantilla) solo HABILITA la ampliación: el avance
+     * SE COMPRA con un desembolso (upgradeCost) desde la cronología de escala
+     * (expandStudio). El coste es siempre menor que el requisito de capital,
+     * así comprar nunca deja la caja en negativo. Los umbrales están
+     * escalonados para que Corporación aterrice hacia E5–E6 (docs/18 V4-c).
      */
     scale: {
-      stage2CapitalThreshold: 15_000,
-      /** Estudio consolidado: capital y equipo que justifican varios equipos. */
-      stage3: { capital: 120_000, staff: 5 },
-      /** Corporación: la escala del magnate (docs/02 §4). */
-      stage4: { capital: 800_000, staff: 15 },
-      staffCapByStage: { 1: 1, 2: 8, 3: 40, 4: 200 } satisfies Record<ScaleStage, number>,
+      /**
+       * Lo que hace falta tener para poder COMPRAR la entrada a cada etapa.
+       * El requisito de plantilla de cada una cabe SIEMPRE en el aforo de la
+       * anterior (4≤4, 8≤10, 20≤25): sin ese cuidado habría una etapa
+       * incomprable. El de capital supera siempre el coste de la ampliación.
+       */
+      requirementsByStage: {
+        2: { capital: 25_000, staff: 0 },
+        3: { capital: 200_000, staff: 4 },
+        4: { capital: 1_500_000, staff: 8 },
+        5: { capital: 8_000_000, staff: 20 },
+      } satisfies Record<Exclude<ScaleStage, 1>, { capital: number; staff: number }>,
+      /** El desembolso de la ampliación (la mudanza/obra; docs/18 V4-c). */
+      upgradeCostByStage: {
+        2: 10_000,
+        3: 100_000,
+        4: 750_000,
+        5: 4_000_000,
+      } satisfies Record<Exclude<ScaleStage, 1>, number>,
+      staffCapByStage: { 1: 1, 2: 4, 3: 10, 4: 25, 5: 100 } satisfies Record<ScaleStage, number>,
       /** Proyectos en paralelo permitidos por etapa (docs/02 §4). */
-      projectCapByStage: { 1: 1, 2: 1, 3: 3, 4: 6 } satisfies Record<ScaleStage, number>,
+      projectCapByStage: { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8 } satisfies Record<ScaleStage, number>,
       /** Tamaño del pool de contratación por etapa (más escala, más candidatos). */
-      poolSizeByStage: { 1: 3, 2: 3, 3: 5, 4: 8 } satisfies Record<ScaleStage, number>,
+      poolSizeByStage: { 1: 3, 2: 3, 3: 4, 4: 6, 5: 8 } satisfies Record<ScaleStage, number>,
     },
   },
 
@@ -592,10 +640,13 @@ export const balance = {
     /** ~1 💡 por persona·semana en I+D [DECIDIDO, docs/12 §6]. */
     pointsPerPersonWeek: 1,
     /** 💡 al lanzar un juego, por tamaño ("se acumulan al desarrollar juegos"). */
-    releasePointsBySize: { pequeno: 2, mediano: 4, grande: 7, aaa: 12 } satisfies Record<
-      ProjectSize,
-      number
-    >,
+    releasePointsBySize: {
+      pequeno: 2,
+      mediano: 4,
+      grande: 7,
+      muyGrande: 9,
+      aaa: 12,
+    } satisfies Record<ProjectSize, number>,
 
     /**
      * Progresión del conocimiento (docs/17 P1/P2). Todo data-driven: qué temas
@@ -651,8 +702,11 @@ export const balance = {
 
   /** Gestión por políticas en la escala grande (docs/02 §4 y docs/10 §14). */
   policies: {
-    /** Etapa de escala desde la que las políticas están disponibles. */
-    minStage: 3 as ScaleStage,
+    /**
+     * Etapa de escala desde la que las políticas están disponibles: el
+     * Estudio grande (aforo 25; con 5 etapas desde 8.8, la 3 solo tiene 10).
+     */
+    minStage: 4 as ScaleStage,
     /** Política salarial: coste semanal vs ánimo de la plantilla. */
     salary: {
       austera: { costFactor: 0.92, moralePerWeek: -1, loyaltyPerWeek: -0.7, employerRepPerWeek: -0.06 },
@@ -717,10 +771,13 @@ export const balance = {
        * llega a la meseta: por eso los desarrollos largos siguen generando más
        * expectación total, pero ninguno se dispara por pura duración.
        */
-      gainBySize: { pequeno: 0.07, mediano: 0.05, grande: 0.04, aaa: 0.045 } satisfies Record<
-        ProjectSize,
-        number
-      >,
+      gainBySize: {
+        pequeno: 0.07,
+        mediano: 0.05,
+        grande: 0.04,
+        muyGrande: 0.04,
+        aaa: 0.045,
+      } satisfies Record<ProjectSize, number>,
       /**
        * Meseta del hype PASIVO (docs/18 V3): el que sube solo, sin comprar nada.
        * La ganancia semanal se multiplica por (1 − hype/passiveCap), así que el
@@ -844,7 +901,13 @@ export const balance = {
 
     /** Reparto de claves (docs/07 §3): recurso limitado por lanzamiento. */
     keys: {
-      bySize: { pequeno: 2, mediano: 3, grande: 4, aaa: 5 } satisfies Record<ProjectSize, number>,
+      bySize: {
+        pequeno: 2,
+        mediano: 3,
+        grande: 4,
+        muyGrande: 5,
+        aaa: 5,
+      } satisfies Record<ProjectSize, number>,
       /** Hype inmediato al anunciar la colaboración: (alcance/escala) × boost. */
       reachScale: 1_000,
       hypeBoost: 0.04,
@@ -960,10 +1023,13 @@ export const balance = {
      * potencial crece en el mismo orden (los AAA venden órdenes de magnitud más
      * que un indie). El precio por tamaño (20→60 💰) aporta el resto del margen.
      */
-    sizeDemandFactor: { pequeno: 1, mediano: 5, grande: 20, aaa: 70 } satisfies Record<
-      ProjectSize,
-      number
-    >,
+    sizeDemandFactor: {
+      pequeno: 1,
+      mediano: 5,
+      grande: 20,
+      muyGrande: 40,
+      aaa: 70,
+    } satisfies Record<ProjectSize, number>,
     /**
      * Curva de lanzamiento (docs/04 §6): pico inicial + cola larga.
      *   curva(t) = pico(hype)·spikeDecay^t + tailAmp·tailDecay(reseña)^t

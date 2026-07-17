@@ -18,8 +18,8 @@ import type { Employee } from './staff';
 
 export type { EraId };
 
-/** Etapa de escala del estudio: garaje → corporación (docs/02 §4). */
-export type ScaleStage = 1 | 2 | 3 | 4;
+/** Etapa de escala del estudio: garaje → corporación (docs/02 §4, 5 desde 8.8). */
+export type ScaleStage = 1 | 2 | 3 | 4 | 5;
 
 /** Datos del estudio (docs/09 §1): capital, reputación segmentada y deuda moral. */
 export interface Studio {

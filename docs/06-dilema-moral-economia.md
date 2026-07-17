@@ -87,7 +87,9 @@ Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 |----------|---------------|
 | Capital inicial (garaje) | 10.000 💰 |
 | Precio recomendado por juego | 20–60 💰 según tamaño/era |
-| **Coste base por tamaño** (docs/17 E1) | 500 / 2.000 / 8.000 / 40.000 💰 (Pequeño/Mediano/Grande/AAA), fijo al iniciar |
+| **Coste base por tamaño** (docs/17 E1 + docs/18 V4) | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
+| **Overhead fijo semanal por etapa** (docs/18 V4-d) | 0 / 300 / 1.500 / 7.000 / 30.000 💰 extra sobre el coste fijo base (100 💰) según etapa 1–5 |
+| **Coste de ampliar el estudio** (docs/18 V4-c) | 10k / 100k / 750k / 4M 💰 (a etapa 2/3/4/5); requiere además 25k / 200k+4 / 1,5M+8 / 8M+20 (capital + plantilla) |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
@@ -95,10 +97,14 @@ Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 | Licencia de plataforma (dev-kit) | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
 
-**Coste base + tamaño como decisión con peso (docs/17 E1):** cada tamaño exige, además del coste base
-fijo, una **plantilla mínima** (1/3/8/15) y una **etapa de escala mínima** (Garaje / Estudio pequeño /
-Consolidado / **Corporación**). El AAA queda bloqueado hasta ser Corporación. Así ir a lo grande es una
-apuesta económica real, no la opción por defecto.
+**Coste base + tamaño como decisión con peso (docs/17 E1 + docs/18 V4-b):** cada tamaño exige, además
+del coste base fijo, una **plantilla mínima** (1/3/8/15/40) y una **etapa de escala mínima** (Garaje /
+Estudio pequeño / Estudio / Estudio grande / **Corporación**). El AAA queda bloqueado hasta ser
+Corporación con 40 en plantilla. Así ir a lo grande es una apuesta económica real, no la opción por defecto.
+
+**La escala quema (docs/18 V4-d):** el overhead creciente por etapa hace que un estudio grande no sea
+nunca riesgo cero — una Corporación quema ~1,5M 💰/año solo en infraestructura (más ~1,6M de nóminas
+con 40 empleados). Sostener la torre exige seguir sacando éxitos: el "punto dulce" invencible no existe.
 
 `factorMonetización` v1: premium = 1.0; premium+dlc ≈ 1.15; premium+mtx ≈ 1.0 + 0.6·`aggressiveness`;
 f2p ≈ 0.3 en ventas base pero MTX ≈ baseInstalada · 0.8 · `aggressiveness`.

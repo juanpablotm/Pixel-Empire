@@ -26,7 +26,7 @@ export function policiesUnlocked(state: GameState): boolean {
 export function setPolicies(state: GameState, patch: Partial<StudioPolicies>): GameState {
   if (state.gameOver) throw new Error('La partida ha terminado');
   if (!policiesUnlocked(state)) {
-    throw new Error('La gestión por políticas llega con el estudio consolidado (docs/02 §4)');
+    throw new Error('La gestión por políticas llega con el Estudio grande (docs/02 §4)');
   }
   return { ...state, policies: { ...state.policies, ...patch } };
 }

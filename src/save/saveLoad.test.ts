@@ -349,6 +349,51 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(() => tick(state)).not.toThrow();
   });
 
+  it('migra un guardado v9 (Fase 8.4) al esquema de 5 etapas (docs/18 V4): 4→5 sin tocar nada más', () => {
+    // El mapeo por identidad de rol: 1→1, 2→2, 3→3 y la vieja Corporación (4)
+    // pasa a la nueva (5). No se recorta plantilla ni proyectos (docs/17 B1).
+    const cases: [number, number][] = [
+      [1, 1],
+      [2, 2],
+      [3, 3],
+      [4, 5],
+    ];
+    for (const [oldStage, newStage] of cases) {
+      const base = createInitialState(SEED);
+      const v9State = {
+        ...base,
+        studio: { ...base.studio, scaleStage: oldStage },
+      };
+      const state = deserializeSave(JSON.stringify({ saveVersion: 9, state: v9State }));
+      expect(state.studio.scaleStage).toBe(newStage);
+      expect(() => tick(state)).not.toThrow();
+    }
+  });
+
+  it('una vieja Corporación migrada conserva su plantilla aunque supere aforos intermedios', () => {
+    const base = createInitialState(SEED);
+    const bigStaff = [
+      base.staff[0],
+      ...Array.from({ length: 29 }, (_, i) => ({
+        ...base.staff[0],
+        id: `viejo-${i}`,
+        name: `Veterano ${i}`,
+        founder: false,
+        salary: 800,
+      })),
+    ];
+    const v9State = {
+      ...base,
+      studio: { ...base.studio, capital: 2_000_000, scaleStage: 4 },
+      staff: bigStaff,
+    };
+    const state = deserializeSave(JSON.stringify({ saveVersion: 9, state: v9State }));
+    // Corporación nueva (aforo 100): los 30 caben; nadie es despedido al cargar.
+    expect(state.studio.scaleStage).toBe(5);
+    expect(state.staff).toHaveLength(30);
+    expect(() => tick(state)).not.toThrow();
+  });
+
   it('al cargar, sanea el hype de partidas antiguas que quedaron por encima del tope (docs/17 B2)', () => {
     let state = startProject(createInitialState(SEED), {
       name: 'Desbordado',

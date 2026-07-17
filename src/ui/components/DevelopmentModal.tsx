@@ -4,6 +4,7 @@ import {
   computeBugLevel,
   computeTeamFactor,
   computeTeamOutput,
+  policiesUnlocked,
   projectProgress,
   projectTotalWeeks,
   realDesignShare,
@@ -99,7 +100,9 @@ function DevelopmentBody({ project }: { project: Project }) {
   const projects = game.projects;
   const staff = game.staff;
   const capital = game.studio.capital;
-  const antiCrunch = game.policies.antiCrunch && game.studio.scaleStage >= 3;
+  // La política anti-crunch solo aplica cuando las políticas están activas
+  // (etapa de escala grande): el umbral lo decide el núcleo, no la UI.
+  const antiCrunch = game.policies.antiCrunch && policiesUnlocked(game);
   const openDev = useGameStore((s) => s.openDev);
   const closeDev = useGameStore((s) => s.closeDev);
   const continueDev = useGameStore((s) => s.continueDev);

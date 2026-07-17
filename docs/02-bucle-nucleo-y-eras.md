@@ -24,10 +24,12 @@ El jugador define:
 - **Sub-género / mezcla** (opcional, desbloqueable): combinar dos géneros con pesos.
 - **Plataforma(s)** objetivo (según las disponibles en la era actual).
 - **Público objetivo** (Hardcore / Amplio / Casual / Infantil) — afecta al fit y a los segmentos.
-- **Tamaño del proyecto** (Pequeño / Mediano / Grande / AAA) — escala tiempo, coste y potencial.
-  Cada tamaño exige un **coste base fijo**, una **plantilla mínima** y una **etapa de escala mínima**
-  (docs/17 E1): el AAA queda bloqueado hasta ser **Corporación**. Los tamaños no disponibles se
-  muestran atenuados con su requisito. Ir a lo grande es una decisión con peso, no la opción por defecto.
+- **Tamaño del proyecto** (Pequeño / Mediano / Grande / **Muy grande** / AAA, 5 desde docs/18 V4) —
+  escala tiempo, coste y potencial. Cada tamaño exige un **coste base fijo**, una **plantilla mínima**
+  y una **etapa de escala mínima** (docs/17 E1 + docs/18 V4-b): el Muy grande pide un Estudio grande;
+  el AAA queda bloqueado hasta ser **Corporación** con una organización de 40. Los tamaños no
+  disponibles se muestran atenuados con su requisito. Ir a lo grande es una decisión con peso, no la
+  opción por defecto.
 - **Nombre del juego** (texto libre; se usa en portada procedural y en la comunidad).
 
 El sistema muestra en tiempo real un **medidor de Fit** (ver `03`) que orienta sin dar la respuesta.
@@ -121,24 +123,34 @@ intacto: el **desglose de reseña** de tus propios lanzamientos es **siempre leg
 se paga saberlo *antes*, nunca la explicación *después* — así descubrir el mapa del mercado es la
 recompensa del Pilar 5, no un muro.
 
-## 4. Progresión de escala (las 4 etapas de estudio) `[DECIDIDO]`
+## 4. Progresión de escala (las 5 etapas de estudio) `[DECIDIDO · rediseñado en docs/18 V4]`
 
 Transversal a las eras históricas, el estudio crece en escala. Cada etapa cambia *qué decisiones tomas*.
 
-| Etapa | Tamaño | El jugador es... | Foco de decisiones |
-|-------|--------|------------------|--------------------|
-| **1. Garaje** | 1 persona (tú) | Creador | Haces el juego con tus manos; cada slider es tu esfuerzo. |
-| **2. Estudio pequeño** | 2–8 | Líder de equipo | Contratas, asignas, gestionas moral; empiezas a delegar. |
-| **3. Estudio consolidado** | 9–40 | Director | Múltiples equipos/proyectos en paralelo; estrategia de portfolio. |
-| **4. Corporación** | 40+ / estudios | Magnate | Estrategia macro: franquicias, adquisiciones, plataformas, ética a escala. |
+| Etapa | Aforo | Proyectos a la vez | El jugador es... | Foco de decisiones |
+|-------|:---:|:---:|------------------|--------------------|
+| **1. Garaje** | 1 (tú) | 1 | Creador | Haces el juego con tus manos; cada slider es tu esfuerzo. |
+| **2. Estudio pequeño** | 4 | 1 | Líder de equipo | Contratas, asignas, gestionas moral; empiezas a delegar. |
+| **3. Estudio** | 10 | 2 | Director | Dos equipos en paralelo; estrategia de portfolio. |
+| **4. Estudio grande** | 25 | 4 | Ejecutivo | Varios proyectos grandes a la vez; gestión por políticas. |
+| **5. Corporación** | 100 | 8 | Magnate | Estrategia macro: franquicias, plataformas, ética a escala. |
 
-La transición entre etapas se desbloquea por hitos de **capital + plantilla** (los umbrales concretos,
-en `data/balance.ts` → `staff.scale`; la tabla legible, en `16` §3.2) y es uno de los grandes momentos
-de recompensa del juego. Desde la Fase 8.6 el jugador los ve: la **cronología de escala** (`10` §10.11)
-enseña los requisitos de cada etapa leyéndolos de la misma fuente que los comprueba. La etapa también
-**gatea el tamaño de proyecto**
-(docs/17 E1): el AAA solo está al alcance de una **Corporación** (con su plantilla mínima), así la
-escala del estudio importa de verdad a la hora de decidir qué juego construir.
+**El avance SE COMPRA (docs/18 V4-c).** Cumplir el hito de **capital + plantilla** solo **habilita**
+la ampliación; hay que **pagarla** con un desembolso desde la **cronología de escala** (`10` §10.11),
+con el botón "Ampliar estudio (coste: X 💰)". Los umbrales están escalonados para que Corporación
+aterrice hacia **E5–E6** (verificado con los bots de `08` §8). Requisitos y costes viven en
+`data/balance.ts` → `staff.scale` (`requirementsByStage`, `upgradeCostByStage`); la cronología los
+enseña leyéndolos de la misma fuente que valida la compra (`expandStudio`), y la tabla legible está
+en `16` §3.2.
+
+**Cada etapa quema más (docs/18 V4-d).** El overhead fijo semanal (alquiler/infraestructura,
+`economy.upkeepExtraByStage`) sube considerablemente por etapa: una Corporación quema ~1,5M 💰/año
+solo en infraestructura, antes de nóminas. Un estudio grande fabricando AAAs no es riesgo cero:
+para sostenerlo hay que seguir sacando éxitos — no existe el "punto dulce" invencible.
+
+La etapa también **gatea el tamaño de proyecto** (docs/17 E1 + docs/18 V4-b): el Muy grande pide un
+Estudio grande; el AAA solo está al alcance de una **Corporación** con 40 en plantilla. Así la escala
+del estudio importa de verdad a la hora de decidir qué juego construir.
 
 ## 5. Las Eras históricas `[DECIDIDO · baseline v1]`
 
@@ -168,7 +180,8 @@ muertos en E5. Y cada era sube el "listón de calidad esperado" por el público 
 ### 6.1 El calendario no se compra con plantilla `[DECIDIDO · baseline v1]`
 
 **1 tick = 1 semana, siempre.** La duración de un juego la fija **solo su tamaño** (pequeño 6 ·
-mediano 18 · grande 42 · AAA 120 semanas de calendario, `balance.development.phaseWeeksBySize`).
+mediano 18 · grande 42 · muy grande 72 · AAA 120 semanas de calendario,
+`balance.development.phaseWeeksBySize`).
 Meter más gente **no acorta el plazo**: lo que hace la capacidad del equipo (personas + motores
 propios, menos el burnout) es decidir **cómo de bien se ejecuta dentro de ese plazo**.
 
@@ -181,7 +194,7 @@ ejecución. Es la palanca de codicia de `05`/`06` hecha tiempo: *sales antes, pe
 la gente*. La plantilla, en cambio, nunca compra calendario.
 
 Se modela con la **dotación relativa**: `crewRatio = capacidad / plantilla esperada del tamaño`
-(la esperada es el `minStaff` del gate de tamaño, docs/17 E1: 1/3/8/15). Con la plantilla justa vale
+(la esperada es el `minStaff` del gate de tamaño, docs/17 E1 + docs/18 V4-b: 1/3/8/15/40). Con la plantilla justa vale
 1 y el QA rinde al ritmo nominal; ir corto deja el juego a medio cocer (menos QA y más bugs por falta
 de manos); ir sobrado ayuda solo hasta `maxCrewRatio` (rendimientos decrecientes — ley de Brooks:
 siete personas no hacen un juego pequeño en una semana). Para crecer de verdad no se amontona gente
@@ -196,5 +209,6 @@ en un proyecto: se abren **proyectos en paralelo** (§4).
 - [ ] El desarrollo pasa por 3 fases con reparto de esfuerzo y decisiones de features.
 - [ ] Al lanzar, se calculan calidad, reseñas, ventas y ajuste de reputación (vía sistemas 03/04/06/07).
 - [ ] Existe post-lanzamiento con parches y DLC.
-- [ ] El estudio progresa por las 4 etapas de escala y por las 7 eras, con eventos de transición.
+- [ ] El estudio progresa por las 5 etapas de escala (comprando cada ampliación) y por las 7 eras,
+      con eventos de transición.
 - [ ] La bancarrota sostenida produce game over; existe cálculo de Puntuación de Legado al final.

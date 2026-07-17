@@ -91,6 +91,7 @@ export const sizeLabels = {
   pequeno: 'pequeño',
   mediano: 'mediano',
   grande: 'grande',
+  muyGrande: 'muy grande',
   aaa: 'AAA',
 } as const;
 

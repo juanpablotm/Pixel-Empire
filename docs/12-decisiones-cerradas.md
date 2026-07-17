@@ -58,9 +58,11 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 |----------|---------------|
 | Capital inicial (garaje) | 10.000 💰 |
 | Precio por juego | 20–60 💰 según tamaño/era |
-| Coste base por tamaño (docs/17 E1) | 500 / 2.000 / 8.000 / 40.000 💰 (Pequeño/Mediano/Grande/AAA), cobrado al iniciar |
-| Requisito por tamaño (docs/17 E1) | plantilla mín. 1 / 3 / 8 / 15 · etapa mín. Garaje / Estudio pequeño / Consolidado / **Corporación** |
-| Duración por tamaño (docs/02 §6.1) | 6 / 18 / 42 / **120** semanas de calendario. 1 tick = 1 semana; la plantilla no acorta el plazo, mejora la ejecución (`crewRatio`, tope 1,5×). El **crunch** es la única excepción: 2 semanas de trabajo por tick (sale en la mitad, con el doble de bugs y desgaste) |
+| Coste base por tamaño (docs/17 E1 + docs/18 V4) | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), cobrado al iniciar |
+| Requisito por tamaño (docs/18 V4-b) | plantilla mín. 1 / 3 / 8 / 15 / 40 · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** |
+| Duración por tamaño (docs/02 §6.1) | 6 / 18 / 42 / 72 / **120** semanas de calendario. 1 tick = 1 semana; la plantilla no acorta el plazo, mejora la ejecución (`crewRatio`, tope 1,5×). El **crunch** es la única excepción: 2 semanas de trabajo por tick (sale en la mitad, con el doble de bugs y desgaste) |
+| Escala: 5 etapas que SE COMPRAN (docs/18 V4-a/c) | aforo 1/4/10/25/100 · proyectos 1/1/2/4/8 · requisito 25k / 200k+4 / 1,5M+8 / 8M+20 (capital+plantilla) · coste de ampliación 10k / 100k / 750k / 4M 💰. Cumplir el umbral habilita; ampliar se paga (botón en la cronología de escala) |
+| Overhead fijo semanal por etapa (docs/18 V4-d) | +0 / +300 / +1.500 / +7.000 / +30.000 💰 sobre el fijo base (100 💰): la Corporación quema ~1,5M/año antes de nóminas — sin éxitos no se sostiene |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |

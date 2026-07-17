@@ -20,7 +20,7 @@ export type NoticeKind =
   | 'marketExit' // un juego sale del mercado → P&L (generó vs costó)
   | 'staffLeft' // renuncia de un empleado (cualquiera; docs/17 U4 ajustado)
   | 'bankruptcyWarning' // primera semana en números rojos (docs/06 §1)
-  | 'scaleUp' // desbloqueo de etapa de escala (docs/02 §4)
+  | 'scaleUp' // la ampliación de estudio pasa a estar disponible (docs/18 V4-c)
   | 'crisis' // escándalo/crisis (beat: CrisisModal, docs/07 §5)
   | 'era' // cambio de era (beat: EraTransition, docs/10 §7.6)
   | 'award'; // premio ganado (beat: AwardsModal, docs/06 §7)
@@ -75,12 +75,14 @@ export const IMPORTANT_NOTICES: Record<NoticeKind, NoticeSpec> = {
     acceptLabel: 'Lo asumo',
     accent: 'danger',
   },
+  // Desde 8.8 la etapa se compra (docs/18 V4-c): el aviso celebra que CUMPLES
+  // los requisitos para ampliar; el botón manda a la cronología de escala.
   scaleUp: {
     level: 'importante',
     surface: 'modal',
     icon: '🏢',
-    title: 'El estudio crece',
-    acceptLabel: '¡Adelante!',
+    title: 'Puedes ampliar el estudio',
+    acceptLabel: 'Ver la cronología',
     accent: 'ok',
   },
   // Estos tres ya tienen su beat (docs/10 §7): no se rehacen por el modal

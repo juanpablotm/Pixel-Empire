@@ -9,8 +9,8 @@ import type { MonetizationConfig } from './moral';
 /** Público objetivo (docs/02 §2 paso 1). */
 export type Audience = 'hardcore' | 'amplio' | 'casual' | 'infantil';
 
-/** Tamaño del proyecto: escala tiempo, coste y potencial (docs/02 §2). */
-export type ProjectSize = 'pequeno' | 'mediano' | 'grande' | 'aaa';
+/** Tamaño del proyecto: escala tiempo, coste y potencial (docs/02 §2; 5 desde 8.8). */
+export type ProjectSize = 'pequeno' | 'mediano' | 'grande' | 'muyGrande' | 'aaa';
 
 /** Fase interna de desarrollo: 1 Concepto · 2 Producción · 3 Pulido (docs/02 §2 paso 3). */
 export type DevPhaseNumber = 1 | 2 | 3;

@@ -97,16 +97,17 @@ grande, egos que chocan. El factor entra en el `teamFactor` de `03`.
 - En **fase avanzada** (con rivales, `04`/`11`), el talento que se va puede **irse a la competencia**
   y potenciar a un rival — drama y consecuencia real.
 
-## 8. Escala: de hacerlo tú a dirigir `[DECIDIDO]`
+## 8. Escala: de hacerlo tú a dirigir `[DECIDIDO · 5 etapas desde docs/18 V4]`
 
-Coherente con las 4 etapas (`02`):
+Coherente con las 5 etapas (`02` §4):
 
 - **Garaje:** eres 1 empleado (tú); tus skills son todo. La gestión de personal casi no existe.
-- **Estudio pequeño:** 2–8; empieza la moral, la asignación y la química.
-- **Consolidado:** 9–40; múltiples equipos/proyectos, mandos intermedios, no puedes microgestionar a todos.
-- **Corporación:** 40+; gestionas por **políticas** (p. ej. política de crunch de empresa, presupuesto
-  de formación) más que persona a persona. Aquí el trato al personal se vuelve una decisión *ética a
-  escala* (Pilar 1).
+- **Estudio pequeño:** hasta 4; empieza la moral, la asignación y la química.
+- **Estudio:** hasta 10; dos proyectos en paralelo, primeros equipos separados.
+- **Estudio grande:** hasta 25; varios proyectos grandes, gestionas por **políticas** (p. ej. política
+  de crunch de empresa, formación automática) más que persona a persona.
+- **Corporación:** hasta 100; la organización de 40+ que exige un AAA. El trato al personal se vuelve
+  una decisión *ética a escala* (Pilar 1) — y la nómina, un incendio semanal que pagar.
 
 ## 9. Interfaz con otros sistemas
 

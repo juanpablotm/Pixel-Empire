@@ -665,7 +665,7 @@ const LAYOUTS: Record<ScaleStage, { width: number; desks: DeskSpot[] }> = {
       { x: 632, y: 206, s: 0.72 },
     ],
   },
-  // Corporación: planta amplia, sala de cristal y servidores.
+  // Estudio grande: planta amplia, sala de cristal y servidores.
   4: {
     width: 880,
     desks: [
@@ -681,6 +681,28 @@ const LAYOUTS: Record<ScaleStage, { width: number; desks: DeskSpot[] }> = {
       { x: 492, y: 206, s: 0.6 },
       { x: 612, y: 206, s: 0.6 },
       { x: 732, y: 206, s: 0.6 },
+    ],
+  },
+  // Corporación: la torre — tres filas, doble sala y granja de servidores.
+  5: {
+    width: 980,
+    desks: [
+      { x: 84, y: 256, s: 0.66 },
+      { x: 198, y: 256, s: 0.66 },
+      { x: 312, y: 256, s: 0.66 },
+      { x: 426, y: 256, s: 0.66 },
+      { x: 540, y: 256, s: 0.66 },
+      { x: 654, y: 256, s: 0.66 },
+      { x: 110, y: 214, s: 0.56 },
+      { x: 216, y: 214, s: 0.56 },
+      { x: 322, y: 214, s: 0.56 },
+      { x: 428, y: 214, s: 0.56 },
+      { x: 534, y: 214, s: 0.56 },
+      { x: 640, y: 214, s: 0.56 },
+      { x: 152, y: 180, s: 0.48 },
+      { x: 300, y: 180, s: 0.48 },
+      { x: 448, y: 180, s: 0.48 },
+      { x: 596, y: 180, s: 0.48 },
     ],
   },
 };
@@ -819,6 +841,25 @@ export function OfficeScene() {
           <ServerRack x={18} y={250} />
           <Plant x={76} y={252} wilted={wilted} />
           <Plant x={628} y={252} wilted={wilted} s={0.85} />
+        </g>
+      )}
+      {scaleStage === 5 && (
+        <g>
+          <CeilingLight x={120} night={night} />
+          <CeilingLight x={280} night={night} />
+          <CeilingLight x={440} night={night} />
+          <CeilingLight x={600} night={night} />
+          <Window x={36} y={34} w={140} h={72} night={night} skyline />
+          <Window x={212} y={34} w={140} h={72} night={night} skyline />
+          <Window x={388} y={34} w={140} h={72} night={night} skyline />
+          <Window x={564} y={34} w={140} h={72} night={night} skyline />
+          <MeetingRoom x={732} y={70} w={230} h={180} />
+          <LogoSign x={700} y={140} crisis={crisis} />
+          <WallClock x={706} y={44} crunch={crunch} />
+          <ServerRack x={16} y={250} />
+          <ServerRack x={52} y={250} />
+          <Plant x={104} y={252} wilted={wilted} s={0.85} />
+          <Plant x={700} y={252} wilted={wilted} s={0.85} />
         </g>
       )}
 
