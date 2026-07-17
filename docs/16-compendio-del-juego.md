@@ -161,23 +161,40 @@ Cada tema tiene su curva de popularidad (modas, `04`). Algunos aparecen en eras 
 fantasía, ciencia ficción y espacio son libres al empezar**; el resto se **desbloquea con 💡** una vez
 su era ha llegado (docs `17` P1). La era habilita la opción; el tema cuesta 💡 igualmente.
 
+Son **29** desde la 8.10: los 15 del baseline + **2 por era** (docs `18` V6). Las eras de esta tabla
+son las de `data/themes.ts` (la fuente de verdad).
+
 | Tema | Aparece | Afinidad típica |
 |------|:---:|-----------------|
 | Fantasía | E1 | Excelente con RPG y Aventura |
 | Ciencia ficción | E1 | Amplia; buena con Shooter y Estrategia |
 | Espacio | E1 | Estrategia, Simulación, Shooter |
 | Medieval | E1 | RPG, Estrategia |
+| Deportes | E1 | Con el género Deportes/Carreras |
+| Vida/Cotidiano | E1 | Casual y Simulación (excelente) |
+| Piratas | E1 | Aventura, Acción |
+| **Mitología** | E1 | RPG, Aventura |
+| **Oeste** | E1 | Aventura, Shooter (muere en E3, renace en E6) |
 | Militar | E2 | Shooter y Estrategia (muy bueno); mal con Casual |
-| Deportes | E2 | Con el género Deportes/Carreras |
-| Vida/Cotidiano | E2 | Casual y Simulación (excelente) |
-| Piratas | E2 | Aventura, Acción |
-| Superhéroes | E2 | Acción, Aventura |
+| Historia/Épica | E2 | Estrategia, RPG |
+| **Ninjas / artes marciales** | E2 | Plataformas, Ritmo (pico arcade en E2–E3) |
+| **Fantasía oscura** | E2 | RPG, Terror (su momento llega en E6) |
 | Crimen | E3 | Aventura, Sandbox, Shooter |
 | Terror sobrenatural | E3 | Con el género Terror |
 | Zombis | E3 | Shooter, Terror, Supervivencia |
-| Cyberpunk | E3 | RPG, Shooter, Sandbox |
-| Post-apocalíptico | E3 | RPG, Shooter, Sandbox |
-| Historia/Épica | E1 | Estrategia, RPG |
+| **Terror psicológico** | E3 | Terror, Aventura (boom indie en E5–E6) |
+| **Espías / conspiración** | E3 | Aventura, Shooter |
+| Cyberpunk | E4 | RPG, Shooter, Sandbox |
+| Post-apocalíptico | E4 | RPG, Shooter, Sandbox |
+| **Supervivencia / naturaleza** | E4 | Sandbox, Simulación (explota en E5–E6) |
+| **Steampunk** | E4 | RPG, Estrategia (nicho fiel) |
+| Superhéroes | E5 | Acción, Aventura (fatiga en E7) |
+| **Vida social / citas** | E5 | Simulación, Gestión |
+| **Cocina / restaurante** | E5 | Gestión, Puzzle |
+| **Isla / battle royale** | E6 | Battle Royale, Shooter (pico brutal, fatiga en E7) |
+| **Urbano aumentado** | E6 | Aventura, Carreras (moda AR: pico corto) |
+| **Transhumanismo / IA** | E7 | RPG, Terror |
+| **Colonización espacial** | E7 | Estrategia, Simulación |
 
 ---
 
@@ -339,7 +356,15 @@ grande sin éxitos se desangra. Bancarrota sostenida (sin poder pagar salarios) 
 
 ## 14. Reconocimiento y cierre de partida (doc `06`)
 
-- **Premios anuales** (tipo Game Awards): dan Reputación (Crítica/Prensa), hype y atractivo de contratación.
+- **Premios anuales** (tipo Game Awards): **competitivos** (docs `18` V7). Te **nominan** si tu mejor
+  juego del año pasa el umbral de la categoría, y compites por un **puesto** ("Estudio del año: 4.º")
+  contra un **listón de industria que sube con la era** y 4 nominados ficticios con nombre. Tu
+  puntuación = reseña + prestigio (crítica/prensa) + escala (tamaño del juego). Como la reseña está
+  normalizada por era y la reputación satura pronto, **lo único que crece es la escala**: ganar solo
+  es realista en **E6–E7**, con Corporación y un AAA excelente. Antes aspiras a entrar en el ranking
+  (la nominación ya deja poso en Crítica/Prensa). Ganar da Reputación, hype y atractivo de
+  contratación. Ni la fábrica cínica (no pasa el umbral) ni el indie de culto (sin escala) se llevan
+  el gordo: es de quien navega el dilema. La Innovación no se compra con presupuesto.
 - **Puntuación de Legado** al final (o al retirarse), multi-dimensional: **Riqueza · Prestigio · Impacto
   (géneros que definiste) · Obras maestras (juegos 90+) · Ética (trato al equipo y honestidad)**.
   No hay victoria única: cada filosofía maximiza ejes distintos y cuenta una historia distinta.

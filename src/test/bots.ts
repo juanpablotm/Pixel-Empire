@@ -12,6 +12,7 @@ import { resolveDilemma, respondToCrisis, type DilemmaChoice } from '../core/sys
 import { availableCredit, repayLoan, takeLoan, weeklyFixedCosts } from '../core/systems/economy';
 import { lootBoxesBanned } from '../core/systems/morale';
 import { estimateProject, sizeBlockReason, startProject, toggleFeature } from '../core/systems/projects';
+import { comboPopularity } from '../core/systems/market';
 import { computeFit } from '../core/systems/quality';
 import {
   buyResearch,
@@ -224,10 +225,15 @@ function isRehash(state: GameState, themeId: string, genreId: string): boolean {
 
 /** Empieza el siguiente juego del bot: mejor combo fresco + features al alcance. */
 function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): GameState {
-  // Como un jugador mirando el medidor de Fit (docs/03 factor A): de los
-  // combos tema×género frescos (sin refrito), el de mejor fit. Determinista.
+  // Como un jugador mirando el medidor de Fit (docs/03 factor A) Y el panel de
+  // tendencias (docs/04 §2): de los combos tema×género frescos (sin refrito),
+  // el de mejor fit × popularidad. Determinista.
+  //
+  // La popularidad no es opcional: un combo de fit perfecto sobre un tema
+  // muerto no vende (el Oeste en E3 está a 0.15). El panel existe justo para
+  // que esa decisión sea informada, así que el bot lo lee igual que el jugador.
   let combo: { themeId: string; genreId: string } | null = null;
-  let bestFit = -1;
+  let bestScore = -1;
   for (const theme of availableThemes(state)) {
     for (const genre of availableGenres(state)) {
       if (isRehash(state, theme.id, genre.id)) continue;
@@ -237,8 +243,9 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
         platformId: 'pcCasero',
         audience: 'amplio',
       });
-      if (fit > bestFit) {
-        bestFit = fit;
+      const score = fit * comboPopularity(state.market, genre.id, theme.id);
+      if (score > bestScore) {
+        bestScore = score;
         combo = { themeId: theme.id, genreId: genre.id };
       }
     }
@@ -412,12 +419,25 @@ function maybeResearch(state: GameState): GameState {
       return buyResearch(state, node.id);
     }
   }
+  // Reserva para el nodo más barato al alcance ('sinPuntos' = era y
+  // prerequisitos OK, solo faltan 💡). Sin ella el bot se funde los puntos en
+  // temas —siempre más baratos que un nodo— y no desbloquea NINGUNA capacidad:
+  // con los 29 temas de la 8.10 (docs/18 V6) eso lo dejaba a 0 nodos y llevaba
+  // a la fábrica a la quiebra en E2. Es la regla que este bot ya decía seguir:
+  // capacidades primero, temas con lo que SOBRE.
+  const reserve =
+    researchNodes
+      .filter((n) => !n.reveals && researchNodeStatus(state, n.id) === 'sinPuntos')
+      .sort((a, b) => a.cost - b.cost)[0]?.cost ?? 0;
+
   const theme = researchableThemes(state)
     .filter((t) => themeResearchStatus(state, t.id) === 'disponible')
     .sort(
       (a, b) => themeResearchCost(a.id) - themeResearchCost(b.id) || a.id.localeCompare(b.id),
     )[0];
-  if (theme) return researchTheme(state, theme.id);
+  if (theme && state.research.points >= themeResearchCost(theme.id) + reserve) {
+    return researchTheme(state, theme.id);
+  }
   return state;
 }
 

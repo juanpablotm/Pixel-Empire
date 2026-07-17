@@ -91,7 +91,14 @@ describe('Bots de partida completa: las tres filosofías de docs/01 §5 (docs/00
     // La fábrica en Corporación NO es riesgo cero: su caja final queda muy por
     // debajo del pico histórico — sostener la torre se come los millones si
     // los lanzamientos no rinden (con peor juego, la misma partida quiebra).
-    expect(factory.stats.peakCapital).toBeGreaterThan(factory.studio.capital * 2);
+    //
+    // El margen bajó de ×2 a ×1.5 en la 8.10: el bot dejó de elegir combos por
+    // fit ciego y ahora lee también el panel de tendencias (docs/04 §2), como
+    // un jugador real, así que vende más y devuelve un tercio del pico en vez
+    // de la mitad. La tesis no cambia: sigue perdiendo decenas de millones
+    // sosteniendo la torre. Que "puede perder" no es teoría — con la versión
+    // ciega del bot esta misma partida quebraba en E3.
+    expect(factory.stats.peakCapital).toBeGreaterThan(factory.studio.capital * 1.5);
     // Y su libro de caja reciente tiene semanas en rojo: el burn es real.
     expect(factory.cashflow.some((c) => c.expenses > c.income)).toBe(true);
   });

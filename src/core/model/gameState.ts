@@ -1,4 +1,4 @@
-import type { Award } from './awards';
+import type { Award, AwardCeremony } from './awards';
 import type { CommunityState } from './community';
 import type { EraId } from './era';
 import type { MarketState } from './market';
@@ -44,6 +44,12 @@ export interface Studio {
   scaleStage: ScaleStage;
   /** Premios anuales ganados (docs/06 §7). */
   awards: Award[];
+  /**
+   * La última gala celebrada (docs/18 V7): el ranking completo con nominados
+   * y tu puesto. Lo calcula el tick y lo LEE la ceremonia, que no decide nada
+   * (docs/08 §1). Solo se guarda la última: es lo único que se muestra.
+   */
+  lastCeremony: AwardCeremony | null;
   /**
    * Hype pendiente para el próximo proyecto por los premios recién ganados
    * (docs/06 §7: "hype para el próximo proyecto"). Se consume al concebir.

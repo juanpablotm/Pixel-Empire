@@ -512,7 +512,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const dilemmaFired = after.community.dilemmas.length > before.community.dilemmas.length;
     // Los beats de la Fase 6: transición de era (docs/10 §7.6) y gala anual.
     const eraChanged = after.era !== before.era;
-    const awardsWon = after.studio.awards.length > before.studio.awards.length;
+    // La gala se celebra si te NOMINARON, aunque no ganes (docs/18 V7): el
+    // puesto es el momento señal, no solo el trofeo.
+    const ceremonyHeld = after.studio.lastCeremony !== before.studio.lastCeremony;
 
     // Avisos importantes de dos niveles (docs/17 U4): se detectan por diff del
     // estado puro (sin animación) y se encolan como estado de presentación; el
@@ -581,7 +583,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       crisisErupted ||
       dilemmaFired ||
       eraChanged ||
-      awardsWon ||
+      ceremonyHeld ||
       phaseChanged ||
       notices.length > 0
     ) {
@@ -612,9 +614,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     if (eraChanged) {
       set({ eraTransition: after.era });
     }
-    if (awardsWon) {
-      const latest = after.studio.awards[after.studio.awards.length - 1];
-      set({ awardsWeek: latest.week });
+    if (ceremonyHeld && after.studio.lastCeremony) {
+      set({ awardsWeek: after.studio.lastCeremony.week });
     }
     // Fin de fase → se reabre la ventana de desarrollo con la fase nueva ya
     // cargada (Fase 8.5): el jugador reparte el esfuerzo y vuelve a continuar.

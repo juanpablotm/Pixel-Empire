@@ -690,17 +690,78 @@ export const balance = {
     },
   },
 
-  /** Premios anuales (docs/06 §7): umbrales por categoría y recompensas. */
+  /** Premios anuales (docs/06 §7): nominación, competición y recompensas. */
   awards: {
     /** La ceremonia se celebra cada fin de año (52 ticks = 1 año, docs/02 §1). */
     intervalWeeks: 52,
-    /** Umbrales de candidatura (sin rivales aún: o los superas, o el premio vuela). */
+    /**
+     * Umbrales de NOMINACIÓN (docs/18 V7): son los que dan identidad a cada
+     * categoría (la Innovación pide riesgo, la Técnica pide pulido...). Si tu
+     * mejor juego del año no los pasa, ni te nominan. Pasarlos NO es ganar:
+     * después compites por el puesto contra el listón (`competition`).
+     */
     thresholds: {
       goty: { minReview: 78 },
       innovacion: { minInnovation: 1.03, minReview: 62 },
       tecnica: { minPolish: 0.92, minReview: 62 },
       diseno: { minFit: 0.85, minReview: 68 },
       pueblo: { minCasualReview: 74 },
+    },
+    /**
+     * Premios COMPETITIVOS (docs/18 V7): compites por un puesto contra un
+     * listón de industria que sube con la era + nominados ficticios.
+     *
+     * Por qué solo es realista ganar en E6–E7: tu reseña NO crece con las eras
+     * (está normalizada por `sales.review.eraStandard` 1→0.86 contra los techos
+     * de `quality.capByEraSize` 85→100, así que el techo real ronda 85–90 en
+     * todas las eras) y la reputación satura pronto. Lo único que crece de
+     * verdad es la ESCALA: por eso el listón sube ~6.5 puntos de E1 a E7 y el
+     * bonus de tamaño vale hasta +12. Un garaje con un juego pequeño excelente
+     * entra en el ranking; hace falta una corporación con un AAA excelente
+     * para ganar el gordo.
+     */
+    competition: {
+      /**
+       * Listón de industria por era: puntuación típica de un nominado ficticio.
+       *
+       * Calibrado contra el TECHO real de cada era, que lo fijan los gates de
+       * tamaño de la 8.8 (`development.sizeGate`): con reseña excelente (~85) y
+       * prestigio alto (~+6), el máximo alcanzable es ~94 en E1 (solo llegas a
+       * Mediano), ~97 en E2–E3 (Grande), ~100 en E4–E5 (Muy grande) y ~103 en
+       * E6–E7 (AAA). El listón va justo por encima del techo de su era hasta
+       * E5 y justo por debajo en E6–E7: por eso ganar solo es realista al
+       * final, y solo con un juego excelente. No basta con ser grande (la
+       * fábrica cínica ni se nomina) ni con ser querido (al indie le falta
+       * escala): hace falta haber navegado el dilema.
+       */
+      barByEra: { E1: 96, E2: 99, E3: 99.5, E4: 101.5, E5: 102, E6: 103, E7: 103.5 } satisfies Record<
+        EraId,
+        number
+      >,
+      /** Nominados ficticios por categoría (tú entras como uno más). */
+      nomineeCount: 4,
+      /**
+       * Dispersión de los nominados alrededor del listón (± puntos). No puede
+       * acercarse al escalón de `sizeBonus`: si el ruido pesa como la escala,
+       * el puesto lo decide el azar y no tu decisión (docs/00: mayormente
+       * determinista). Con 4 nominados, el mejor sale ~+1.5 sobre el listón.
+       */
+      nomineeSpread: 2.5,
+      /** Prestigio: hasta +N puntos por reputación (docs/18 V7: "calidad + reputación"). */
+      prestigeWeight: 6,
+      /** Mezcla del prestigio: la gala la deciden crítica y prensa. */
+      prestigeMix: { critica: 0.6, prensa: 0.4 },
+      /**
+       * Escala: puntos por tamaño del juego, × el `scaleWeight` de la categoría.
+       * El salto al AAA es deliberadamente grande (+6 sobre Muy grande): es lo
+       * único que separa el techo de E6–E7 del de E4–E5, y con escalones de +3
+       * la dispersión de los nominados se lo comía — un AAA de Corporación
+       * ganaba o perdía por azar, y un Muy grande de E4 ganaba el GOTY.
+       */
+      sizeBonus: { pequeno: 0, mediano: 2, grande: 5, muyGrande: 8, aaa: 14 } satisfies Record<
+        ProjectSize,
+        number
+      >,
     },
     /** Recompensas por premio ganado (docs/06 §7). */
     rewards: {
@@ -709,6 +770,12 @@ export const balance = {
       /** Hype pendiente para el próximo proyecto, por premio (con tope). */
       hypePerAward: 0.08,
       hypeCap: 0.25,
+      /**
+       * Ser nominado sin ganar también cuenta (docs/18 V7): en las eras
+       * tempranas ganar no es realista, así que la gala no puede ser estéril.
+       * Por categoría nominada y no ganada.
+       */
+      nominationRepDeltas: { critica: 0.5, prensa: 0.5 },
     },
   },
 

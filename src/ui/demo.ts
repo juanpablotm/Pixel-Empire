@@ -1,6 +1,8 @@
 import {
+  advanceAwards,
   createInitialState,
   generateCandidates,
+  makeRng,
   type ActiveCrisis,
   type CommunityPost,
   type Employee,
@@ -227,6 +229,41 @@ function galaDemo(): GameState {
   return { ...base, releasedGames: [game] };
 }
 
+/**
+ * Estado de escaparate: la gala anual de premios (docs/18 V7). El ranking NO
+ * se inventa aquí: se siembra un año con un lanzamiento y se deja que el
+ * núcleo (`advanceAwards`) resuelva la ceremonia de verdad, igual que en el
+ * tick. `ganas` siembra el caso aspiracional (E7, un AAA y prestigio de
+ * megacorporación); si no, el caso normal: te nominan y quedas en el ranking.
+ */
+function premiosDemo(ganas: boolean): GameState {
+  const base = studioDemo();
+  const week = 52 * 4; // semana de gala (múltiplo del intervalo anual)
+  const game: ReleasedGame = {
+    ...makeReleasedGame(ganas ? 88 : 84, week - 20),
+    size: ganas ? 'aaa' : 'mediano',
+    reviewsBySegment: ganas
+      ? { critica: 88, prensa: 88, hardcore: 85, casual: 85 }
+      : { critica: 84, prensa: 82, hardcore: 80, casual: 78 },
+  };
+  const prestige = ganas ? 95 : 55;
+  const seeded: GameState = {
+    ...base,
+    week,
+    era: ganas ? 'E7' : 'E2',
+    releasedGames: [game],
+    studio: {
+      ...base.studio,
+      awards: [],
+      lastCeremony: null,
+      awardHype: 0,
+      reputation: { ...base.studio.reputation, critica: prestige, prensa: prestige },
+    },
+  };
+  // El mismo stream que usa el tick (core/engine/tick.ts) para la gala.
+  return advanceAwards(seeded, makeRng(seeded.seed, (7 << 20) + week));
+}
+
 /** Estado de escaparate: una crisis abierta con su reloj (docs/10 §10.8). */
 function crisisDemo(): GameState {
   const base = studioDemo();
@@ -387,6 +424,15 @@ export function applyDemoFromQuery(): boolean {
   if (demo === 'aviso') {
     seed(studioDemo(), 'estudio', null);
     useGameStore.setState({ pendingNotices: noticeQueue() });
+    return true;
+  }
+  // La gala anual competitiva (docs/18 V7): el ranking con nominados ficticios
+  // y tu puesto. `&ganas=1` captura el puesto 1.º (con confeti); si no, el caso
+  // realista de las eras tempranas: nominado, pero no ganas.
+  if (demo === 'premios') {
+    const game = premiosDemo(params.get('ganas') === '1');
+    seed(game, 'estudio', null);
+    useGameStore.setState({ awardsWeek: game.studio.lastCeremony?.week ?? null });
     return true;
   }
   // El beat de transición de era (7E): overlay sobre la piel de la era vieja.

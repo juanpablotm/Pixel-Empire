@@ -149,11 +149,38 @@ Legado = {
 Diferentes filosofías (`01` §5) maximizan diferentes ejes → cada final cuenta una historia distinta
 ("Construiste un imperio odiado" vs "Un estudio adorado que nunca fue rico"). Rejugabilidad por diseño.
 
-## 7. Premios y reconocimiento `[DECIDIDO]`
+## 7. Premios y reconocimiento `[DECIDIDO · rediseñado en 8.10]`
 
 Ceremonia anual (tipo "Game Awards") que premia mejor juego, innovación, arte, etc. Ganar da
 Reputación (sobre todo Crítica/Prensa), hype para el próximo proyecto y atractivo de contratación.
 Otro incentivo del lado de la integridad para contrapesar la codicia.
+
+**Los premios son COMPETITIVOS (docs/18 V7).** No hay "ganaste" automático cada año: hay **nominados**
+y un **puesto** ("Estudio del año: 4.º"). Ganar es difícil y aspiracional.
+
+- **Nominación.** Tu mejor lanzamiento del año debe pasar el **umbral** de la categoría
+  (`awards.thresholds`). Ese umbral es lo que da identidad a cada premio: la Innovación pide riesgo,
+  la Técnica pide pulido, el Público pide nota casual. Sin umbral no hay gala.
+- **Puesto.** Compites contra un **listón de industria** que **sube con la era** y contra 4
+  **nominados ficticios** con nombre (estudio + título). Sin rivales simulados (`04` §9 sigue
+  diferido), esto es lo que hace que la industria se sienta viva. Tu puntuación:
+
+  ```
+  puntuación = reseña + prestigio(crítica, prensa) + escala(tamaño) × pesoEscala(categoría)
+  puesto     = 1 + nº de nominados por encima de ti
+  ```
+
+- **Solo es realista ganar en E6–E7.** Tu reseña **no crece con las eras** (está normalizada: el
+  `eraStandard` baja de 1 a 0.86 contra techos de Q que suben de 85 a 100) y la reputación satura
+  pronto. Lo único que crece de verdad es la **escala**, y los gates de tamaño de `18` V4-b la
+  reparten por eras. Por eso el listón va **por delante** de tu techo hasta E5 y **por detrás** en
+  E6–E7: en el garaje aspiras a entrar en el ranking; el gordo cae cuando eres Corporación y sacas
+  un AAA excelente.
+- **Ni la escala ni el cariño bastan por separado.** La fábrica cínica no pasa el umbral (sus
+  reseñas son malas) y el indie de culto no tiene escala: **el premio va a quien navegó el dilema**.
+  Y la escala **no compra la Innovación** (`scaleWeight` 0.25): ahí compite la idea.
+- **La nominación no es estéril:** quedarte en el ranking sin ganar deja poso en Crítica y Prensa.
+  El hype y el resto de recompensas siguen siendo solo de ganar.
 
 ## 8. Criterios de aceptación (para Claude Code)
 

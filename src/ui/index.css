@@ -637,6 +637,23 @@
 }
 
 /*
+ * Superficie de los modales. Un modal NO puede ser cristal: encima va texto
+ * denso (el ranking de la gala, docs/18 V7) y detrás está la Oficina Viva
+ * entera. En la piel de E7 el panel es translúcido al 8 % (glassmorphism), así
+ * que un modal con solo `bg-panel` deja ver el escenario a través del texto y
+ * se pierde el contraste AA que exige la 7E. Esta clase respeta el look de
+ * cada era pero garantiza un fondo opaco donde hace falta.
+ */
+.modal-panel {
+  background-color: var(--surface-panel);
+}
+.era-E7 .modal-panel {
+  background-color: rgba(13, 18, 36, 0.96);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+}
+
+/*
  * La Oficina Viva (Fase 7B, docs/10 §5): micro-vida y burbujas. Todo
  * transform/opacity, todo CSS, nada dentro del tick (docs/08). Los delays
  * negativos por semilla los pone el componente; aquí viven los bucles.

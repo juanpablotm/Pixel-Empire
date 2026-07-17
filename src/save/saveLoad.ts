@@ -21,7 +21,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -227,6 +227,17 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
         ...file.state.studio,
         scaleStage: file.state.studio.scaleStage >= 4 ? 5 : file.state.studio.scaleStage,
       },
+    },
+  }),
+  // v10 (Fase 8.8) → v11 (Fase 8.10): los premios pasan a ser competitivos y la
+  // gala guarda su ranking (docs/18 V7). No destructivo: los premios ya ganados
+  // se conservan tal cual (siguen siendo victorias legítimas con las reglas de
+  // su momento) y la ceremonia empieza vacía — la próxima gala la rellena.
+  10: (file) => ({
+    saveVersion: 11,
+    state: {
+      ...file.state,
+      studio: { ...file.state.studio, lastCeremony: null },
     },
   }),
 };

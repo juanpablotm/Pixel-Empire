@@ -67,6 +67,7 @@ export function createInitialState(seed: number): GameState {
       moralDrift: 0,
       scaleStage: 1,
       awards: [],
+      lastCeremony: null,
       awardHype: 0,
     },
     // En el garaje eres tú solo; el pool de contratación llega con la etapa 2.

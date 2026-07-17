@@ -223,6 +223,51 @@ describe('P1: temas gateados por investigación (docs/17)', () => {
     expect(usable).toEqual([...balance.research.knowledge.starterThemes].sort());
   });
 
+  // Los 14 temas de la 8.10 (docs/18 V6) no traen reglas propias: se integran
+  // con la progresión de conocimiento de la 8.4 por el simple hecho de existir.
+  it('los temas nuevos de la 8.10 exigen investigación, ninguno es gratis (docs/18 V6)', () => {
+    const nuevos = [
+      'mitologia',
+      'oeste',
+      'ninjas',
+      'fantasiaOscura',
+      'terrorPsicologico',
+      'espias',
+      'supervivencia',
+      'steampunk',
+      'vidaSocial',
+      'cocina',
+      'islaBR',
+      'urbanoAumentado',
+      'transhumanismo',
+      'colonizacionEspacial',
+    ];
+    const starters = balance.research.knowledge.starterThemes;
+    const rico = withPoints(999);
+    for (const id of nuevos) {
+      expect(getTheme(id)).toBeDefined();
+      expect(starters).not.toContain(id);
+      // Ni con 💡 de sobra: sin investigarlo, no se puede usar.
+      expect(themeAvailable(rico, getTheme(id))).toBe(false);
+      expect(themeResearchCost(id)).toBeGreaterThan(0);
+    }
+  });
+
+  it('los temas nuevos están gateados por su era: E7 no se investiga en E1 (docs/18 V6)', () => {
+    const rico = withPoints(999); // E1, con 💡 de sobra
+    // De los nuevos, solo los de E1 se pueden investigar ya.
+    expect(themeResearchStatus(rico, 'mitologia')).toBe('disponible');
+    expect(themeResearchStatus(rico, 'oeste')).toBe('disponible');
+    // Los de eras futuras ni asoman, por muchos 💡 que tengas.
+    expect(themeResearchStatus(rico, 'islaBR')).toBe('bloqueado');
+    expect(themeResearchStatus(rico, 'transhumanismo')).toBe('bloqueado');
+    expect(() => researchTheme(rico, 'transhumanismo')).toThrow();
+    // Ya en E7, el tema de E7 se puede investigar (y cuesta más que uno de E1).
+    const enE7 = { ...rico, era: 'E7' as const, week: getEra('E7').startWeek };
+    expect(themeResearchStatus(enE7, 'transhumanismo')).toBe('disponible');
+    expect(themeResearchCost('transhumanismo')).toBeGreaterThan(themeResearchCost('mitologia'));
+  });
+
   it('no puedes usar un tema no investigado (docs/17 P1)', () => {
     const state = withPoints(0); // E1: deportes existe en la era pero no es starter
     expect(themeAvailable(state, getTheme('deportes'))).toBe(false);

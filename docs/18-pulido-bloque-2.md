@@ -136,6 +136,20 @@ conocimiento (P1): son nuevos objetivos de investigación. Sugerencias (ajustabl
 Cada tema con su afinidad tema×género y su curva de popularidad (datos, `09`/`04`).
 **Toca:** `09` §3 (temas), `04` (curvas), `16`.
 
+> **✅ Implementado (Fase 8.10).** Los 14 temas sugeridos, con las eras de la tabla, su fila en
+> `data/affinity.ts` y su curva en `data/themes.ts` (15 → **29** temas). Baseline en `09` §3 y `16` §5
+> (donde además se corrigieron las eras de Superhéroes/Cyberpunk/Post-apocalíptico/Vida/Piratas/
+> Deportes/Historia, que estaban desincronizadas con los datos).
+> - **Cero reglas nuevas:** se integran solos con la progresión de conocimiento de la 8.4 — ninguno es
+>   *starter*, así que nacen gateados por era + 💡 heredando `themeCostByEra`.
+> - **Los bots destaparon dos trampas suyas** (no del juego), corregidas en `src/test/bots.ts`: (1)
+>   compraban el tema más barato antes de poder ahorrar para un nodo, así que con 14 sinks más se
+>   quedaban a **0 capacidades** y la fábrica quebraba en E2 — ahora reservan para el nodo más barato
+>   al alcance, que es la regla que su propio comentario ya decía seguir; (2) elegían el combo por
+>   **fit ciego**, y las curvas nuevas tienen valles profundos (el Oeste cae a 0.15 en E3), así que
+>   fabricaban obras perfectas sobre temas muertos — ahora leen también el panel de tendencias
+>   (`04` §2), como un jugador real. Con eso las 3 filosofías vuelven a llegar vivas a E7.
+
 ### V7 · Rediseño de premios: competitivos y con puesto 🧩⚖️ P2 🟡
 *(playtest #7)*
 **Problema:** ganas todos los años; los premios no significan nada.
@@ -149,6 +163,34 @@ Cada tema con su afinidad tema×género y su curva de popularidad (datos, `09`/`
   compites. Tu probabilidad de puesto depende de tu mejor lanzamiento del año (calidad + reputación) vs
   ese listón.
 **Toca:** `06` §7 (premios).
+
+> **✅ Implementado (Fase 8.10).** Baseline en `06` §7, `09` §1 y `16` §14. Save **v11** (añade
+> `studio.lastCeremony`; los premios ya ganados se conservan).
+> - **Nominación = los umbrales que ya existían** (`awards.thresholds`): son los que dan identidad a
+>   cada categoría. Si tu mejor juego del año no los pasa, ni te nominan y la gala pasa de largo.
+> - **Puesto** = `1 + nº de nominados por encima`. Puntuación = `reseña + prestigio + escala ×
+>   scaleWeight`; nominados ficticios = `listón ± jitter` (PRNG solo para el sabor: nombres y jitter).
+>   `data/awards.ts` lleva `barOffset`/`scaleWeight` por categoría + 12 estudios y 18 títulos ficticios.
+> - **Números** (`balance.awards.competition`): listón 96/99/99.5/101.5/102/103/103.5 (E1→E7) ·
+>   `sizeBonus` 0/2/5/8/**14** · `prestigeWeight` 6 (60 % crítica, 40 % prensa) · 4 nominados ·
+>   dispersión ±2.5. `barOffset`: goty 0 · tecnica −2 · diseno/pueblo −3 · innovacion −4.
+>   `scaleWeight`: goty 1 · tecnica 0.8 · diseno/pueblo 0.5 · **innovacion 0.25**.
+> - **Calibrado contra el techo real de cada era** (que fijan los gates de tamaño de V4-b), no a ojo:
+>   con reseña ~85 y prestigio alto el máximo es ~94 en E1, ~97 en E2–E3, ~100 en E4–E5 y ~103 en
+>   E6–E7. Medido sobre 40 semillas, un estudio excelente y consagrado gana el GOTY **0–5 % de los
+>   años hasta E5 y ~100 % en E6–E7**. Dos trampas que costó ver: un `barOffset` generoso (−6/−11) se
+>   gana **desde E1** (tu puntuación no crece con las eras si no creces de escala), y con escalones de
+>   `sizeBonus` de +3 la dispersión de los nominados decidía el puesto por azar.
+> - **Consecuencia de diseño aceptada:** el indie de culto **no gana nunca** (ni la Innovación): sin
+>   escala, su puntuación es plana en todas las eras, así que un listón que la alcance se ganaría
+>   también en E1. Se queda en la nominación, que sí da reputación. La fábrica cínica **ni se nomina**.
+> - **UI:** la gala se abre con la NOMINACIÓN (no solo al ganar) y revela el ranking completo con tu
+>   fila resaltada; confeti solo con puesto 1. Escaparate nuevo `?demo=premios[&ganas=1]`; verificado
+>   vía CDP (`scripts/verify810.mjs`, capturas `capturas/8-10-*.png`).
+> - **Bug de piel encontrado de paso:** en E7 (glassmorphism) `--surface-panel` es translúcido al 8 % y
+>   el ranking se leía sobre la Oficina Viva. Se añade la clase `.modal-panel` (opaca + blur en E7) y
+>   se aplica a la gala. **Los demás modales (crisis, dilema, avisos) siguen con `bg-panel` y tienen el
+>   mismo problema**: pendiente fuera de esta fase.
 
 ---
 

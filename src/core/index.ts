@@ -4,7 +4,12 @@
  */
 export type { EraDef, EraId } from './model/era';
 export type { GameOverInfo, GameState, LogEntry, ScaleStage, Studio } from './model/gameState';
-export type { Award } from './model/awards';
+export type {
+  Award,
+  AwardCategoryResult,
+  AwardCeremony,
+  AwardNominee,
+} from './model/awards';
 export type {
   MarketKnowledge,
   ResearchNodeDef,
@@ -139,7 +144,14 @@ export {
   squadsUnlocked,
   withdrawTeam,
 } from './systems/squads';
-export { advanceAwards, pickCategoryWinner } from './systems/awards';
+export {
+  advanceAwards,
+  categoryBar,
+  pickCategoryWinner,
+  prestigeBonus,
+  rankLabel,
+  studioScore,
+} from './systems/awards';
 export {
   advancePolicies,
   defaultPolicies,

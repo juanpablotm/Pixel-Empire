@@ -68,10 +68,27 @@ interface Studio {
   capital: number;
   reputation: Record<Segment, number>;   // vector segmentado (doc 06)
   reputationDebt: number;       // "deuda de reputación" oculta (doc 06)
-  scaleStage: 1 | 2 | 3 | 4;    // garaje..corporación (doc 02)
+  scaleStage: 1 | 2 | 3 | 4 | 5;  // garaje..corporación (doc 02, docs/18 V4-a)
   officeLevel: number;
-  awards: Award[];
+  awards: Award[];              // solo los GANADOS (doc 06 §7)
+  lastCeremony: AwardCeremony | null;  // el ranking de la última gala (docs/18 V7)
 }
+
+// Premios competitivos (docs/18 V7): la gala guarda su ranking para que la
+// ceremonia LEA el resultado y no calcule reglas en la UI (doc 08 §1).
+interface AwardCeremony {
+  week: number; year: number; era: EraId;
+  categories: AwardCategoryResult[];
+  nominated: boolean;
+}
+interface AwardCategoryResult {
+  categoryId: string;
+  bar: number;                  // el listón de esa categoría ese año
+  nominees: AwardNominee[];     // ranking ordenado; te incluye si te nominaron
+  rank: number | null;          // tu puesto (1 = ganado); null = ni nominado
+  gameId: string | null; gameName: string | null;
+}
+interface AwardNominee { studio: string; gameName: string; score: number; isPlayer: boolean; }
 
 type Segment = 'critica' | 'hardcore' | 'casual' | 'prensa' | 'comunidad' | 'empleador';
 ```
@@ -113,6 +130,19 @@ interface Theme { id: string; name: string; appearsInEra: EraId; basePopularityC
 
 Semilla: Fantasía, Ciencia ficción, Espacio, Militar, Zombis, Medieval, Deportes, Vida/Cotidiano,
 Crimen, Terror sobrenatural, Piratas, Cyberpunk, Post-apocalíptico, Superhéroes, Historia/Épica.
+
+**+2 temas por era (docs/18 V6, Fase 8.10).** El catálogo sube de 15 a **29** temas. Los 14 nuevos no
+traen reglas propias: se integran solos con el gateo de arriba (era + 💡) por el hecho de existir.
+
+| Era | Temas nuevos | Afinidad alta |
+|-----|--------------|---------------|
+| E1 | Mitología · Oeste | RPG/Aventura · Aventura/Shooter |
+| E2 | Ninjas / artes marciales · Fantasía oscura | Plataformas/Ritmo · RPG/Terror |
+| E3 | Terror psicológico · Espías / conspiración | Terror/Aventura · Aventura/Shooter |
+| E4 | Supervivencia / naturaleza · Steampunk | Sandbox/Simulación · RPG/Estrategia |
+| E5 | Vida social / citas · Cocina / restaurante | Simulación/Gestión · Gestión/Puzzle |
+| E6 | Isla / battle royale · Urbano aumentado | Battle Royale/Shooter · Aventura/Carreras |
+| E7 | Transhumanismo / IA · Colonización espacial | RPG/Terror · Estrategia/Simulación |
 
 **Gateo por investigación (docs/17 P1).** Además de `appearsInEra`, un tema es **usable** solo si es
 *starter* o está investigado con 💡. No lleva `requiresResearch` (a diferencia de géneros/features):
