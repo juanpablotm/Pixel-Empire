@@ -235,7 +235,7 @@ function ConceptionForm() {
         if (e.target === e.currentTarget) close();
       }}
     >
-      <PopIn className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-line-hi bg-panel shadow-2xl">
+      <PopIn className="modal-panel flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-line-hi shadow-2xl">
         <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
           <div>
             <h2 className="text-lg font-bold text-ink-hi">💡 Nuevo juego</h2>

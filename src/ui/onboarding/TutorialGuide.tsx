@@ -143,7 +143,7 @@ export function TutorialGuide() {
   if (step.target === null) {
     return (
       <Layer className="inset-0 flex items-center justify-center bg-scrim px-6">
-        <PopIn key={step.id} className="pointer-events-auto card flex w-96 max-w-full flex-col gap-2">
+        <PopIn key={step.id} className="pointer-events-auto card modal-panel flex w-96 max-w-full flex-col gap-2">
           {counter}
           <p className="text-lg font-semibold text-ink-hi">{step.title}</p>
           <p className="text-sm text-ink">{step.body}</p>

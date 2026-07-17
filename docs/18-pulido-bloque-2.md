@@ -187,10 +187,16 @@ Cada tema con su afinidad tema×género y su curva de popularidad (datos, `09`/`
 > - **UI:** la gala se abre con la NOMINACIÓN (no solo al ganar) y revela el ranking completo con tu
 >   fila resaltada; confeti solo con puesto 1. Escaparate nuevo `?demo=premios[&ganas=1]`; verificado
 >   vía CDP (`scripts/verify810.mjs`, capturas `capturas/8-10-*.png`).
-> - **Bug de piel encontrado de paso:** en E7 (glassmorphism) `--surface-panel` es translúcido al 8 % y
->   el ranking se leía sobre la Oficina Viva. Se añade la clase `.modal-panel` (opaca + blur en E7) y
->   se aplica a la gala. **Los demás modales (crisis, dilema, avisos) siguen con `bg-panel` y tienen el
->   mismo problema**: pendiente fuera de esta fase.
+> - **Bug de piel encontrado de paso (arreglado):** en E7 (glassmorphism) `--surface-panel` es
+>   translúcido al 8 % y el scrim solo tapa el 65 %, así que el ranking se leía sobre la Oficina Viva
+>   al ~32 %. Se añade la clase `.modal-panel` (opaca + blur en E7) y se aplica a **todo lo que flota**:
+>   gala, crisis, dilema, avisos, concepción, desarrollo, menú del HUD, desplegable del menú,
+>   cronologías, fin de partida y guía del tutorial. **La regla es la profundidad, no el componente:**
+>   los paneles EN PÁGINA (Legado, Finanzas, HUD, tarjetas) conservan el cristal a propósito — ahí el
+>   glassmorphism es el look, porque detrás solo está el fondo de la app. La transición de era no lo
+>   necesita: ya declara su propio mini-tema nocturno. Auditado sobre las 7 superficies con
+>   `scripts/verify-modales-e7.mjs` (CDP headless). De paso, `?demo=aciegas` y `?demo=tutorial` ahora
+>   respetan `&era=`, como su cabecera ya prometía para *cualquier* escaparate.
 
 ---
 

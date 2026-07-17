@@ -53,7 +53,7 @@ export function StudioMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-lg border border-line-hi bg-panel shadow-2xl"
+          className="modal-panel absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-lg border border-line-hi shadow-2xl"
         >
           {ENTRIES.map((entry) => (
             <button

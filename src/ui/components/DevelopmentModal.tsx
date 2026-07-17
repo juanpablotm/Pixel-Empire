@@ -155,7 +155,7 @@ function DevelopmentBody({ project }: { project: Project }) {
       aria-label={`Desarrollo de ${project.name}`}
       className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-scrim px-4 py-8"
     >
-      <PopIn className="flex max-h-[85vh] w-full max-w-5xl flex-col rounded-lg border border-line-hi bg-panel shadow-2xl">
+      <PopIn className="modal-panel flex max-h-[85vh] w-full max-w-5xl flex-col rounded-lg border border-line-hi shadow-2xl">
         {/* Cabecera: qué juego, en qué fase y cuánto lleva. */}
         <div className="flex flex-col gap-3 border-b border-line px-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">

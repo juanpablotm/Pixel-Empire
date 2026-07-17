@@ -91,7 +91,7 @@ function CrisisCard({ crisis }: { crisis: ActiveCrisis }) {
   const backfireThreshold = balance.community.crisis.culparBackfireSeverity;
 
   return (
-    <div className="crisis-card w-full max-w-2xl rounded-lg border border-danger/40 bg-panel p-6 shadow-2xl">
+    <div className="crisis-card modal-panel w-full max-w-2xl rounded-lg border border-danger/40 p-6 shadow-2xl">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="mb-1 text-xs font-bold uppercase tracking-widest text-danger">

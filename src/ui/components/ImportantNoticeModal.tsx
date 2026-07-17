@@ -154,7 +154,7 @@ export function ImportantNoticeModal() {
       aria-label={spec.title}
       className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-scrim px-6 py-10"
     >
-      <PopIn className={`w-full max-w-md rounded-lg border ${accent.border} bg-panel p-6 shadow-2xl`}>
+      <PopIn className={`modal-panel w-full max-w-md rounded-lg border ${accent.border} p-6 shadow-2xl`}>
         <div className="flex items-center gap-3">
           <span aria-hidden className="text-3xl leading-none">
             {spec.icon}

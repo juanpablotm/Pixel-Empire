@@ -38,7 +38,7 @@ function MenuModalShell({
         if (e.target === e.currentTarget) close();
       }}
     >
-      <PopIn className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-lg border border-line-hi bg-panel shadow-2xl">
+      <PopIn className="modal-panel flex max-h-[80vh] w-full max-w-2xl flex-col rounded-lg border border-line-hi shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-ink-hi">{title}</h2>

@@ -637,12 +637,18 @@
 }
 
 /*
- * Superficie de los modales. Un modal NO puede ser cristal: encima va texto
- * denso (el ranking de la gala, docs/18 V7) y detrás está la Oficina Viva
- * entera. En la piel de E7 el panel es translúcido al 8 % (glassmorphism), así
- * que un modal con solo `bg-panel` deja ver el escenario a través del texto y
- * se pierde el contraste AA que exige la 7E. Esta clase respeta el look de
- * cada era pero garantiza un fondo opaco donde hace falta.
+ * Superficie de lo que FLOTA (modales, overlays, el desplegable del menú, la
+ * guía del tutorial). Un modal no puede ser cristal: encima va texto denso y
+ * detrás está la Oficina Viva entera. En la piel de E7 el panel es translúcido
+ * al 8 % (glassmorphism) y el scrim solo tapa un 65 %, así que con `bg-panel`
+ * el escenario se ve al ~32 % a través del texto y se pierde el contraste AA
+ * que exige la 7E (docs/10 §8).
+ *
+ * Los paneles EN PÁGINA (Legado, Finanzas, HUD, tarjetas de equipo…) siguen con
+ * `bg-panel` a propósito: ahí el cristal es el look buscado, porque detrás solo
+ * está el fondo de la app. La regla es la profundidad, no el componente.
+ *
+ * La transición de era no la necesita: ya declara su propio mini-tema nocturno.
  */
 .modal-panel {
   background-color: var(--surface-panel);

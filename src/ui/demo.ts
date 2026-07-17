@@ -406,8 +406,12 @@ export function applyDemoFromQuery(): boolean {
   // El arranque A CIEGAS (docs/17 P2): partida recién fundada con el modal de
   // concepción abierto — Fit "por descubrir" y precio de referencia oculto.
   if (demo === 'aciegas') {
+    // `&era=` también manda aquí: la cabecera promete que recoloca CUALQUIER
+    // escaparate, y hace falta para auditar el modal sobre pieles como el
+    // cristal de E7. Sin ella, esta rama se quedaba clavada en E1.
+    const fresh = createInitialState(DEMO_SEED);
     useGameStore.setState({
-      game: createInitialState(DEMO_SEED),
+      game: era !== null ? withEra(fresh, era) : fresh,
       screen: 'estudio',
       speed: 0,
       reviewGameId: null,
@@ -452,8 +456,11 @@ export function applyDemoFromQuery(): boolean {
   // directo a un paso del guion (ui/onboarding/steps.ts) para capturarlo.
   if (demo === 'tutorial') {
     const stepParam = Number(params.get('step') ?? '0');
+    // El tutorial real solo ocurre en E1 (partida recién fundada), pero `&era=`
+    // sigue valiendo para auditar su guía sobre cualquier piel.
+    const fresh = createInitialState(DEMO_SEED);
     useGameStore.setState({
-      game: createInitialState(DEMO_SEED),
+      game: era !== null ? withEra(fresh, era) : fresh,
       screen: 'estudio',
       speed: 0,
       reviewGameId: null,
