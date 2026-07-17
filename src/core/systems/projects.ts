@@ -205,7 +205,13 @@ export function estimateProject(size: ProjectSize, platformId: string): {
 export function releasedGameCost(project: Project, releaseWeek: number): number {
   const licenseCost = getPlatform(project.platformId).licenseCost;
   const baseCost = balance.economy.sizeBaseCost[project.size];
-  const devWeeks = Math.max(0, releaseWeek - (project.startWeek ?? releaseWeek));
+  // Las semanas en pausa no cuentan: nadie trabajó, no hay desarrollo que
+  // cobrar (docs/18 V5). La nómina del estudio va aparte y ya se pagó semana a
+  // semana; esta cifra es el coste atribuible AL JUEGO.
+  const devWeeks = Math.max(
+    0,
+    releaseWeek - (project.startWeek ?? releaseWeek) - (project.pausedWeeks ?? 0),
+  );
   const devCost = devWeeks * balance.economy.devCostPerPersonWeek;
   const marketingCost = project.marketingUsed.reduce(
     (sum, level) => sum + (balance.economy.marketing.levels[level]?.cost ?? 0),
@@ -297,6 +303,7 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     assignedStaff: unassignedStaff(state).map((e) => e.id),
     crunch: false,
     startWeek: state.week,
+    pausedWeeks: 0,
     // Los premios del año pasado inflan el anuncio (docs/06 §7); aun así el
     // hype de salida entra clampeado a su rango (docs/17 B2).
     hype: clampHype(state.studio.awardHype),
@@ -488,7 +495,13 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
   // Capacidad del equipo esta semana: ~1 por persona, con motores propios
   // (docs/02 §3), crunch y burnout encima (core/systems/staff.ts).
   const output = computeTeamOutput(team, project.crunch) * capabilityBonus(state, 'devOutput');
-  if (output <= 0) return state; // sin nadie asignado, el proyecto no avanza
+  // Sin nadie trabajando el proyecto NO avanza: se pausa, no se cancela
+  // (docs/18 V5). No sube weeksSpent, no acumula bugs, no cambia de fase y no
+  // se lanza; al reasignar continúa donde estaba. Solo cuenta la semana en
+  // pausa, para no cobrarla como desarrollo en el P&L.
+  if (output <= 0) {
+    return withProject(state, { ...project, pausedWeeks: (project.pausedWeeks ?? 0) + 1 });
+  }
 
   // DOTACIÓN RELATIVA, no velocidad: la duración de un juego la fija su tamaño
   // (semanas de calendario) y la plantilla NO la acelera. Lo que decide la

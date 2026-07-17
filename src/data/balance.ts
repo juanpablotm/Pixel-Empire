@@ -432,6 +432,18 @@ export const balance = {
     /** Finiquito al despedir, en semanas de salario. */
     severanceWeeks: 4,
 
+    /**
+     * Subequipos: asignación en bloque (docs/18 V5). Pura comodidad de UI, así
+     * que aquí no hay nada que afecte a la simulación. Llegan con el Estudio
+     * (etapa 3), que es cuando hay varios proyectos en paralelo y gente que
+     * repartir; antes serían ruido sobre una plantilla de 4.
+     */
+    squads: {
+      minStage: 3 as ScaleStage,
+      /** Tope sano para la UI; con 100 empleados nadie gestiona más grupos. */
+      maxSquads: 12,
+    },
+
     /** Formar: invertir dinero en subir una skill (docs/05 §6). */
     training: { cost: 1_200, skillGain: 5, moraleBoost: 2 },
     /** Motivar: bonus puntual o subida de salario permanente (docs/05 §6). */

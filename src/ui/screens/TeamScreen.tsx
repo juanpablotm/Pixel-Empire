@@ -4,6 +4,7 @@ import {
   policiesUnlocked,
   salaryTierOf,
   scaleStageInfo,
+  squadsUnlocked,
   staffCap,
   type Employee,
   type SalaryPolicy,
@@ -17,6 +18,7 @@ import { Avatar } from '../components/Avatar';
 import { EmployeeCard } from '../components/EmployeeCard';
 import { StaggerGroup, StaggerItem } from '../components/Motion';
 import { SkillRow } from '../components/SkillRow';
+import { SquadsPanel } from '../components/SquadsPanel';
 
 /**
  * Pantalla de equipo (docs/10 §10.6): plantilla con tarjetas de empleado y
@@ -175,6 +177,9 @@ export function TeamScreen() {
   const scaleStage = useGameStore((s) => s.game.studio.scaleStage);
   const cap = useGameStore((s) => staffCap(s.game));
   const showPolicies = useGameStore((s) => policiesUnlocked(s.game));
+  // Los subequipos llegan con el Estudio (docs/18 V5): con 4 personas y un
+  // proyecto no ahorran nada, y serían ruido.
+  const showSquads = useGameStore((s) => squadsUnlocked(s.game));
   const goTo = useGameStore((s) => s.goTo);
 
   // Aforo alcanzado: la etapa no admite a nadie más hasta mejorar (docs/17 B1).
@@ -201,6 +206,10 @@ export function TeamScreen() {
 
       {/* Gestión por políticas en la escala grande (docs/02 §4). */}
       {showPolicies && <PoliciesPanel />}
+
+      {/* Asignación en bloque (docs/18 V5): antes de la plantilla, porque a
+          esta escala es por donde se empieza a repartir gente. */}
+      {showSquads && <SquadsPanel />}
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">Plantilla</h3>

@@ -53,6 +53,15 @@ export interface Project {
    * proyectos de saves previos sigan siendo válidos (heredan coste dev 0).
    */
   startWeek?: number;
+  /**
+   * Semanas de calendario que el proyecto pasó EN PAUSA, sin nadie asignado
+   * (docs/18 V5). Se descuentan del coste de desarrollo del P&L: si nadie
+   * trabajó, no hubo coste de desarrollo que atribuir. Sin esto, retirar al
+   * equipo para que descanse inflaría el "costó" del juego —y el crunch, que
+   * comprime el calendario, lo abarataría—, o sea justo la lección inversa a la
+   * que el descanso existe para enseñar. Opcional: los saves previos heredan 0.
+   */
+  pausedWeeks?: number;
   /** Fase de desarrollo en curso. */
   phase: DevPhaseNumber;
   /** Reparto de esfuerzo por fase: focus[fase - 1]. */

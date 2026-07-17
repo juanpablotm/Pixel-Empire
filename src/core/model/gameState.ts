@@ -14,6 +14,7 @@ import type { StudioPolicies } from './policies';
 import type { Project } from './project';
 import type { ReleasedGame } from './release';
 import type { ResearchState } from './research';
+import type { Squad } from './squad';
 import type { Employee } from './staff';
 
 export type { EraId };
@@ -97,6 +98,12 @@ export interface GameState {
   staff: Employee[];
   /** Pool de contratación; vacío en el garaje (docs/05 §6). */
   candidates: Employee[];
+  /**
+   * Subequipos nombrados para asignar en bloque (docs/18 V5). Pura comodidad de
+   * la UI de asignación: la simulación no los lee. Opcional: los saves previos
+   * arrancan sin él y se leen con `?? []` (mismo patrón que recentFireWeeks).
+   */
+  squads?: Squad[];
   /**
    * Proyectos en desarrollo. El aforo depende de la etapa de escala
    * (docs/02 §4): 1 hasta el estudio pequeño; varios en paralelo desde el

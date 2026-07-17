@@ -1,4 +1,4 @@
-import { salaryTierOf, type Employee } from '../../core';
+import { salaryTierOf, squadOf, type Employee } from '../../core';
 import { balance } from '../../data/balance';
 import { specialtyLabels, tierLabels } from '../../data/staffTexts';
 import { getTrait } from '../../data/traits';
@@ -49,6 +49,9 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
   const rdStaff = useGameStore((s) => s.game.research.rdStaff);
   const activeProjectId = useGameStore((s) => s.activeProjectId);
   const capital = useGameStore((s) => s.game.studio.capital);
+  // Devuelve la referencia del subequipo en el estado (o null): no crea objeto
+  // nuevo por render, así que el selector es estable.
+  const squad = useGameStore((s) => squadOf(s.game, employee.id));
   const fire = useGameStore((s) => s.fire);
   const train = useGameStore((s) => s.train);
   const motivate = useGameStore((s) => s.motivate);
@@ -96,6 +99,14 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
             {inResearch && (
               <span className="rounded bg-warn/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-capital">
                 En I+D
+              </span>
+            )}
+            {squad && (
+              <span
+                title={`Subequipo «${squad.name}»`}
+                className="rounded bg-raised px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-mute"
+              >
+                {squad.name}
               </span>
             )}
           </div>

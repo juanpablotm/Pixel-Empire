@@ -80,7 +80,16 @@ grande, egos que chocan. El factor entra en el `teamFactor` de `03`.
   estudio querido atrae mejor talento). Coste de contratación + salario.
 - **Formar:** invertir tiempo/dinero en subir skills (o desbloquear especialidades). Los "Mentor"
   abaratan esto.
-- **Asignar:** a proyectos y a fases; gestionar carga de trabajo.
+- **Asignar:** a proyectos y a fases; gestionar carga de trabajo. Desde el **Estudio** (etapa 3) se
+  pueden crear **subequipos** nombrados ("Equipo A", "Motor gráfico") y asignarlos **en bloque**, en vez
+  de persona a persona (docs/18 V5). Son una comodidad de asignación: no cambian el rendimiento —siguen
+  contando las personas reales— y un empleado pertenece a un subequipo como mucho.
+- **Retirar equipo entero (descanso):** sacar de golpe a todos los asignados de un proyecto. Al quedarse
+  sin proyecto ni I+D **descansan** (recuperan energía y moral, §4), y el proyecto **se pausa: no avanza,
+  pero no se pierde nada** — al reasignar continúa donde estaba. Es el **contrapeso del crunch**: rotas y
+  descansas equipos para evitar el burnout, sobre todo en proyectos largos (Muy grande/AAA). Lo que sigue
+  corriendo mientras es la nómina y el calendario (las modas decaen, las plataformas envejecen): ése es
+  su precio, y se paga en caja, no en la cuenta de resultados del juego (docs/18 V5).
 - **Motivar:** subidas de salario, vacaciones, bonus, mejores oficinas/perks.
 - **Crunch:** forzar sobre-esfuerzo → +producción a corto, −moral/energía/lealtad. **Palanca de codicia** (`06`).
 - **Despedir:** ahorra salario pero golpea la moral de los que quedan y la reputación como empleador.

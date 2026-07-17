@@ -32,6 +32,23 @@ export const tierLabels: Record<SalaryTier, string> = {
   estrella: 'Estrella',
 };
 
+/**
+ * Subequipos y retirada de equipo (docs/18 V5). El texto de "retirar" nombra
+ * el efecto completo —descanso + pausa— porque es justo lo que el jugador
+ * necesita entender para usarlo como contrapeso del crunch (Pilar 2).
+ */
+export const squadTexts = {
+  needsName: 'El subequipo necesita un nombre',
+  emptySquad: 'El subequipo no tiene a nadie',
+  tooMany: (max: number) => `No puedes tener más de ${max} subequipos`,
+  created: (name: string) => `Nuevo subequipo: «${name}».`,
+  disbanded: (name: string) => `El subequipo «${name}» se disuelve (nadie cambia de proyecto).`,
+  assigned: (name: string, count: number, project: string) =>
+    `«${name}» (${count} ${count === 1 ? 'persona' : 'personas'}) pasa a «${project}».`,
+  withdrawn: (count: number, project: string) =>
+    `Retiras al equipo de «${project}»: ${count} ${count === 1 ? 'persona' : 'personas'} a descansar. El proyecto queda en pausa hasta que vuelvas a asignar gente.`,
+} as const;
+
 export const stageLabels: Record<ScaleStage, string> = {
   1: 'Garaje',
   2: 'Estudio pequeño',

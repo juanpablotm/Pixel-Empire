@@ -15,6 +15,7 @@ import type { GameState, ScaleStage } from '../model/gameState';
 import type { Employee, SalaryTier, Specialty, TeamFactorResult } from '../model/staff';
 import { nudgeMoralDrift } from './morale';
 import { employerPoolModifiers, withReputationDeltas } from './reputation';
+import { dropFromSquads } from './squads';
 
 /**
  * Sistema de personal (docs/05): anatomía del empleado, teamFactor
@@ -437,6 +438,9 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
       rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
     },
   };
+  // Quien se va sale también de su subequipo (docs/18 V5): mismo saneado que
+  // assignedStaff y rdStaff, para no dejar ids muertos.
+  next = dropFromSquads(next, [employeeId]);
   next = appendLog(
     next,
     'staff',
@@ -779,6 +783,13 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
   }
 
   let next: GameState = { ...state, staff, projects, research, studio };
+  // Quien renuncia sale también de su subequipo (docs/18 V5).
+  if (quitters.length > 0) {
+    next = dropFromSquads(
+      next,
+      quitters.map((e) => e.id),
+    );
+  }
   for (const text of events) {
     next = appendLog(next, 'staff', text);
   }

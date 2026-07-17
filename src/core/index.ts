@@ -12,6 +12,7 @@ export type {
   StudioCapability,
 } from './model/research';
 export type { SalaryPolicy, StudioPolicies } from './model/policies';
+export type { Squad } from './model/squad';
 export type { Employee, SalaryTier, Specialty, TeamFactorResult } from './model/staff';
 export type {
   Audience,
@@ -126,6 +127,18 @@ export {
   themeResearchStatus,
   toggleResearchAssignment,
 } from './systems/research';
+export {
+  assignSquadToProject,
+  createSquad,
+  disbandSquad,
+  getSquads,
+  renameSquad,
+  setSquadMembers,
+  squadMembers,
+  squadOf,
+  squadsUnlocked,
+  withdrawTeam,
+} from './systems/squads';
 export { advanceAwards, pickCategoryWinner } from './systems/awards';
 export {
   advancePolicies,

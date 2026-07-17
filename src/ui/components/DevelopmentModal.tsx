@@ -109,6 +109,7 @@ function DevelopmentBody({ project }: { project: Project }) {
   const setFocus = useGameStore((s) => s.setFocus);
   const toggleFeature = useGameStore((s) => s.toggleFeature);
   const setCrunch = useGameStore((s) => s.setCrunch);
+  const withdrawTeam = useGameStore((s) => s.withdrawTeam);
   const launchMarketing = useGameStore((s) => s.launchMarketing);
   const goTo = useGameStore((s) => s.goTo);
 
@@ -329,9 +330,19 @@ function DevelopmentBody({ project }: { project: Project }) {
               }
             >
               {team.length === 0 ? (
-                <p className="text-sm text-danger">
-                  Nadie trabaja en el proyecto: no avanzará hasta que asignes a alguien.
-                </p>
+                /* Pausa, no cancelación (docs/18 V5): decir las dos mitades del
+                   trato —ni avanza, ni se pierde— es lo que hace del descanso
+                   una decisión y no un susto. */
+                <div className="flex flex-col gap-1.5">
+                  <span className="self-start rounded bg-warn/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-capital">
+                    En pausa
+                  </span>
+                  <p className="text-sm text-ink">
+                    Nadie trabaja en «{project.name}»: el desarrollo está parado y no se pierde nada.
+                    Sigue en la semana {Math.floor(project.weeksSpent)} de {projectTotalWeeks(project)}
+                    , y continuará ahí en cuanto vuelvas a asignar gente.
+                  </p>
+                </div>
               ) : (
                 <>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -377,28 +388,47 @@ function DevelopmentBody({ project }: { project: Project }) {
                 </>
               )}
 
+              {/* Las dos palancas opuestas, juntas a propósito (docs/18 V5): el
+                  crunch compra plazo con desgaste; retirar al equipo paga
+                  desgaste con plazo. Verlas al lado es la decisión. */}
               <div className="flex flex-col gap-2 border-t border-line pt-3">
-                <button
-                  type="button"
-                  aria-pressed={project.crunch}
-                  disabled={antiCrunch && !project.crunch}
-                  title={antiCrunch ? 'La política anti-crunch del estudio lo prohíbe' : undefined}
-                  onClick={() => setCrunch(!project.crunch, project.id)}
-                  className={`self-start rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    project.crunch
-                      ? 'bg-danger-deep text-oncolor hover:bg-danger-deep'
-                      : 'bg-raised text-ink hover:bg-control'
-                  } ${antiCrunch && !project.crunch ? 'cursor-not-allowed opacity-50' : ''}`}
-                >
-                  {project.crunch
-                    ? 'Crunch activo — desactivar'
-                    : antiCrunch
-                      ? 'Crunch prohibido (política)'
-                      : 'Activar crunch'}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={project.crunch}
+                    disabled={antiCrunch && !project.crunch}
+                    title={antiCrunch ? 'La política anti-crunch del estudio lo prohíbe' : undefined}
+                    onClick={() => setCrunch(!project.crunch, project.id)}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      project.crunch
+                        ? 'bg-danger-deep text-oncolor hover:bg-danger-deep'
+                        : 'bg-raised text-ink hover:bg-control'
+                    } ${antiCrunch && !project.crunch ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    {project.crunch
+                      ? 'Crunch activo — desactivar'
+                      : antiCrunch
+                        ? 'Crunch prohibido (política)'
+                        : 'Activar crunch'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={team.length === 0}
+                    title={
+                      team.length === 0
+                        ? 'No queda nadie en el proyecto'
+                        : `Saca a las ${team.length} personas del proyecto: descansan y el desarrollo queda en pausa`
+                    }
+                    onClick={() => withdrawTeam(project.id)}
+                    className="rounded-md bg-raised px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-control disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Retirar equipo (descanso)
+                  </button>
+                </div>
                 <p className="text-xs text-ink-faint">
                   El crunch acelera a costa de moral, energía y lealtad; los quemados rinden la
-                  mitad.
+                  mitad. Retirar al equipo hace lo contrario: recuperan energía y moral mientras el
+                  proyecto espera parado.
                 </p>
               </div>
             </Panel>

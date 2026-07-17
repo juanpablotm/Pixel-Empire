@@ -17,8 +17,13 @@ import {
   resolveDilemma,
   respondToCrisis,
   retireStudio,
+  assignSquadToProject,
+  createSquad,
+  disbandSquad,
+  renameSquad,
   setCrunch,
   setFocus,
+  setSquadMembers,
   scaleUpgradeCost,
   setPolicies,
   startProject,
@@ -28,6 +33,7 @@ import {
   toggleFeature,
   toggleResearchAssignment,
   trainEmployee,
+  withdrawTeam,
   type CrisisResponseId,
   type DevPhaseNumber,
   type DilemmaChoice,
@@ -269,6 +275,17 @@ export interface GameStore {
   motivate: (employeeId: string, kind: MotivationKind) => void;
   toggleAssignment: (employeeId: string, projectId?: string) => void;
   setCrunch: (active: boolean, projectId?: string) => void;
+  /**
+   * Subequipos y asignación en bloque (docs/18 V5; core/systems/squads.ts).
+   * `withdrawTeam` retira a todo el equipo de un proyecto: descansan y el
+   * proyecto queda en pausa.
+   */
+  createSquad: (name: string, memberIds?: string[]) => void;
+  renameSquad: (squadId: string, name: string) => void;
+  setSquadMembers: (squadId: string, memberIds: string[]) => void;
+  disbandSquad: (squadId: string) => void;
+  assignSquadToProject: (squadId: string, projectId: string) => void;
+  withdrawTeam: (projectId: string) => void;
   /** Acciones de investigación (docs/02 §3; delegan en core/systems/research.ts). */
   toggleResearch: (employeeId: string) => void;
   buyResearch: (nodeId: string) => void;
@@ -767,6 +784,30 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   setCrunch: (active, projectId) => {
     set((s) => ({ game: setCrunch(s.game, active, projectId) }));
+  },
+
+  createSquad: (name, memberIds) => {
+    set((s) => ({ game: createSquad(s.game, name, memberIds) }));
+  },
+
+  renameSquad: (squadId, name) => {
+    set((s) => ({ game: renameSquad(s.game, squadId, name) }));
+  },
+
+  setSquadMembers: (squadId, memberIds) => {
+    set((s) => ({ game: setSquadMembers(s.game, squadId, memberIds) }));
+  },
+
+  disbandSquad: (squadId) => {
+    set((s) => ({ game: disbandSquad(s.game, squadId) }));
+  },
+
+  assignSquadToProject: (squadId, projectId) => {
+    set((s) => ({ game: assignSquadToProject(s.game, squadId, projectId) }));
+  },
+
+  withdrawTeam: (projectId) => {
+    set((s) => ({ game: withdrawTeam(s.game, projectId) }));
   },
 
   toggleResearch: (employeeId) => {

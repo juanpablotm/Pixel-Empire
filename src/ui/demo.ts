@@ -303,9 +303,17 @@ function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
 }
 
-/** Aplica el escaparate pedido por la query string. Devuelve true si sembró algo. */
+/**
+ * Aplica el escaparate pedido por la query string. Devuelve true si sembró algo.
+ *
+ * De paso expone el store en `window` para la verificación por CDP (docs/08 §8:
+ * Chrome headless, porque en el Browser pane rAF no dispara): permite leer el
+ * estado real tras conducir la UI, en vez de deducirlo del DOM. Dev-only como
+ * todo este arnés — Vite lo elimina del build.
+ */
 export function applyDemoFromQuery(): boolean {
   if (!import.meta.env.DEV) return false;
+  (window as Window & { useGameStore?: typeof useGameStore }).useGameStore = useGameStore;
   const params = new URLSearchParams(window.location.search);
   const demo = params.get('demo');
   if (!demo) return false;

@@ -305,6 +305,12 @@ Roster de creadores como tarjetas (alcance, público, afinidad estimada), repart
 ### 10.6 Equipo (doc 05)
 Tarjetas de empleados con avatar, moral, energía, skills y rasgos; pool de contratación; acciones
 (asignar, formar, motivar, crunch, despedir). En corporación, vista de **políticas**.
+Desde el **Estudio** (etapa 3), panel de **subequipos** sobre la plantilla: grupos nombrados con sus
+avatares y las acciones asignar en bloque / editar / renombrar / disolver; cada empleado luce la etiqueta
+de su subequipo (docs/18 V5). En la ventana de desarrollo, **"Retirar equipo (descanso)" va junto al
+crunch**, a propósito: son las dos palancas opuestas (el crunch compra plazo con desgaste; retirar paga
+desgaste con plazo) y verlas juntas es la decisión. Sin nadie asignado, el proyecto se marca **"En pausa"**
+y dice las dos mitades del trato: ni avanza, ni se pierde.
 
 ### 10.7 Mercado y tendencias (doc 04)
 Panel de tendencias con flechas ↑→↓ por género/tema y una marquesina "lo que está de moda"; ciclo de
