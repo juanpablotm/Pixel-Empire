@@ -460,6 +460,8 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
   // Hype base (docs/04 §4): crece desde la fase de Producción, más si hay moda.
   // Las "Estrellas mediáticas" asignadas dan hype extra (docs/07 §6) y el
   // marketing investigado lo acelera (docs/02 §3: capacidad hypeGain).
+  // El pasivo se frena contra su meseta (hype.passiveCap, docs/18 V3): la zona
+  // roja solo se alcanza comprando marketing o creadores, nunca por duración.
   const hypeCapability = capabilityBonus(state, 'hypeGain');
   const projects = state.projects.map((project) => {
     if (project.phase < cfg.hype.startPhase) return project;
@@ -471,11 +473,15 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
           sum + e.traits.reduce((s, id) => s + (getTrait(id).modifiers.hypeBonus ?? 0), 0),
         0,
       );
+    // Freno hacia la meseta: 1 en hype 0, 0 al alcanzarla (y por encima, si el
+    // marketing ya la superó). Es lo que desacopla el hype pasivo de la duración.
+    const headroom = Math.max(0, 1 - project.hype / cfg.hype.passiveCap);
     const gain =
       cfg.hype.gainBySize[project.size] *
       (cfg.hype.popCouplingBase + cfg.hype.popCouplingSpan * pop) *
       (1 + balance.community.mediaStarHypeCoef * starBonus) *
-      hypeCapability;
+      hypeCapability *
+      headroom;
     return { ...project, hype: clampHype(project.hype + gain) };
   });
 

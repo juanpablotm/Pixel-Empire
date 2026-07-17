@@ -55,10 +55,17 @@
   --accent-warn: #d9a83c;
   --accent-warn-hi: #e3b95e;
   --accent-danger: #e4605f;
-  --accent-danger-hi: #eb6a6a;
+  /* Un punto más claro de lo que pedía el ojo (docs/18 V1): sobre los chips
+     tintados (bg-danger/15) el rojo anterior (#eb6a6a) daba 4,32:1, justo por
+     debajo de AA. Las pieles claras lo redefinen aparte. */
+  --accent-danger-hi: #ee7878;
   --accent-danger-deep: #b23336;
   --accent-info: #5f9ee8;
   --accent-capital: #e8b44a;
+  /* Magenta del "en su pico" del panel de tendencias (docs/10 §10.7). Existe
+     como token porque antes era un text-fuchsia-300 suelto y las pieles claras
+     no podían recolorearlo: en E3 daba 1,06:1 — invisible (docs/18 V1). */
+  --accent-peak: #f4a8ff;
 
   --ring-focus: #4fb377;
   /* Sombra plana (flat): sólida y corta, sin blur difuso. */
@@ -114,6 +121,7 @@
   --accent-danger-deep: #c03a3e;
   --accent-info: #2d69b8;
   --accent-capital: #8f5f0a;
+  --accent-peak: #7d2a87;
 
   --ring-focus: #1f7a44;
   --shadow-flat: 0 2px 0 rgba(26, 30, 39, 0.12);
@@ -151,6 +159,7 @@
   --color-danger-deep: var(--accent-danger-deep);
   --color-info: var(--accent-info);
   --color-capital: var(--accent-capital);
+  --color-peak: var(--accent-peak);
   --color-skin-accent: var(--skin-accent);
 
   --font-sans: var(--font-ui);

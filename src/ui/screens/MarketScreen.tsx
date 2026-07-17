@@ -26,7 +26,7 @@ import { TrendArrow } from '../components/TrendArrow';
 const STAGE_COLOR: Record<TrendStage, string> = {
   naciendo: 'bg-info/15 text-info',
   creciendo: 'bg-ok/15 text-ok',
-  pico: 'bg-fuchsia-500/15 text-fuchsia-300',
+  pico: 'bg-peak/15 text-peak',
   estable: 'bg-control text-ink',
   declive: 'bg-warn/15 text-capital',
   muerto: 'bg-danger/15 text-danger-hi',

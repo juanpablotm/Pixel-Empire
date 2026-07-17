@@ -26,6 +26,18 @@ import { useGameStore, type ImportantNotice, type Screen } from '../state/store'
 
 const DEMO_SEED = 20240712;
 
+/** Pantallas válidas para `&pantalla=` (el tipo Screen no existe en runtime). */
+const SCREENS: readonly Screen[] = [
+  'estudio',
+  'resena',
+  'equipo',
+  'mercado',
+  'creadores',
+  'investigacion',
+  'finanzas',
+  'legado',
+];
+
 /** Reparte staff de escaparate: el fundador + una tanda de candidatos adoptados. */
 function demoStaff(base: GameState, count: number): Employee[] {
   const extra = generateCandidates(DEMO_SEED, 5, 60, count - 1);
@@ -302,10 +314,16 @@ export function applyDemoFromQuery(): boolean {
       ? (eraParam as EraId)
       : null;
 
+  // `&pantalla=equipo` abre cualquier escaparate en otra pantalla: sirve para
+  // auditar el contraste de una piel donde vive el texto (docs/18 V1).
+  const screenParam = params.get('pantalla');
+  const forcedScreen: Screen | null =
+    screenParam !== null && SCREENS.includes(screenParam as Screen) ? (screenParam as Screen) : null;
+
   const seed = (game: GameState, screen: Screen, reviewGameId: string | null) =>
     useGameStore.setState({
       game: era !== null ? withEra(game, era) : game,
-      screen,
+      screen: forcedScreen ?? screen,
       speed: 0,
       reviewGameId,
       activeProjectId: 'demo-proj',

@@ -672,10 +672,17 @@ export const balance = {
   market: {
     /** Evolución de popularidades por tick (docs/04 §2): base guionizada + ruido suave. */
     popularity: {
-      /** Amplitud del ruido semanal (± sobre la popularidad, antes del clamp 0..1). */
-      noiseAmplitude: 0.02,
+      /**
+       * Amplitud del ruido semanal (± sobre la popularidad, antes del clamp 0..1).
+       * Con la persistencia forman un AR(1): la desviación estacionaria vale
+       * ~amplitud/√(3·(1−persistencia²)) ≈ 0,037 (antes 0,022; docs/18 V2 pedía
+       * modas "más vivas"). Las flechas ↑→↓ y la etapa del ciclo se leen de la
+       * CURVA BASE (ver trendStateAt), así que el ruido nunca las hace parpadear:
+       * solo matiza la popularidad efectiva de ventas/fit.
+       */
+      noiseAmplitude: 0.03,
       /** Persistencia de la desviación: cada tick la popularidad revierte hacia la curva base. */
-      noisePersistence: 0.85,
+      noisePersistence: 0.88,
       /** Semanas hacia atrás para medir la dirección ↑→↓ sobre la curva base. */
       directionLookbackWeeks: 6,
       /** Cambio mínimo de la curva base en ese lapso para marcar ↑ o ↓. */
@@ -704,11 +711,34 @@ export const balance = {
     hype: {
       /** El hype empieza a acumularse en esta fase de desarrollo (el "anuncio"). */
       startPhase: 2,
-      /** Ganancia semanal base por tamaño de proyecto (los grandes generan más expectación). */
+      /**
+       * Ganancia semanal base por tamaño de proyecto. Con passiveCap ya NO fija
+       * el hype final (eso lo hace el tope), sino la VELOCIDAD con la que se
+       * llega a la meseta: por eso los desarrollos largos siguen generando más
+       * expectación total, pero ninguno se dispara por pura duración.
+       */
       gainBySize: { pequeno: 0.07, mediano: 0.05, grande: 0.04, aaa: 0.045 } satisfies Record<
         ProjectSize,
         number
       >,
+      /**
+       * Meseta del hype PASIVO (docs/18 V3): el que sube solo, sin comprar nada.
+       * La ganancia semanal se multiplica por (1 − hype/passiveCap), así que el
+       * hype pasivo se acerca a este valor y se para; la zona roja (overHype-
+       * Threshold) queda fuera de su alcance. Llegar arriba exige DECISIÓN —
+       * marketing (docs/06 §4) o creadores (docs/07 §3) — no tiempo.
+       *
+       * Antes, la ganancia iba acoplada a la duración (que varía ×20 entre
+       * tamaños): un Grande llegaba a 0,78 y un AAA topaba en 1,0 hacia la
+       * semana 32 de 80, sin que el jugador hiciera nada. Con el tope, el hype
+       * pasivo al lanzar aterriza en ~0,16 / 0,25 / 0,31 / 0,35 (pequeño →
+       * AAA), inmune a la duración y al crunch.
+       *
+       * Consecuencia [DECIDIDO · Fase 8.7]: si ya compraste hype por encima de
+       * la meseta, el pasivo deja de aportar (el factor se satura a 0). Comprar
+       * marketing tarde rinde más que comprarlo pronto.
+       */
+      passiveCap: 0.35,
       /** La moda alimenta la expectación: ganancia × (base + span·popCombo). */
       popCouplingBase: 0.4,
       popCouplingSpan: 0.6,

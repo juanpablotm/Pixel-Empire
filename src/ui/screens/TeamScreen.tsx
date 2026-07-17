@@ -15,6 +15,7 @@ import { formatMoney } from '../format';
 import { Avatar } from '../components/Avatar';
 import { EmployeeCard } from '../components/EmployeeCard';
 import { StaggerGroup, StaggerItem } from '../components/Motion';
+import { SkillRow } from '../components/SkillRow';
 
 /**
  * Pantalla de equipo (docs/10 §10.6): plantilla con tarjetas de empleado y
@@ -128,15 +129,7 @@ function CandidateCard({ candidate }: { candidate: Employee }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-mute">
-        {(Object.entries(specialtyLabels) as [keyof typeof specialtyLabels, string][]).map(
-          ([spec, label]) => (
-            <span key={spec} className={spec === candidate.specialty ? 'text-ink' : ''}>
-              {label} <span className="tabular-nums">{Math.round(candidate.skills[spec])}</span>
-            </span>
-          ),
-        )}
-      </div>
+      <SkillRow specialty={candidate.specialty} skills={candidate.skills} />
 
       <div className="flex flex-wrap gap-1.5">
         {candidate.traits.map((id) => {

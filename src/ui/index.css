@@ -456,7 +456,13 @@
 
 /* E3 — El salto 3D: software beige/gris CLARO de los 90, botones con relieve
    y barras de título gruesas (gradiente azul de ventana). Piel clara: todos
-   los tokens de texto/acento se redefinen para AA sobre beige. */
+   los tokens de texto/acento se redefinen para AA sobre beige.
+
+   Nota (docs/18 V1): los tonos de texto de esta piel están ENCAJONADOS — el
+   mute ya roza el mínimo AA contra --surface-app (#b6b2a2, el "escritorio"),
+   así que no se puede aclarar para ganar separación contra --text-strong sin
+   romper las cabeceras que van sobre el escritorio. Por eso el destaque de la
+   especialidad NO se fía de la luminosidad: ver ui/components/SkillRow.tsx. */
 .era-E3 {
   --skin-accent: #1f4e9c;
   --surface-app: #b6b2a2;
@@ -473,14 +479,21 @@
   --text-faint: #4a4438;
   --accent-action: #1f7a44;
   --accent-action-hi: #2e9c5b;
-  --accent-ok: #185430;
+  /* Un punto más oscuro que en E4: el distintivo "En proyecto" (bg-ok/20) se
+     compone contra el escritorio beige y a #185430 se quedaba en 4,48:1. */
+  --accent-ok: #175030;
   --accent-warn: #6f5008;
   --accent-warn-hi: #5a4006;
   --accent-danger: #a3242a;
   --accent-danger-hi: #8b1e23;
   --accent-danger-deep: #a3242a;
   --accent-info: #23539c;
-  --accent-capital: #7a5206;
+  /* Más oscuro que el ámbar de las otras pieles claras (docs/18 V1): aquí el
+     dorado va sobre chips tintados (bg-warn/20) que se componen contra el
+     escritorio beige, y a #7a5206 el distintivo "Fundador" se quedaba en
+     3,56:1. */
+  --accent-capital: #5e3f04;
+  --accent-peak: #7d2a87;
   --ring-focus: #1f7a44;
   --shadow-flat: 0 2px 0 rgba(40, 38, 30, 0.25);
   --shadow-flat-raised: 0 3px 0 rgba(40, 38, 30, 0.3);
@@ -531,6 +544,7 @@
   --accent-danger-deep: #a3242a;
   --accent-info: #1a5fb4;
   --accent-capital: #7a5206;
+  --accent-peak: #7d2a87;
   --ring-focus: #1a5fb4;
   --shadow-flat: 0 2px 0 rgba(23, 52, 80, 0.18);
   --shadow-flat-raised: 0 3px 0 rgba(23, 52, 80, 0.22);

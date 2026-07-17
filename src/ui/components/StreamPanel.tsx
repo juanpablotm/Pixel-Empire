@@ -30,7 +30,19 @@ const CHAT_HANDLES = [
   'tecla_travi',
   'modo_foto',
 ];
-const HANDLE_COLORS = ['#5b8ef5', '#43b96f', '#a06bf0', '#f09a3f', '#e8b44a', '#22d3ee'];
+/**
+ * Colores de los nicks del chat. Van por TOKEN de acento, no por hex suelto
+ * (docs/18 V1): la paleta neón anterior era fija y se evaporaba en las pieles
+ * claras — el cian daba 1,22:1 sobre el beige de E3. Los acentos ya los afina
+ * cada piel para cumplir AA, así que esto se adapta solo. Fuera el dorado de
+ * marca, además: docs/10 §2 lo reserva al eje Capital.
+ */
+const HANDLE_COLORS = [
+  'var(--accent-info)',
+  'var(--accent-ok)',
+  'var(--skin-accent)',
+  'var(--accent-danger-hi)',
+];
 
 /** Selección determinista de líneas de chat: sin RNG en la UI (docs/08). */
 function chatFor(stream: StreamResult, index: number): string[] {
@@ -113,7 +125,13 @@ function StreamCard({ stream, game, index }: { stream: StreamResult; game: Relea
   const lines = chatFor(stream, index);
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-line bg-scrim p-4">
+    // bg-panel, no bg-scrim (docs/18 V1): el scrim es el VELO de los modales,
+    // un negro translúcido. Usado como superficie de tarjeta, sobre una piel
+    // clara componía un gris medio (#767368) donde no se leía ni la tinta clara
+    // ni la oscura: los factores de la campaña caían a 1,56:1 en E3. Se usa la
+    // MISMA superficie que el resto de tarjetas del juego, que es contra la que
+    // cada piel tiene afinados sus acentos.
+    <div className="flex flex-col gap-2 rounded-lg border border-line bg-panel p-4">
       <div className="flex items-baseline justify-between gap-2">
         <div>
           <p className="font-semibold text-ink-hi">{creator.name}</p>
@@ -142,7 +160,7 @@ function StreamCard({ stream, game, index }: { stream: StreamResult; game: Relea
       </p>
 
       {/* Chat en vivo: los mensajes van llegando (docs/10 §7.2). */}
-      <ul className="flex flex-col gap-1 rounded bg-panel px-3 py-2 text-xs">
+      <ul className="flex flex-col gap-1 rounded bg-raised px-3 py-2 text-xs">
         {lines.map((line, i) => {
           const isBugLine = stream.liveBug && liveBugChatLines.includes(line);
           const h = hashString(`${stream.creatorId}:${index}:${i}`);

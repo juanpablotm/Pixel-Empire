@@ -4,12 +4,15 @@ import { genres } from '../../data/genres';
 import { getPlatform } from '../../data/platforms';
 import { getTheme, themes } from '../../data/themes';
 import { createInitialState } from '../engine/initialState';
+import { makeRng } from '../engine/rng';
 import { tick } from '../engine/tick';
 import type { Platform } from '../model/content';
 import type { GameState } from '../model/gameState';
+import type { ProjectSize } from '../model/project';
 import type { ReleasedGame } from '../model/release';
 import type { Employee } from '../model/staff';
 import {
+  advanceMarket,
   clampHype,
   comboKey,
   computeSegmentReviews,
@@ -270,6 +273,114 @@ describe('reseñas por segmento (docs/04 §5, CA)', () => {
     expect(high.info.hypePenalty).toBeGreaterThan(5);
     expect(high.average).toBeLessThan(low.average);
     expect(high.bySegment.critica).toBeLessThan(low.bySegment.critica ?? 100);
+  });
+});
+
+describe('hype pasivo — la meseta lo desacopla de la duración (docs/18 V3)', () => {
+  /**
+   * Estado con un proyecto del tamaño dado ya en fase de hype (Producción). El
+   * tamaño se fuerza sobre el proyecto en vez de pasar por startProject: aquí
+   * se mide SOLO la acumulación de hype de advanceMarket, y las puertas de
+   * etapa (no puedes empezar un AAA en el garaje) son de otro sistema.
+   */
+  function withProject(size: ProjectSize, hype = 0): GameState {
+    const started = startProject(createInitialState(SEED), CONCEPT);
+    const project = started.projects[0];
+    return {
+      ...started,
+      projects: [{ ...project, size, phase: balance.market.hype.startPhase, hype }],
+    };
+  }
+
+  /** Solo el hype pasivo: avanza el mercado N semanas sin comprar nada. */
+  function passiveHypeAfter(size: ProjectSize, weeks: number): number {
+    let s = withProject(size);
+    for (let i = 0; i < weeks; i++) s = advanceMarket(s, makeRng(SEED, i));
+    return s.projects[0].hype;
+  }
+
+  const cap = balance.market.hype.passiveCap;
+
+  it('CA: ningún tamaño llega solo a la zona roja, por mucho que dure el desarrollo', () => {
+    // 200 semanas es más del doble que el AAA más largo: si el pasivo pudiera
+    // desbocarse por tiempo, aquí se vería.
+    for (const size of ['pequeno', 'mediano', 'grande', 'aaa'] as const) {
+      const hype = passiveHypeAfter(size, 200);
+      expect(hype).toBeLessThan(balance.market.hype.overHypeThreshold);
+      expect(hype).toBeLessThanOrEqual(cap);
+    }
+  });
+
+  it('el pasivo se acerca a la meseta y se para ahí (no la cruza)', () => {
+    const long = passiveHypeAfter('aaa', 200);
+    expect(long).toBeGreaterThan(cap * 0.95);
+    expect(long).toBeLessThanOrEqual(cap);
+  });
+
+  it('los desarrollos largos siguen generando más expectación que los cortos', () => {
+    // La meseta no aplana la progresión: a igual semana, el que lleva más
+    // tiempo anunciado tiene más hype (docs/04 §4).
+    const pequeno = passiveHypeAfter('pequeno', 4);
+    const grande = passiveHypeAfter('grande', 28);
+    const aaa = passiveHypeAfter('aaa', 80);
+    expect(grande).toBeGreaterThan(pequeno);
+    expect(aaa).toBeGreaterThan(grande);
+  });
+
+  it('el freno es progresivo: cada semana aporta menos que la anterior', () => {
+    let s = withProject('grande');
+    const deltas: number[] = [];
+    let prev = 0;
+    for (let i = 0; i < 12; i++) {
+      s = advanceMarket(s, makeRng(SEED, i));
+      deltas.push(s.projects[0].hype - prev);
+      prev = s.projects[0].hype;
+    }
+    for (let i = 1; i < deltas.length; i++) {
+      expect(deltas[i]).toBeLessThanOrEqual(deltas[i - 1]);
+    }
+  });
+
+  it('por encima de la meseta el pasivo no aporta: subir de ahí es DECISIÓN', () => {
+    // Hype comprado (marketing/creadores) muy por encima de la meseta.
+    const s = withProject('aaa', 0.8);
+    const after = advanceMarket(s, makeRng(SEED, 1));
+    expect(after.projects[0].hype).toBe(0.8);
+  });
+
+  it('la meseta deja sitio a que marketing + creadores lleguen a la zona roja', () => {
+    // El diseño exige que la palanca comprada BASTE para cruzar (docs/18 V3).
+    const topCampaign = Math.max(...balance.economy.marketing.levels.map((c) => c.hypeBoost));
+    expect(cap + topCampaign).toBeGreaterThan(balance.market.hype.overHypeThreshold);
+  });
+});
+
+describe('ruido de popularidad — más vivo pero legible (docs/18 V2)', () => {
+  it('CA: la flecha y la etapa se leen de la curva base, el ruido no las mueve', () => {
+    // Es la garantía de "mayormente determinista": suba lo que suba el ruido,
+    // el panel de tendencias no parpadea.
+    const genre = genres[0];
+    let s = createInitialState(SEED);
+    for (let i = 0; i < 40; i++) s = advanceMarket(s, makeRng(SEED, i));
+    const state = s.market.genres[genre.id];
+    expect(state.direction).toBe(trendDirection(genre.basePopularityCurve, s.week));
+    expect(state.stage).toBe(trendStage(genre.basePopularityCurve, s.week));
+  });
+
+  it('la desviación sobre la curva base se queda en un margen legible', () => {
+    // ~0,037 de desviación típica: se nota, pero la tendencia manda.
+    const genre = genres[0];
+    let s = createInitialState(SEED);
+    let worst = 0;
+    for (let i = 0; i < 300; i++) {
+      s = advanceMarket(s, makeRng(SEED, i));
+      const base = curveValueAt(genre.basePopularityCurve, s.week);
+      const pop = s.market.genres[genre.id].pop;
+      // El clamp 0..1 recorta la desviación cuando la base roza los extremos.
+      if (base > 0.05 && base < 0.95) worst = Math.max(worst, Math.abs(pop - base));
+    }
+    expect(worst).toBeGreaterThan(0.02); // se mueve de verdad
+    expect(worst).toBeLessThan(0.15); // pero no tapa la tendencia
   });
 });
 

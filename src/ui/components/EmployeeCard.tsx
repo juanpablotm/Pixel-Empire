@@ -5,6 +5,7 @@ import { getTrait } from '../../data/traits';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../format';
 import { Avatar } from './Avatar';
+import { SkillRow } from './SkillRow';
 import { StatBar } from './StatBar';
 
 /**
@@ -111,15 +112,7 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
         <StatBar label="Lealtad" value={employee.loyalty} />
       </div>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-mute">
-        {(Object.entries(specialtyLabels) as [keyof typeof specialtyLabels, string][]).map(
-          ([spec, label]) => (
-            <span key={spec} className={spec === employee.specialty ? 'text-ink' : ''}>
-              {label} <span className="tabular-nums">{Math.round(employee.skills[spec])}</span>
-            </span>
-          ),
-        )}
-      </div>
+      <SkillRow specialty={employee.specialty} skills={employee.skills} />
 
       <div className="flex flex-wrap gap-1.5">
         {employee.traits.map((id) => {
