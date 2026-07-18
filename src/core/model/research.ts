@@ -22,11 +22,12 @@ export type StudioCapability = 'devOutput' | 'qaEfficiency' | 'hypeGain' | 'rese
  * Facetas del conocimiento de mercado que un nodo puede revelar globalmente
  * (docs/17 P2): la PISTA PREDICTIVA (saberlo antes de lanzar). El desglose de
  * reseña a posteriori nunca se paga (Pilar 2, docs/03). Cada faceta:
- *   · `fit`     → el medidor de Fit en vivo deja de estar "difuso" (docs/03 A).
- *   · `balance` → el ideal Diseño/Técnica del género (docs/03 B).
- *   · `price`   → el precio recomendado por tamaño (docs/06 §2).
+ *   · `fit`        → el medidor de Fit en vivo deja de estar "difuso" (docs/03 A).
+ *   · `balance`    → el ideal Diseño/Técnica del género (docs/03 B).
+ *   · `price`      → el precio recomendado por tamaño (docs/06 §2).
+ *   · `featureFit` → el encaje feature×género al elegir features (9.3, docs/19 §9.3).
  */
-export type MarketKnowledge = 'fit' | 'balance' | 'price';
+export type MarketKnowledge = 'fit' | 'balance' | 'price' | 'featureFit';
 
 /** Un nodo del árbol de investigación (data/research.ts). */
 export interface ResearchNodeDef {
@@ -66,4 +67,11 @@ export interface ResearchState {
    * balance ideal de ese género, sin comprar el nodo global. Opcional: `?? []`.
    */
   insights?: string[];
+  /**
+   * Pares `featureId|genreId` cuyo ENCAJE se conoce (Fase 9.3, docs/19 §9.3).
+   * Se aprenden GRATIS al lanzar: el desglose de reseña nombra qué features
+   * encajaban y cuáles no (Pilar 2), así que ese conocimiento pasa a ser tuyo.
+   * El nodo global 'teoriaDiseno' lo revela todo de golpe. Opcional: `?? []`.
+   */
+  featureInsights?: string[];
 }

@@ -1,4 +1,5 @@
 import type { StreamResult } from './community';
+import type { FeatureAffinity } from './content';
 import type { ReviewMarketInfo, Segment } from './market';
 import type { MonetizationConfig } from './moral';
 import type { Audience, ProjectSize } from './project';
@@ -44,8 +45,14 @@ export interface QualityBreakdown {
   balanceScore: number;
   dReal: number;
   dIdeal: number;
-  /** Factor C — Features y alcance, 0..1. */
+  /** Factor C — Features y alcance, 0..1 (desde 9.3, ponderado por encaje). */
   featureScore: number;
+  /**
+   * Encaje de cada feature elegida con el género (Fase 9.3, docs/19 §9.3):
+   * alimenta la línea del desglose que nombra las que no pegaban (Pilar 2).
+   * Opcional: los juegos de saves previos no lo llevan.
+   */
+  featureParts?: { id: string; affinity: FeatureAffinity }[];
   /** Factor D — Pulido, 0..1 (polishScore = 1 - bugLevel). */
   polishScore: number;
   bugLevel: number;

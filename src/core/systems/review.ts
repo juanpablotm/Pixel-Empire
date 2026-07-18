@@ -1,7 +1,14 @@
 import { balance } from '../../data/balance';
 import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
-import { audienceLabels, factorTexts, sizeLabels, verdicts } from '../../data/reviewTexts';
+import {
+  audienceLabels,
+  factorTexts,
+  featureMisfitText,
+  sizeLabels,
+  verdicts,
+} from '../../data/reviewTexts';
+import { getFeature } from '../../data/features';
 import { specialtyLabels } from '../../data/staffTexts';
 import type { ReviewMarketInfo } from '../model/market';
 import type { Audience, ProjectSize } from '../model/project';
@@ -69,6 +76,11 @@ export function buildReviewLines(
     breakdown.keySpecialty !== undefined
       ? specialtyLabels[breakdown.keySpecialty as Specialty]
       : '';
+  // Features fuera de género (9.3): el desglose las nombra — la lección es
+  // "esta pieza no pintaba nada aquí", no un número opaco (Pilar 2).
+  const misfits = (breakdown.featureParts ?? [])
+    .filter((part) => part.affinity === 'noEncaja')
+    .map((part) => getFeature(part.id).name);
   const vars = {
     tema: getTheme(subject.themeId).name,
     genero: getGenre(subject.genreId).name,
@@ -79,6 +91,7 @@ export function buildReviewLines(
       breakdown.capBinding !== undefined ? ceilingLimitLabel(breakdown.capBinding, rol) : '',
     fatiga: String(Math.round(market?.fatiga ?? 0)),
     banda: String(Math.abs(market?.banda ?? 0)),
+    featuresFuera: misfits.join(' y '),
   };
   const r = balance.reviews;
 
@@ -130,10 +143,13 @@ export function buildReviewLines(
   }
 
   return tones.map(({ factor, tone }) => {
-    const text = factorTexts[factor][tone];
+    // La línea de features cambia de texto (y fuerza ✘) si alguna no encajaba
+    // con el género (9.3): la reseña explica el criterio, no solo el alcance.
+    const text =
+      factor === 'features' && misfits.length > 0 ? featureMisfitText : factorTexts[factor][tone];
     return {
       factor,
-      tone,
+      tone: factor === 'features' && misfits.length > 0 ? 'bad' : tone,
       title: text.title,
       detail: interpolate(text.detail, vars),
     };

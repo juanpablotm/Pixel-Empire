@@ -1,6 +1,6 @@
 import { balance } from '../../data/balance';
 import { getAudienceGenreAffinity, getThemeGenreAffinity } from '../../data/affinity';
-import { getFeature } from '../../data/features';
+import { featureGenreAffinity, getFeature } from '../../data/features';
 import { getGenre } from '../../data/genres';
 import { getPlatform } from '../../data/platforms';
 import type { EraId } from '../model/era';
@@ -104,12 +104,23 @@ export function computeQuality(
   const balanceScore =
     1 - (Math.abs(dReal - genre.idealDesign) + Math.abs(tReal - genre.idealTech)) / 2;
 
-  // Factor C — Features y alcance
-  const featureValue = project.chosenFeatureIds.reduce(
-    (sum, id) => sum + getFeature(id).qualityValue,
+  // Factor C — Features y alcance (9.3: cada feature aporta según su ENCAJE
+  // con el género; una que no pega resta y aun así costó semanas y bugs).
+  const aff = balance.quality.featureAffinity;
+  const affinityMult = { encaja: aff.encajaMult, neutro: aff.neutroMult, noEncaja: aff.noEncajaMult };
+  const featureParts = project.chosenFeatureIds.map((id) => ({
+    id,
+    affinity: featureGenreAffinity(getFeature(id), project.genreId),
+  }));
+  const featureValue = featureParts.reduce(
+    (sum, part) => sum + getFeature(part.id).qualityValue * affinityMult[part.affinity],
     0,
   );
-  const featureScore = Math.min(1, featureValue / balance.quality.featureScopeTarget[project.size]);
+  const featureScore = clamp(
+    featureValue / balance.quality.featureScopeTarget[project.size],
+    0,
+    1,
+  );
 
   // Factor D — Pulido / bugs
   const bugLevel = computeBugLevel(project.bugDebt, project.qaInvested);
@@ -161,6 +172,7 @@ export function computeQuality(
       dReal,
       dIdeal: genre.idealDesign,
       featureScore,
+      featureParts,
       polishScore,
       bugLevel,
       teamFactor: ctx.teamFactor,

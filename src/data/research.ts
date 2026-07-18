@@ -47,6 +47,15 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     era: 'E2',
     reveals: 'fit',
   },
+  {
+    id: 'teoriaDiseno',
+    name: 'Teoría del diseño',
+    description:
+      'Qué mecánicas pide cada género: revela el encaje de cada feature con el género en la mesa de desarrollo.',
+    cost: 14,
+    era: 'E2',
+    reveals: 'featureFit',
+  },
 
   // --- Arquitectura de motores (Fase 9.2, docs/19 §9.2) ---------------------
   // Estos nodos NO construyen nada: desbloquean la CAPACIDAD de construir
@@ -161,6 +170,14 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description:
       'Netcode propio: desbloquea el multijugador online y la capacidad Online de tus motores.',
     cost: 60,
+    era: 'E4',
+  },
+  {
+    id: 'produccionAudio',
+    name: 'Producción de audio',
+    description:
+      'Estudio de grabación y dirección de actores: desbloquea el doblaje completo.',
+    cost: 30,
     era: 'E4',
   },
   {

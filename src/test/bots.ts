@@ -1,5 +1,6 @@
 import { balance } from '../data/balance';
 import { eraIndex, getEra } from '../data/eras';
+import { featureGenreAffinity } from '../data/features';
 import { researchNodes } from '../data/research';
 import { createInitialState } from '../core/engine/initialState';
 import { tick } from '../core/engine/tick';
@@ -386,24 +387,40 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
     monetization: pickMonetization(state, phil),
   });
 
-  // Features hasta el objetivo de alcance del tamaño (docs/03 factor C),
-  // mejores primero: misma regla para los tres bots (comparación justa). Las
-  // gateadas por capacidad de motor (9.2) se saltan si el motor elegido no la
-  // tiene — como el jugador, que las ve bloqueadas.
+  // Features hasta el objetivo de alcance del tamaño (docs/03 factor C), por
+  // VALOR EFECTIVO para el género (9.3): un jugador con criterio no mete lo
+  // que no pega (bugs y coste sin calidad) y de cada trade-off coge una sola
+  // variante. Como con computeFit, el bot "ve" el encaje sin pagar el nodo
+  // (juega como un jugador experimentado; probar el gateo por conocimiento
+  // llevó a la fábrica a la bancarrota apilando misfits a ciegas). Misma
+  // regla para los tres bots (comparación justa). Las gateadas por capacidad
+  // de motor (9.2) se saltan si el motor elegido no la tiene.
   const project = next.projects[next.projects.length - 1];
   const target = balance.quality.featureScopeTarget[size];
+  const aff = balance.quality.featureAffinity;
+  const affMult = { encaja: aff.encajaMult, neutro: aff.neutroMult, noEncaja: aff.noEncajaMult };
   const pool = [...availableFeatures(next)]
     .filter(
       (f) =>
         f.requiresEngineCapability === undefined ||
         engineHasCapability(next, project.engineId, f.requiresEngineCapability),
     )
-    .sort((a, b) => b.qualityValue - a.qualityValue || a.id.localeCompare(b.id));
+    .map((f) => ({
+      feature: f,
+      eff: f.qualityValue * affMult[featureGenreAffinity(f, combo.genreId)],
+    }))
+    .filter(({ eff }) => eff > 0)
+    .sort((a, b) => b.eff - a.eff || a.feature.id.localeCompare(b.feature.id));
   let scope = 0;
-  for (const feature of pool) {
+  const pickedGroups = new Set<string>();
+  for (const { feature, eff } of pool) {
     if (scope >= target) break;
+    if (feature.variantGroup !== undefined) {
+      if (pickedGroups.has(feature.variantGroup)) continue;
+      pickedGroups.add(feature.variantGroup);
+    }
     next = toggleFeature(next, feature.id, project.id);
-    scope += feature.qualityValue;
+    scope += eff;
   }
   return next;
 }

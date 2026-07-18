@@ -266,9 +266,11 @@ describe('setFocus y toggleFeature — decisiones de desarrollo', () => {
   });
 
   it('toggleFeature añade la feature y su riesgo de bugs; quitarla lo devuelve', () => {
+    // Físicas es neutra para RPG: riesgo base × la escala global (9.3).
+    const expected = 0.15 * balance.development.featureBugScale;
     let state = toggleFeature(withProject(), 'fisicasAvanzadas');
     expect(state.projects[0].chosenFeatureIds).toEqual(['fisicasAvanzadas']);
-    expect(state.projects[0].bugDebt).toBeCloseTo(0.15, 10);
+    expect(state.projects[0].bugDebt).toBeCloseTo(expected, 10);
 
     state = toggleFeature(state, 'fisicasAvanzadas');
     expect(state.projects[0].chosenFeatureIds).toEqual([]);

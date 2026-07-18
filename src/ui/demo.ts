@@ -521,6 +521,133 @@ function motoresDemo(): GameState {
   };
 }
 
+/**
+ * Escaparates de la Fase 9.3 (docs/19 §9.3): features por género.
+ * · sin flag: el modal de desarrollo en pleno CONCEPTO de una aventura de E5:
+ *   badges de encaje conocidos (verde/ámbar/rojo), un par aún ❓ (el encaje
+ *   se gana, docs/17 P2) y los dos grupos de variantes (mundo abierto, voces).
+ * · &desglose=1: la gala de un lanzamiento con piezas fuera de género,
+ *   calculada con el NÚCLEO real — "Features que no pegan" las nombra.
+ */
+function featuresDemo(desglose: boolean): GameState {
+  const base = studioDemo();
+  // El encaje conocido de la aventura (docs/17 P2): lo ya vivido en
+  // lanzamientos propios. Crafteo y cinemáticas quedan por descubrir (❓).
+  const state: GameState = {
+    ...base,
+    research: {
+      ...base.research,
+      points: 64,
+      unlocked: ['generacionProcedural', 'produccionAudio'],
+      featureInsights: [
+        'mundoAbierto|aventura',
+        'mapaProcedural|aventura',
+        'vozDigitalizada|aventura',
+        'doblajeCompleto|aventura',
+        'finalRamificado|aventura',
+        'bandaSonora|aventura',
+        'multijugadorLocal|aventura',
+        'editorNiveles|aventura',
+        'modoCarrera|aventura',
+        'fisicasAvanzadas|aventura',
+        'logros|aventura',
+        'guardadoNube|aventura',
+      ],
+    },
+  };
+
+  const concepto: Project = {
+    ...demoProject(state.staff.map((e) => e.id)),
+    name: 'La Posada del Fin del Mundo',
+    themeId: 'fantasia',
+    genreId: 'aventura',
+    audience: 'amplio',
+    size: 'mediano',
+    phase: 1,
+    weeksSpent: 1,
+    designPoints: 4,
+    techPoints: 2,
+    qaInvested: 0,
+    bugDebt: 0.39,
+    hype: 0.05,
+    marketingUsed: [],
+    // Las dos verdes ya marcadas: el mundo abierto artesanal (variante
+    // elegida del trade-off) y el final ramificado.
+    chosenFeatureIds: ['mundoAbierto', 'finalRamificado'],
+  };
+
+  if (!desglose) return { ...state, projects: [concepto] };
+
+  // La gala con piezas fuera de género, calculada con el núcleo real (como
+  // escaladaDemo): multijugador local y editor de niveles no pintan nada en
+  // una aventura narrativa — no aportan, y sus bugs (×misfit) pasan factura.
+  const project: Project = {
+    ...concepto,
+    id: 'demo-93',
+    phase: 3,
+    weeksSpent: 16,
+    designPoints: 140,
+    techPoints: 60,
+    chosenFeatureIds: ['finalRamificado', 'vozDigitalizada', 'multijugadorLocal', 'editorNiveles'],
+    qaInvested: 0.3,
+    bugDebt: 0.95,
+    hype: 0.3,
+  };
+  const teamResult = computeTeamFactor(state.staff, project.genreId);
+  const ceiling = computeCeilingContext(state, state.staff, project.genreId, project.size);
+  const { q, breakdown } = computeQuality(project, {
+    era: state.era,
+    teamFactor: teamResult.teamFactor,
+    comboRepeats: 0,
+    ceiling,
+  });
+  const reviews = computeSegmentReviews({
+    quality: q,
+    genreId: project.genreId,
+    themeId: project.themeId,
+    audience: project.audience,
+    hype: project.hype,
+    monetization: project.monetization,
+    era: state.era,
+    market: state.market,
+    recentRepeats: 0,
+    bandOffset: -1,
+  });
+  const review = reviews.average;
+  const game: ReleasedGame = {
+    ...makeReleasedGame(review, state.week),
+    id: 'demo-93',
+    name: project.name,
+    themeId: project.themeId,
+    genreId: project.genreId,
+    audience: project.audience,
+    size: project.size,
+    monetization: project.monetization,
+    quality: q,
+    reviewsBySegment: reviews.bySegment,
+    reviewMarket: reviews.info,
+    hypeAtRelease: project.hype,
+    verdict: reviewVerdict(review),
+    breakdown: {
+      ...breakdown,
+      teamParts: {
+        competenceFactor: teamResult.competenceFactor,
+        moraleFactor: teamResult.moraleFactor,
+        synergyFactor: teamResult.synergyFactor,
+      },
+    },
+    lines: buildReviewLines(breakdown, project, reviews.info),
+    weeklySales: [],
+    totalUnits: 0,
+    totalRevenue: 0,
+    streams: undefined,
+    creatorSpikeBoost: undefined,
+    personalBest: false,
+    previousBestReview: 88,
+  };
+  return { ...state, releasedGames: [...state.releasedGames, game] };
+}
+
 /** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
 function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
@@ -603,6 +730,15 @@ export function applyDemoFromQuery(): boolean {
     const concebir = params.get('concebir') === '1';
     seed(motoresDemo(), concebir ? 'estudio' : 'investigacion', null);
     if (concebir) useGameStore.setState({ conceptionOpen: true });
+    return true;
+  }
+  // Features por género (Fase 9.3, docs/19 §9.3): el Concepto con badges de
+  // encaje y variantes; con `&desglose=1`, la gala de un lanzamiento con
+  // piezas fuera de género que la reseña nombra.
+  if (demo === 'features') {
+    const desglose = params.get('desglose') === '1';
+    seed(featuresDemo(desglose), desglose ? 'resena' : 'estudio', desglose ? 'demo-93' : null);
+    if (!desglose) useGameStore.setState({ devProjectId: 'demo-proj' });
     return true;
   }
   // El arranque A CIEGAS (docs/17 P2): partida recién fundada con el modal de

@@ -50,18 +50,32 @@ El reparto de esfuerzo del jugador en las 3 fases (ver `02`) produce un balance 
 balanceScore = 1 - (|dReal - dIdeal| + |tReal - tIdeal|) / 2
 ```
 
-### Factor C — Features y Alcance `[DECIDIDO]`
+### Factor C — Features y Alcance `[DECIDIDO · reelaborado en Fase 9.3, docs/19 §9.3]`
 Las features elegidas durante el desarrollo (ver `02`, `09`) suman **calidad potencial** pero
 consumen tiempo y capacidad del equipo. Cada feature tiene: `valorCalidad`, `costeTiempo`,
-`riesgoBugs`, y a veces un `públicoAfin` (una feature puede encantar a Hardcore y ser irrelevante a
-Casual).
+`riesgoBugs` — y, desde la Fase 9.3, **afinidad por género** (`fitsGenres` / `clashesGenres`, ver
+`09` §5): elegir features es una decisión de **criterio** (encaja / no encaja), no de apilar.
 
 ```
-featureScore = min(1, Σ valorCalidad_features / objetivoAlcance(tamañoProyecto))
+valorEfectivo = valorCalidad × multEncaje      // encaja 1 · neutro 0.5 · noEncaja −0.25
+featureScore  = clamp01( Σ valorEfectivo / objetivoAlcance(tamañoProyecto) )
 ```
+
+- Una feature que **encaja** con el género aporta su valor entero; una **neutra**, la mitad; una que
+  **no encaja no aporta: RESTA** un poco del numerador — y aun así suma semanas, coste y deuda de
+  bugs **multiplicada** (`misfitBugMult`, factor D). Meter mundo abierto en un puzle **hace daño
+  neto siempre**: más bugs y presupuesto desperdiciado, sin calidad. Fin del "apila todos los buenos".
+- Algunos features vienen en **variantes excluyentes** de un mismo trade-off (`variantGroup`):
+  mundo abierto **procedural** (barato/rápido/repetitivo) vs **artesanal** (caro/lento/calidad);
+  **voz digitalizada** vs **doblaje completo**. El jugador elige el punto del trade-off; elegir una
+  variante desmarca la otra.
+- El **encaje se muestra al elegir** (badge verde/ámbar/rojo por tarjeta) pero **se gana** como el
+  resto del conocimiento (§5.1): empieza en "❓ por descubrir" y se aprende lanzando (gratis, el
+  desglose te lo cuenta) o con el nodo global *Teoría del diseño*. Nunca se muestra el número.
 
 Meter demasiadas features para el tamaño del proyecto **no** las aprovecha (rendimientos decrecientes)
-y dispara los bugs (Factor D). Es una decisión de ambición vs riesgo.
+y dispara los bugs (Factor D). Es una decisión de ambición vs riesgo — y ahora también de criterio.
+Los multiplicadores viven en `balance.quality.featureAffinity`; la afinidad, en `data/features.ts`.
 
 ### Factor D — Pulido / Bugs `[DECIDIDO]`
 Durante el desarrollo se acumula **deuda de bugs** en función de features, prisa (poco tiempo) y
@@ -161,6 +175,11 @@ RESEÑA: 82 / 100   "Una joya honesta con algún defecto."
 
 Cada línea mapea a un factor. Verde/amarillo/rojo. Esto convierte el fracaso en **aprendizaje
 accionable** ("la próxima, más QA") en vez de frustración opaca.
+
+Desde la Fase 9.3 la línea de features es **de criterio**: si alguna pieza no encajaba con el
+género, la línea pasa a ✘ y **las nombra** — *"Features que no pegan — Multijugador local y Editor
+de niveles: fuera de sitio en un Aventura; solo trajeron bugs y coste"*. El desglose enseña qué
+encajaba y qué no (y ese conocimiento queda aprendido para la próxima, §5.1).
 
 Desde la Fase 9.1 el desglose añade **cinco líneas más**, igual de legibles: el **techo** ("Hoy la
 juventud del estudio deja el listón de lo posible en 46" / "la falta de una estrella de Diseño" /

@@ -23,7 +23,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -297,6 +297,21 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       },
     };
   },
+  // v13 (Fase 9.2) → v14 (Fase 9.3): features por género. No destructivo: los
+  // encajes conocidos arrancan vacíos (los juegos lanzados no guardaban sus
+  // features, así que no hay nada que reconstruir; se re-aprenden lanzando o
+  // con el nodo Teoría del diseño). Los breakdowns guardados no llevan
+  // featureParts (opcional) y su desglose histórico sigue válido tal cual.
+  13: (file) => ({
+    saveVersion: 14,
+    state: {
+      ...file.state,
+      research: {
+        ...file.state.research,
+        featureInsights: file.state.research.featureInsights ?? [],
+      },
+    },
+  }),
 };
 
 /**

@@ -17,7 +17,7 @@ import type { MarketKnowledge, ResearchState, StudioCapability } from '../model/
  */
 
 export function initialResearchState(): ResearchState {
-  return { points: 0, unlocked: [], rdStaff: [], themes: [], insights: [] };
+  return { points: 0, unlocked: [], rdStaff: [], themes: [], insights: [], featureInsights: [] };
 }
 
 /** Clave del combo para las pistas por combo (docs/17 P2): tema|género. */
@@ -137,7 +137,12 @@ export function researchTheme(state: GameState, themeId: string): GameState {
 
 /** Qué facetas de conocimiento de mercado están reveladas globalmente (por nodos). */
 export function marketKnowledge(state: GameState): Record<MarketKnowledge, boolean> {
-  const revealed: Record<MarketKnowledge, boolean> = { fit: false, balance: false, price: false };
+  const revealed: Record<MarketKnowledge, boolean> = {
+    fit: false,
+    balance: false,
+    price: false,
+    featureFit: false,
+  };
   for (const id of state.research.unlocked) {
     const reveals = getResearchNode(id).reveals;
     if (reveals) revealed[reveals] = true;
@@ -176,6 +181,46 @@ export function balanceRevealed(state: GameState, genreId: string): boolean {
 /** ¿Ya se aprendió la pista predictiva de este combo lanzado? */
 export function insightKnown(state: GameState, themeId: string, genreId: string): boolean {
   return (state.research.insights ?? []).includes(insightKey(themeId, genreId));
+}
+
+// --- 9.3: el encaje feature×género se gana (docs/19 §9.3) -------------------
+
+/** Clave del encaje conocido de una feature con un género: feature|género. */
+export function featureInsightKey(featureId: string, genreId: string): string {
+  return `${featureId}|${genreId}`;
+}
+
+/**
+ * ¿Se conoce el ENCAJE de esta feature con este género? (badge verde/ámbar/
+ * rojo al elegir features, 9.3). Global con el nodo 'teoriaDiseno', u
+ * orgánico: lanzaste un juego de ese género con esa feature y el desglose te
+ * lo contó (Pilar 2) — ese conocimiento ya es tuyo. Nunca se muestra el
+ * número, solo la banda.
+ */
+export function featureFitRevealed(state: GameState, featureId: string, genreId: string): boolean {
+  if (marketKnowledge(state).featureFit) return true;
+  return (state.research.featureInsights ?? []).includes(featureInsightKey(featureId, genreId));
+}
+
+/**
+ * Aprendizaje orgánico al lanzar (9.3): el desglose nombra qué features
+ * encajaban con el género y cuáles no, así que sus encajes quedan conocidos.
+ * Gratis y silencioso — es la vía "aprendes de tus propios juegos" de 8.4.
+ */
+export function learnFeatureInsights(
+  state: GameState,
+  featureIds: readonly string[],
+  genreId: string,
+): GameState {
+  const known = state.research.featureInsights ?? [];
+  const learned = featureIds
+    .map((id) => featureInsightKey(id, genreId))
+    .filter((key) => !known.includes(key));
+  if (learned.length === 0) return state;
+  return {
+    ...state,
+    research: { ...state.research, featureInsights: [...known, ...learned] },
+  };
 }
 
 /**

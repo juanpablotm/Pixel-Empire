@@ -354,6 +354,13 @@ export const balance = {
     } satisfies Record<ProjectSize, { minStaff: number; minStage: ScaleStage }>,
     /** Deuda de bugs acumulada por semana de Concepto/Producción (docs/03 factor D). */
     baseBugsPerWeek: 0.02,
+    /**
+     * Escala global de la deuda de bugs de las FEATURES (9.3): elegir con
+     * criterio ya ahorra los bugs de los misfits, así que cada feature cuesta
+     * algo más — el sobre del riesgo se reparte y el envolvente de dificultad
+     * de 9.1 (nadie imprime 85+ en E2) se conserva. Calibrado con los bots.
+     */
+    featureBugScale: 1.3,
     /** Reducción de deuda de bugs por semana con el 100 % del esfuerzo en QA. */
     qaReductionPerWeek: 0.15,
   },
@@ -363,14 +370,34 @@ export const balance = {
     weights: { fit: 0.3, balance: 0.25, features: 0.2, polish: 0.25 },
     /** Ponderación de las partes del Fit (docs/03 factor A). */
     fitWeights: { themeGenre: 0.5, genrePlatform: 0.25, audience: 0.25 },
-    /** objetivoAlcance(tamaño): suma de valorCalidad de features para featureScore = 1 (docs/03 factor C). */
+    /**
+     * objetivoAlcance(tamaño): suma de valorCalidad EFECTIVO de features para
+     * featureScore = 1 (docs/03 factor C). Desde 9.3 el valor efectivo pondera
+     * por encaje (featureAffinity): las que encajan valen entero, las neutras
+     * la mitad — llenar el objetivo exige criterio, y llenarlo a base de
+     * relleno neutro cuesta el doble de features (y sus bugs).
+     */
     featureScopeTarget: {
       pequeno: 4,
       mediano: 8,
-      grande: 14,
-      muyGrande: 18,
-      aaa: 22,
+      grande: 13,
+      muyGrande: 16,
+      aaa: 20,
     } satisfies Record<ProjectSize, number>,
+    /**
+     * Afinidad feature×género (Fase 9.3, docs/19 §9.3): multiplicador del
+     * qualityValue según el encaje con el género del proyecto. Una feature que
+     * NO encaja resta un poco del numerador y además multiplica su deuda de
+     * bugs al elegirla: meterla hace daño neto SIEMPRE — fin del "apila todos
+     * los features buenos".
+     */
+    featureAffinity: {
+      encajaMult: 1,
+      neutroMult: 0.5,
+      noEncajaMult: -0.25,
+      /** La tecnología forzada donde no pega sale cara: bugs extra al elegirla. */
+      misfitBugMult: 1.75,
+    },
     /** innovationMod: rango 0.9–1.15 [DECIDIDO, docs/12 §3]. */
     innovation: {
       min: 0.9,

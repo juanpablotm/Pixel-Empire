@@ -55,11 +55,19 @@ export interface Platform {
   licenseCost: number;
 }
 
+/**
+ * Encaje de una feature con un género (Fase 9.3, docs/19 §9.3): 'encaja'
+ * aporta su calidad completa; 'neutro' aporta a medias; 'noEncaja' no aporta
+ * (resta un poco) y multiplica sus bugs. Los multiplicadores viven en
+ * balance.quality.featureAffinity.
+ */
+export type FeatureAffinity = 'encaja' | 'neutro' | 'noEncaja';
+
 export interface Feature {
   id: string;
   name: string;
   description: string;
-  /** Aporte al featureScore (docs/03 factor C). */
+  /** Aporte al featureScore (docs/03 factor C), ponderado por encaje desde 9.3. */
   qualityValue: number;
   /** Semanas extra de desarrollo que añade (se suman a la fase de Producción). */
   timeCostWeeks: number;
@@ -74,6 +82,20 @@ export interface Feature {
    * en toggleFeature contra el motor elegido al concebir.
    */
   requiresEngineCapability?: EngineCapabilityId;
+  /**
+   * Afinidad por género (Fase 9.3, docs/19 §9.3): géneros donde la feature
+   * ENCAJA (verde) y donde NO ENCAJA (rojo). Los no listados son neutros
+   * (ámbar). El encaje pondera el featureScore y el riesgo de bugs.
+   */
+  fitsGenres?: string[];
+  clashesGenres?: string[];
+  /**
+   * Variantes excluyentes de un mismo trade-off (Fase 9.3): las features que
+   * comparten grupo son puntos distintos del dilema barato/rápido vs
+   * caro/calidad (mundo abierto procedural vs artesanal; voces vs doblaje).
+   * Elegir una desmarca la otra (toggleFeature).
+   */
+  variantGroup?: string;
 }
 
 /** Rasgo de personalidad de un empleado (docs/05 §3 y docs/09 §6). */

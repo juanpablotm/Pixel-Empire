@@ -5,14 +5,19 @@ import {
   computeTeamFactor,
   computeTeamOutput,
   engineHasCapability,
+  featureFitRevealed,
   policiesUnlocked,
   projectProgress,
   projectTotalWeeks,
   realDesignShare,
+  type Feature,
+  type FeatureAffinity,
+  type GameState,
   type Project,
 } from '../../core';
 import { balance } from '../../data/balance';
 import { devPhases, getDevPhase } from '../../data/devPhases';
+import { featureGenreAffinity } from '../../data/features';
 import { getGenre } from '../../data/genres';
 import { marketingLevelNames } from '../../data/marketTexts';
 import { useGameStore } from '../../state/store';
@@ -53,6 +58,85 @@ function factorColor(value: number): string {
   if (value >= 1.0) return 'text-ok';
   if (value >= 0.85) return 'text-warn';
   return 'text-danger';
+}
+
+/** Una entrada del panel de features: tarjeta suelta o grupo de variantes (9.3). */
+type FeatureEntry =
+  | { kind: 'single'; feature: Feature }
+  | { kind: 'group'; group: string; variants: Feature[] };
+
+/**
+ * Badge de encaje feature×género (9.3): banda cualitativa verde/ámbar/rojo,
+ * nunca el número. Oculto hasta conocerse (nodo Teoría del diseño o haberlo
+ * vivido en un lanzamiento — docs/17 P2: el conocimiento se gana).
+ */
+function affinityBadge(
+  known: boolean,
+  affinity: FeatureAffinity,
+  genreName: string,
+): { text: string; color: string } {
+  if (!known) return { text: '❓ Encaje por descubrir', color: 'text-ink-faint' };
+  if (affinity === 'encaja') return { text: `● Encaja con ${genreName}`, color: 'text-ok' };
+  if (affinity === 'noEncaja') return { text: `● No pega con ${genreName}`, color: 'text-danger' };
+  return { text: `● Ni fu ni fa en ${genreName}`, color: 'text-warn' };
+}
+
+/** Tarjeta de una feature en el Concepto: el núcleo decide (encaje, motor,
+ *  revelado); aquí solo se muestra y se despacha el toggle (docs/08 §6). */
+function FeatureCard({
+  feature,
+  game,
+  project,
+  genreName,
+  onToggle,
+}: {
+  feature: Feature;
+  game: GameState;
+  project: Project;
+  genreName: string;
+  onToggle: () => void;
+}) {
+  const chosen = project.chosenFeatureIds.includes(feature.id);
+  // El motor gatea features (9.2): sin la capacidad, la tarjeta sale atenuada
+  // con su motivo. El núcleo decide (engineHasCapability); la UI solo muestra.
+  const engineBlocked =
+    !chosen &&
+    feature.requiresEngineCapability !== undefined &&
+    !engineHasCapability(game, project.engineId, feature.requiresEngineCapability);
+  const badge = affinityBadge(
+    featureFitRevealed(game, feature.id, project.genreId),
+    featureGenreAffinity(feature, project.genreId),
+    genreName,
+  );
+  return (
+    <button
+      type="button"
+      aria-pressed={chosen}
+      disabled={engineBlocked}
+      title={engineBlocked ? 'El motor de este proyecto no tiene esa capacidad' : undefined}
+      onClick={onToggle}
+      className={`rounded-lg border p-2.5 text-left transition-colors ${
+        chosen ? 'border-action-hi bg-ok/10' : 'border-line-hi bg-raised/60 hover:border-line-hi'
+      } ${engineBlocked ? 'cursor-not-allowed opacity-50' : ''}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">{feature.name}</span>
+        {chosen && <span aria-hidden>✔</span>}
+        {engineBlocked && <span aria-hidden>🔒</span>}
+      </div>
+      <p className={`mt-0.5 text-xs ${badge.color}`}>{badge.text}</p>
+      <p className="mt-1 text-xs text-ink-mute">{feature.description}</p>
+      <p className="mt-1.5 text-xs text-ink-faint">
+        +{feature.qualityValue} calidad · +{feature.timeCostWeeks} sem ·{' '}
+        {feature.bugRisk >= 0.15
+          ? 'riesgo de bugs alto'
+          : feature.bugRisk >= 0.08
+            ? 'riesgo de bugs medio'
+            : 'riesgo de bugs bajo'}
+        {engineBlocked && ' · 🔒 exige capacidad del motor'}
+      </p>
+    </button>
+  );
 }
 
 /** Tarjeta de sección dentro del modal (más compacta que las `.card`). */
@@ -135,6 +219,23 @@ function DevelopmentBody({ project }: { project: Project }) {
   const bugs = bugLabel(bugLevel);
 
   const featuresShown = availableFeatures(game);
+  // Variantes de un trade-off (9.3): las disponibles del mismo grupo se
+  // muestran juntas; un grupo con una sola variante desbloqueada va suelto.
+  const featureEntries: FeatureEntry[] = [];
+  for (const feature of featuresShown) {
+    const group = feature.variantGroup;
+    const existing =
+      group !== undefined
+        ? featureEntries.find((e): e is FeatureEntry & { kind: 'group' } => e.kind === 'group' && e.group === group)
+        : undefined;
+    if (existing) {
+      existing.variants.push(feature);
+    } else if (group !== undefined && featuresShown.filter((f) => f.variantGroup === group).length > 1) {
+      featureEntries.push({ kind: 'group', group, variants: [feature] });
+    } else {
+      featureEntries.push({ kind: 'single', feature });
+    }
+  }
   const inConcept = project.phase === 1;
   // El marketing no existe hasta Producción (docs/04 §4): antes ni ocupa sitio.
   const marketingOpen = project.phase >= balance.market.hype.startPhase;
@@ -274,54 +375,50 @@ function DevelopmentBody({ project }: { project: Project }) {
               </div>
             </Panel>
 
-            {/* Features: la otra decisión del Concepto (se cierran al salir). */}
+            {/* Features: la otra decisión del Concepto (se cierran al salir).
+                Desde 9.3 cada tarjeta muestra su ENCAJE con el género (si se
+                conoce — docs/17 P2) y las variantes de un trade-off van
+                agrupadas: elegir una desmarca la otra. */}
             {inConcept && (
               <Panel title="Features">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {featuresShown.map((feature) => {
-                    const chosen = project.chosenFeatureIds.includes(feature.id);
-                    // El motor gatea features (9.2): sin la capacidad, la
-                    // tarjeta sale atenuada con su motivo. El núcleo decide
-                    // (engineHasCapability); la UI solo muestra.
-                    const engineBlocked =
-                      !chosen &&
-                      feature.requiresEngineCapability !== undefined &&
-                      !engineHasCapability(game, project.engineId, feature.requiresEngineCapability);
-                    return (
-                      <button
-                        key={feature.id}
-                        type="button"
-                        aria-pressed={chosen}
-                        disabled={engineBlocked}
-                        title={engineBlocked ? 'El motor de este proyecto no tiene esa capacidad' : undefined}
-                        onClick={() => toggleFeature(feature.id, project.id)}
-                        className={`rounded-lg border p-2.5 text-left transition-colors ${
-                          chosen
-                            ? 'border-action-hi bg-ok/10'
-                            : 'border-line-hi bg-raised/60 hover:border-line-hi'
-                        } ${engineBlocked ? 'cursor-not-allowed opacity-50' : ''}`}
+                  {featureEntries.map((entry) =>
+                    entry.kind === 'group' ? (
+                      <div
+                        key={`grupo-${entry.group}`}
+                        className="rounded-lg border border-dashed border-line-hi p-2 sm:col-span-2"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium">{feature.name}</span>
-                          {chosen && <span aria-hidden>✔</span>}
-                          {engineBlocked && <span aria-hidden>🔒</span>}
-                        </div>
-                        <p className="mt-1 text-xs text-ink-mute">{feature.description}</p>
-                        <p className="mt-1.5 text-xs text-ink-faint">
-                          +{feature.qualityValue} calidad · +{feature.timeCostWeeks} sem ·{' '}
-                          {feature.bugRisk >= 0.15
-                            ? 'riesgo de bugs alto'
-                            : feature.bugRisk >= 0.08
-                              ? 'riesgo de bugs medio'
-                              : 'riesgo de bugs bajo'}
-                          {engineBlocked && ' · 🔒 exige capacidad del motor'}
+                        <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                          Trade-off: elige una variante (la otra se desmarca)
                         </p>
-                      </button>
-                    );
-                  })}
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {entry.variants.map((feature) => (
+                            <FeatureCard
+                              key={feature.id}
+                              feature={feature}
+                              game={game}
+                              project={project}
+                              genreName={genre.name}
+                              onToggle={() => toggleFeature(feature.id, project.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <FeatureCard
+                        key={entry.feature.id}
+                        feature={entry.feature}
+                        game={game}
+                        project={project}
+                        genreName={genre.name}
+                        onToggle={() => toggleFeature(entry.feature.id, project.id)}
+                      />
+                    ),
+                  )}
                 </div>
                 <p className="text-xs text-ink-faint">
-                  Solo se eligen en el Concepto: al pasar a Producción, el alcance queda cerrado.
+                  Solo se eligen en el Concepto: al pasar a Producción, el alcance queda cerrado. Una
+                  feature que no pega con el género no aporta calidad y trae más bugs.
                 </p>
               </Panel>
             )}

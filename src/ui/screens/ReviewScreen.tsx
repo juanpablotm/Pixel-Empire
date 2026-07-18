@@ -42,7 +42,11 @@ function useGalaAct(gameId: string): [number, () => void] {
       [3200, 3], // desglose factor a factor
       [4600, 4], // veredicto y cierre
     ];
-    const timers = cues.map(([ms, next]) => window.setTimeout(() => setAct(next), ms));
+    // Los actos solo avanzan: si el jugador salta al final durante el redoble,
+    // los timers pendientes no deben rebobinar la ceremonia.
+    const timers = cues.map(([ms, next]) =>
+      window.setTimeout(() => setAct((prev) => Math.max(prev, next)), ms),
+    );
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [gameId]);
 

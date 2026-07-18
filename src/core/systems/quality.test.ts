@@ -91,7 +91,8 @@ describe('computeQuality — fórmula de composición (docs/03 §3)', () => {
       audience: 'hardcore',
       designPoints: 5.5,
       techPoints: 4.5,
-      chosenFeatureIds: ['multijugadorLocal'], // valorCalidad 1 → featureScore 0.25
+      // valorCalidad 1, ENCAJA con estrategia (9.3, valor entero) → 1/4 = 0.25
+      chosenFeatureIds: ['multijugadorLocal'],
       bugDebt: 0.3,
       qaInvested: 0.1, // bugLevel 0.2 → polish 0.8
     });
@@ -105,6 +106,7 @@ describe('computeQuality — fórmula de composición (docs/03 §3)', () => {
     expect(breakdown.fit).toBeCloseTo(0.875, 10);
     expect(breakdown.balanceScore).toBeCloseTo(1.0, 10); // dReal 0.55 = ideal
     expect(breakdown.featureScore).toBeCloseTo(0.25, 10);
+    expect(breakdown.featureParts).toEqual([{ id: 'multijugadorLocal', affinity: 'encaja' }]);
     expect(breakdown.polishScore).toBeCloseTo(0.8, 10);
     expect(breakdown.innovationMod).toBeCloseTo(1.0, 10);
     // base = 0.3·0.875 + 0.25·1 + 0.2·0.25 + 0.25·0.8 = 0.7625
@@ -116,7 +118,8 @@ describe('computeQuality — fórmula de composición (docs/03 §3)', () => {
     const project = makeProject({
       designPoints: 6.5, // ideal exacto para RPG
       techPoints: 3.5,
-      chosenFeatureIds: ['mundoAbierto', 'fisicasAvanzadas'], // 5 ≥ objetivo 4 → 1.0
+      // mundoAbierto encaja con RPG (3) + físicas neutras (2·0.5) = 4 ≥ 4 → 1.0
+      chosenFeatureIds: ['mundoAbierto', 'fisicasAvanzadas'],
       bugDebt: 0,
       qaInvested: 0,
     });
@@ -191,7 +194,8 @@ describe('ejemplos trabajados de docs/03 §6', () => {
     const project = makeProject({
       designPoints: 6,
       techPoints: 4,
-      chosenFeatureIds: ['sistemaCrafteo', 'finalRamificado'], // 3/4 = 0.75
+      // Ambas encajan con RPG (9.3, valor entero): 3/4 = 0.75
+      chosenFeatureIds: ['sistemaCrafteo', 'finalRamificado'],
       bugDebt: 0.25,
       qaInvested: 0.1, // polish 0.85
     });

@@ -231,21 +231,37 @@ Las features pueden exigir capacidad de motor (`Feature.requiresEngineCapability
 online y el cross-play piden `online`). Los juegos lanzados congelan `engineId`/`engineName`,
 `royaltyPct` y acumulan `royaltyPaid` (para el P&L).
 
-## 5. Features `[DECIDIDO]`
+## 5. Features `[DECIDIDO · afinidad por género desde 9.3]`
 
 ```ts
+type FeatureAffinity = 'encaja' | 'neutro' | 'noEncaja';
+
 interface Feature {
   id: string; name: string;
-  qualityValue: number;         // aporte a featureScore (doc 03)
+  qualityValue: number;         // aporte a featureScore (doc 03), ponderado por encaje
   timeCost: number;
-  bugRisk: number;              // suma a bugDebt
-  affinitySegment?: Segment;    // a qué público le encanta
+  bugRisk: number;              // suma a bugDebt (× misfitBugMult si no encaja)
   requiresEra?: EraId; requiresResearch?: string;
+  requiresEngineCapability?: EngineCapabilityId;  // 9.2: el motor gatea (online…)
+  fitsGenres?: string[];        // 9.3: géneros donde ENCAJA (verde, valor entero)
+  clashesGenres?: string[];     // 9.3: donde NO encaja (rojo: resta y multiplica bugs)
+                                // lo no listado es neutro (ámbar, medio valor)
+  variantGroup?: string;        // 9.3: variantes excluyentes de un trade-off
 }
 ```
 
-Ejemplos: "Mundo abierto", "Multijugador local", "Multijugador online" (E4+), "Final ramificado",
-"Físicas avanzadas", "Sistema de crafteo", "Modo foto" (E6+), "Cross-play" (E6+).
+La afinidad feature×género vive **en los datos**, no en la lógica: `featureGenreAffinity()` la lee y
+`balance.quality.featureAffinity` pone los multiplicadores (1 / 0.5 / −0.25 y `misfitBugMult` 1.75,
+sobre `balance.development.featureBugScale`). Ejemplos: mundo abierto **encaja** en RPG/aventura/
+sandbox y **no pega** en puzle/ritmo/deportes; el online encaja en shooter/deportes/battle royale y
+no pega en aventura narrativa. **Variantes** (`variantGroup`, elegir una desmarca la otra):
+`mundoAbierto` = artesanal (caro/lento/calidad) vs procedural (barato/rápido/repetitivo);
+`voces` = voz digitalizada (barata) vs doblaje completo (caro, E4 + *Producción de audio*).
+
+Ejemplos de catálogo: "Mundo abierto artesanal", "Mundo procedural" (E5+), "Multijugador local",
+"Multijugador online" (E4+), "Final ramificado", "Físicas avanzadas", "Sistema de crafteo",
+"Editor de niveles" (E2+), "Modo carrera" (E2+), "Banda sonora original" (E2+), "Doblaje completo"
+(E4+), "Modo foto" (E6+), "Cross-play" (E6+), "Compañero con IA" (E7).
 
 ## 6. Rasgos de personalidad `[DECIDIDO]`
 

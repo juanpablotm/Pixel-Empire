@@ -50,8 +50,8 @@ export const factorTexts: Record<QualityFactor, Record<FactorTone, LineText>> = 
   },
   features: {
     good: {
-      title: 'Alcance bien aprovechado',
-      detail: 'Contenido a la altura de un proyecto {tamano}',
+      title: 'Features bien elegidas',
+      detail: 'Contenido que le sienta bien a un {genero}, a la altura de un proyecto {tamano}',
     },
     ok: { title: 'Alcance correcto', detail: 'Bien para un proyecto {tamano}, sin sobrar nada' },
     bad: {
@@ -130,6 +130,17 @@ export const factorTexts: Record<QualityFactor, Record<FactorTone, LineText>> = 
     },
   },
 };
+
+/**
+ * Línea de features cuando alguna NO ENCAJA con el género (Fase 9.3, docs/19
+ * §9.3): sustituye al texto normal del factor 'features' y nombra las piezas
+ * fuera de sitio — el desglose enseña el criterio (Pilar 2). {featuresFuera}
+ * las interpola review.ts.
+ */
+export const featureMisfitText = {
+  title: 'Features que no pegan',
+  detail: '{featuresFuera}: fuera de sitio en un {genero}; solo trajeron bugs y coste',
+} as const;
 
 /** Etiquetas legibles para interpolar en los textos. */
 export const audienceLabels = {

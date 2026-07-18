@@ -40,6 +40,7 @@ const revealsLabel: Record<MarketKnowledge, string> = {
   price: 'el precio recomendado al concebir',
   balance: 'el balance Diseño/Técnica ideal del género',
   fit: 'el medidor de Fit de cualquier combinación',
+  featureFit: 'el encaje de cada feature con el género elegido',
 };
 
 /** Estado cualitativo de un motor frente a la época (adecuación de referencia). */

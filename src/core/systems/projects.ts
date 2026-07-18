@@ -1,12 +1,13 @@
 import { balance } from '../../data/balance';
 import { getDevPhase } from '../../data/devPhases';
-import { getFeature } from '../../data/features';
+import { chosenVariantSibling, featureGenreAffinity, getFeature } from '../../data/features';
 import { getGenre } from '../../data/genres';
 import { defaultMonetization, getMonetizationModel } from '../../data/monetization';
 import { getPlatform } from '../../data/platforms';
 import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
 import { makeRng } from '../engine/rng';
+import type { Feature } from '../model/content';
 import type { GameState } from '../model/gameState';
 import type { MonetizationConfig } from '../model/moral';
 import type {
@@ -29,7 +30,12 @@ import {
 import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeCeilingContext } from './maturity';
 import { computeQuality } from './quality';
-import { addReleaseResearchPoints, capabilityBonus, themeResearchStatus } from './research';
+import {
+  addReleaseResearchPoints,
+  capabilityBonus,
+  learnFeatureInsights,
+  themeResearchStatus,
+} from './research';
 import { engineHasCapability, engineMaxPlatforms, resolveEngine } from './engines';
 import { getLicensedEngine, isLicensedEngineId } from '../../data/engines';
 
@@ -428,7 +434,9 @@ export function setFocus(
 /**
  * Acción: añadir/quitar una feature. Solo durante la fase de Concepto
  * (simplificación v1 de las decisiones de features de docs/02 paso 3) y solo
- * features desbloqueadas por era/investigación (docs/02 §3).
+ * features desbloqueadas por era/investigación (docs/02 §3). Desde 9.3 una
+ * feature que NO encaja con el género mete más bugs (misfitBugMult) y elegir
+ * una variante de un trade-off desmarca a su hermana (variantGroup).
  */
 export function toggleFeature(state: GameState, featureId: string, projectId?: string): GameState {
   const project = findProject(state, projectId);
@@ -451,12 +459,34 @@ export function toggleFeature(state: GameState, featureId: string, projectId?: s
       `${feature.name} exige un motor con la capacidad adecuada (el de este proyecto no la tiene)`,
     );
   }
+  // Deuda de bugs de una feature en ESTE proyecto (9.3): forzar tecnología
+  // donde no pega sale cara. Simétrica al quitarla (el género no cambia).
+  const featureBugDebt = (f: Feature): number =>
+    f.bugRisk *
+    balance.development.featureBugScale *
+    (featureGenreAffinity(f, project.genreId) === 'noEncaja'
+      ? balance.quality.featureAffinity.misfitBugMult
+      : 1);
+
+  let ids = project.chosenFeatureIds;
+  let bugDebt = project.bugDebt;
+  if (chosen) {
+    ids = ids.filter((id) => id !== featureId);
+    bugDebt -= featureBugDebt(feature);
+  } else {
+    // Variantes de un trade-off (9.3): elegir una desmarca la otra.
+    const sibling = chosenVariantSibling(feature, ids);
+    if (sibling) {
+      ids = ids.filter((id) => id !== sibling.id);
+      bugDebt -= featureBugDebt(sibling);
+    }
+    ids = [...ids, featureId];
+    bugDebt += featureBugDebt(feature);
+  }
   const next: Project = {
     ...project,
-    chosenFeatureIds: chosen
-      ? project.chosenFeatureIds.filter((id) => id !== featureId)
-      : [...project.chosenFeatureIds, featureId],
-    bugDebt: Math.max(0, project.bugDebt + (chosen ? -feature.bugRisk : feature.bugRisk)),
+    chosenFeatureIds: ids,
+    bugDebt: Math.max(0, bugDebt),
   };
   return withProject(state, next);
 }
@@ -622,6 +652,9 @@ function releaseProject(state: GameState, project: Project): GameState {
   }
   // Desarrollar también enseña: puntos 💡 por lanzamiento (docs/02 §3).
   next = addReleaseResearchPoints(next, project.size);
+  // El desglose te cuenta qué features encajaban (9.3, Pilar 2): esos encajes
+  // quedan aprendidos gratis — de tus propios juegos siempre aprendes.
+  next = learnFeatureInsights(next, project.chosenFeatureIds, project.genreId);
   // El dilema moral pasa factura (docs/06): reputación por segmento, deuda
   // por las palancas de codicia y contadores de legado.
   next = applyReleaseMoralEffects(next, released);

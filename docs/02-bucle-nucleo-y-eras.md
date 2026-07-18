@@ -114,15 +114,19 @@ pero cuestan 💡 (más caros cuanto más tardía la era). Así la investigació
 
 ### 3.2 El conocimiento del mercado se gana (docs/17 P2) `[DECIDIDO · baseline v1]`
 
-Las **pistas predictivas** —medidor de **Fit** (tema×género), **precio recomendado** y **balance
-Diseño/Técnica ideal** del género— **empiezan TODAS ocultas**. Nada se regala: el estudio novato de
-1980 no sabe qué combina con qué, cuánto vale un juego ni qué pide cada género. El arranque es
-deliberadamente a ciegas y el conocimiento se **gana** de dos formas:
+Las **pistas predictivas** —medidor de **Fit** (tema×género), **precio recomendado**, **balance
+Diseño/Técnica ideal** del género y, desde 9.3, el **encaje de cada feature con el género**—
+**empiezan TODAS ocultas**. Nada se regala: el estudio novato de 1980 no sabe qué combina con qué,
+cuánto vale un juego ni qué pide cada género. El arranque es deliberadamente a ciegas y el
+conocimiento se **gana** de dos formas:
 
 - **Nodos globales de I+D** (rama *Inteligencia de mercado*): revelan una faceta para todo y para
-  siempre. Compiten en 💡 con motores/QA: saber es una inversión con coste de oportunidad.
+  siempre (el encaje de features lo revela *Teoría del diseño*). Compiten en 💡 con motores/QA:
+  saber es una inversión con coste de oportunidad.
 - **"Investigar resultados"** de un juego ya lanzado (gasta 💡): aprende el atajo predictivo de ESA
   combinación (su Fit y el balance ideal de su género). Es la vía orgánica: aprendes de lo que haces.
+  El **encaje de features** va aún más allá: se aprende **gratis al lanzar** (el desglose te cuenta
+  qué encajaba y qué no — Pilar 2 — y ese conocimiento queda tuyo para ese género).
 
 Aun con la pista oculta **siempre puedes concebir y lanzar**: nada se bloquea. Y el **Pilar 2** queda
 intacto: el **desglose de reseña** de tus propios lanzamientos es **siempre legible** (ver `03`). Solo

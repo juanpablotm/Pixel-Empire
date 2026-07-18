@@ -102,11 +102,23 @@ en E2 y que las 3 filosofías siguen viables.
   capacidades del motor que se investigan. La demanda de ventas SUMA las bases instaladas.
 **Tocó:** `02`/`03` (techo), `04` (plataformas), `09` (esquemas), `12`/`16`; nuevo módulo de datos de motores.
 
-## 9.3 — Features por género `[dirección]`
+## 9.3 — Features por género `[IMPLEMENTADO · commit "Fase 9.3: features por género"]`
+
+> Baseline actualizada en `02` §3.2, `03` §2C/§5, `09` §5 y `16` §2/§7. Afinidad y variantes en
+> `data/features.ts` (`fitsGenres`/`clashesGenres`/`variantGroup`); multiplicadores en
+> `balance.quality.featureAffinity` (encaja 1 / neutro 0.5 / noEncaja −0.25; bugs de misfit ×1.75
+> sobre `featureBugScale`); conocimiento en `research.featureInsights` + nodo *Teoría del diseño*
+> (save v14). CA verificados con tests (`features.test.ts`, `fullGame.test.ts`) y bots. Capturas:
+> `capturas/9-3-features-encaje.png` y `capturas/9-3-desglose-features.png` (script
+> `scripts/verify93.mjs`, escaparates `?demo=features[&desglose=1]`).
 
 **Meta:** decisiones de creación con intuición.
 - Cada feature **encaja o no según el género** (mundo abierto en RPG sí, en puzle no; online en shooter
-  sí, en aventura narrativa no) y tiene **trade-offs** (barato/rápido/repetitivo vs caro/lento/calidad).
+  sí, en aventura narrativa no) y tiene **trade-offs** (barato/rápido/repetitivo vs caro/lento/calidad:
+  mundo abierto procedural vs artesanal, voz digitalizada vs doblaje completo — variantes excluyentes).
+- La que no encaja **no aporta (resta) y multiplica sus bugs**: apilar hace daño neto; el desglose
+  de reseña **nombra** las piezas fuera de sitio (Pilar 2). El encaje se muestra al elegir
+  (verde/ámbar/rojo) pero **se gana** (8.4): lanzando (gratis) o con el nodo *Teoría del diseño*.
 - Gateadas por investigación. Fin del "apila todos los features buenos": ahora hay que elegir con criterio.
 **Toca:** `03` (features), `09` (datos de features + afinidad por género), `02` (investigación), `16`.
 

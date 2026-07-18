@@ -253,6 +253,7 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
       rdStaff: [],
       themes: [],
       insights: [],
+      featureInsights: [],
     });
     expect(state.policies).toEqual({
       salary: 'mercado',
@@ -390,6 +391,16 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     // Corporación nueva (aforo 100): los 30 caben; nadie es despedido al cargar.
     expect(state.studio.scaleStage).toBe(5);
     expect(state.staff).toHaveLength(30);
+    expect(() => tick(state)).not.toThrow();
+  });
+
+  it('migra un guardado v13 (Fase 9.2) a v14 (Fase 9.3): los encajes conocidos arrancan vacíos', () => {
+    const base = createInitialState(SEED);
+    // Un estado "v13": el campo featureInsights aún no existía.
+    const { featureInsights: _v14, ...researchV13 } = base.research;
+    const v13State = { ...base, research: researchV13 };
+    const state = deserializeSave(JSON.stringify({ saveVersion: 13, state: v13State }));
+    expect(state.research.featureInsights).toEqual([]);
     expect(() => tick(state)).not.toThrow();
   });
 

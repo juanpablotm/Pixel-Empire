@@ -37,7 +37,8 @@ Recursos que gestionas: **Capital 💰**, **Reputación ⭐** (vector por públi
 
 **Cómo crear un juego (el bucle):** (1) concepción (tema/género/plataforma/público/tamaño/nombre) con
 medidor de Fit → (2) equipo y presupuesto → (3) desarrollo en 3 fases con reparto de esfuerzo y
-decisiones de features → (4) monetización y precio ◄ dilema moral → (5) marketing y creadores ◄
+decisiones de features (con **encaje por género** y variantes de trade-off, 9.3) → (4) monetización
+y precio ◄ dilema moral → (5) marketing y creadores ◄
 comunidad → (6) lanzamiento (calidad → reseñas por segmento → ventas) → (7) post-lanzamiento (parches,
 DLC, crisis) → (8) reinversión (contratar, investigar, crecer). Detalle: `02` §2.
 
@@ -263,21 +264,40 @@ se renueva por eras y los viejos se retiran de proyectos nuevos. Cuota **por jue
 
 ---
 
-## 7. Catálogo: Features `[baseline v1]` (doc `09` §5)
+## 7. Catálogo: Features `[baseline v1 · afinidad por género desde 9.3]` (doc `09` §5, docs/19 §9.3)
 
-Cada feature suma **calidad potencial** pero cuesta tiempo y puede generar bugs. Meter demasiadas para
-el tamaño del proyecto tiene rendimientos decrecientes y dispara los bugs.
+Cada feature suma **calidad potencial** pero cuesta tiempo y puede generar bugs — y desde la Fase
+9.3 tiene **afinidad por género**: la que **encaja** aporta entera (verde), la neutra a medias
+(ámbar) y la que **no pega no aporta (resta) y multiplica sus bugs** (rojo). Elegir features es una
+decisión de **criterio**, no de apilar. El encaje **se gana** (❓ hasta lanzarlo o investigar *Teoría
+del diseño*) y el desglose de reseña **nombra** las piezas fuera de sitio. Algunas vienen en
+**variantes excluyentes** de un trade-off (elegir una desmarca la otra).
 
-| Feature | Desde | Aporta | Riesgo | A quién encanta |
-|---------|:---:|--------|--------|-----------------|
-| Multijugador local | E2 | Medio | Bajo | Casual/Amplio |
-| Final ramificado | E1 | Alto (narrativa) | Medio | Hardcore/Crítica |
-| Físicas avanzadas | E3 | Alto | Alto | Hardcore |
-| Sistema de crafteo | E3 | Medio-alto | Medio | Hardcore |
-| Mundo abierto | E3 | Muy alto | Muy alto | Amplio/Hardcore |
-| Multijugador online | E4 | Muy alto | Muy alto | Amplio |
-| Modo foto | E6 | Bajo (marketing) | Muy bajo | Comunidad |
-| Cross-play | E6 | Medio | Alto | Comunidad/Amplio |
+| Feature | Desde | Aporta | Riesgo | Encaja en… | No pega en… |
+|---------|:---:|--------|--------|------------|-------------|
+| Multijugador local | E1 | Bajo | Bajo | Deportes, Carreras, Plataformas, Ritmo, Estrategia, Puzzle | Aventura, Terror, Gestión |
+| Final ramificado | E1 | Medio | Bajo | RPG, Aventura, Terror | Deportes, Carreras, Ritmo, Puzzle, Battle Royale |
+| Físicas avanzadas | E1 | Alto | Alto | Shooter, Carreras, Simulación, Plataformas, Puzzle | Ritmo, Gestión |
+| Sistema de crafteo | E1 | Medio | Medio | RPG, Sandbox, Simulación, Terror | Deportes, Carreras, Ritmo, Puzzle |
+| Mundo abierto artesanal ◄var| E1 | Muy alto | Muy alto | RPG, Aventura, Sandbox | Puzzle, Ritmo, Deportes, Gestión |
+| Editor de niveles | E2 | Alto | Medio | Puzzle, Plataformas, Estrategia, Sandbox, Gestión | Aventura, Terror |
+| Modo carrera | E2 | Alto | Medio | Deportes, Carreras, Gestión, Simulación | Aventura, Terror, Puzzle |
+| Banda sonora original | E2 | Medio | Muy bajo | Ritmo, Carreras, Plataformas, Aventura | — |
+| Voz digitalizada ◄var | E3 | Medio | Bajo | Aventura, RPG, Terror | Puzzle |
+| Cinemáticas | E3 | Alto | Medio | RPG, Aventura, Shooter, Terror | Puzzle, Gestión, Ritmo |
+| Multijugador online | E4 | Muy alto | Muy alto | Shooter, Deportes, Carreras, Estrategia, Battle Royale | Aventura |
+| Doblaje completo ◄var | E4 | Muy alto | Medio | RPG, Aventura, Terror | Puzzle, Ritmo, Deportes, Carreras |
+| Logros y desafíos | E4 | Bajo | Muy bajo | — (neutra) | — |
+| Mundo procedural ◄var | E5 | Alto | Alto | Sandbox, RPG, Estrategia | Aventura, Ritmo, Deportes |
+| Guardado en la nube | E5 | Bajo | Bajo | — (neutra) | — |
+| Modo foto | E6 | Medio (marketing) | Muy bajo | Sandbox, Aventura, Carreras, Simulación | Puzzle, Ritmo |
+| Cross-play | E6 | Alto | Alto | Shooter, Deportes, Battle Royale, Carreras | Aventura, Terror |
+| Compañero con IA | E7 | Muy alto | Muy alto | RPG, Aventura, Terror, Simulación | Puzzle, Deportes, Carreras, Ritmo |
+
+**Variantes (◄var):** `mundoAbierto` = artesanal (caro/lento/calidad) vs procedural (barato/rápido/
+repetitivo); `voces` = voz digitalizada (barata) vs doblaje completo (caro, exige *Producción de
+audio* en I+D). Multiplicadores en `balance.quality.featureAffinity` (1 / 0.5 / −0.25; bugs de
+misfit ×1.75 sobre `featureBugScale` 1.3).
 
 ---
 
