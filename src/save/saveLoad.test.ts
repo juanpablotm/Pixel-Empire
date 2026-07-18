@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createInitialState, startProject, tick } from '../core';
-import { balance } from '../data/balance';
 import {
   deserializeSave,
   loadFromLocalStorage,
@@ -394,7 +393,7 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(() => tick(state)).not.toThrow();
   });
 
-  it('al cargar, sanea el hype de partidas antiguas que quedaron por encima del tope (docs/17 B2)', () => {
+  it('al cargar, sanea solo el hype negativo: sin tope superior desde 9.1 (docs/19)', () => {
     let state = startProject(createInitialState(SEED), {
       name: 'Desbordado',
       themeId: 'fantasia',
@@ -403,10 +402,14 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
       audience: 'hardcore',
       size: 'pequeno',
     });
-    // Un build anterior al clamp único pudo dejar el manómetro por encima del tope.
+    // Con el marketing sin tope, un hype de 3.5 es legítimo y se conserva…
     state = { ...state, projects: state.projects.map((p) => ({ ...p, hype: 3.5 })) };
     const loaded = deserializeSave(serializeSave(state));
-    expect(loaded.projects[0].hype).toBe(balance.market.hype.max);
+    expect(loaded.projects[0].hype).toBe(3.5);
+    // …pero un hype negativo (corrupto) sí se sanea a 0.
+    state = { ...state, projects: state.projects.map((p) => ({ ...p, hype: -0.5 })) };
+    const repaired = deserializeSave(serializeSave(state));
+    expect(repaired.projects[0].hype).toBe(0);
   });
 
   it('el JSON incluye saveVersion', () => {

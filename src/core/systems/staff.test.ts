@@ -466,7 +466,12 @@ describe('crunch: empujón a corto plazo, deuda a largo (CA docs/11 Fase 2)', ()
     expect(gCrunched.releaseWeek).toBeLessThan(gNormal.releaseWeek);
     expect(gCrunched.breakdown.bugLevel).toBeGreaterThan(gNormal.breakdown.bugLevel);
     expect(gCrunched.breakdown.teamFactor).toBeLessThan(gNormal.breakdown.teamFactor);
-    expect(gCrunched.quality).toBeLessThan(gNormal.quality);
+    // …y una ejecución peor. Con el techo de garaje (9.1) ambos pueden topar
+    // en el mismo cap, así que la Q cruda es la que delata el deterioro.
+    expect(gCrunched.quality).toBeLessThanOrEqual(gNormal.quality);
+    const rawQ = (g: (typeof normal.releasedGames)[0]) =>
+      g.breakdown.base * g.breakdown.teamFactor * g.breakdown.innovationMod;
+    expect(rawQ(gCrunched)).toBeLessThan(rawQ(gNormal));
   });
 
   it('el rasgo Sensible al crunch duplica el daño; Workaholic lo amortigua', () => {

@@ -33,6 +33,11 @@ Cada empleado es una entidad con estado propio:
 Cada género pondera las especialidades de forma distinta al calcular `teamFactor` (`03`). Un equipo
 desequilibrado (todo Técnica, cero Diseño) hará ciertos géneros bien y otros mal.
 
+**La estrella marca el techo (9.1, docs/19 §9.1):** además de la media del `teamFactor`, el **mejor
+individuo** en la especialidad CLAVE del género (la de mayor peso) fija uno de los techos parciales
+de calidad (`03` §3.1): una **obra maestra (85+) exige una estrella (skill ≥ 80)** en ese rol. La
+escasez de talento deja de ser solo un coste: es el listón de lo sublime.
+
 ## 3. Rasgos de personalidad `[DECIDIDO]`
 
 Los rasgos dan **carácter** y decisiones interesantes. Ejemplos:

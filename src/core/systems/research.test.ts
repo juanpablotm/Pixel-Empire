@@ -400,15 +400,12 @@ describe('P2: conocimiento de mercado que se gana (docs/17)', () => {
     });
     while (s.releasedGames.length === 0) s = tick(s);
     const g = s.releasedGames[0];
-    // Las 6 líneas del desglose están presentes y explican el resultado…
-    expect(g.lines.map((l) => l.factor)).toEqual([
-      'fit',
-      'balance',
-      'features',
-      'polish',
-      'team',
-      'innovation',
-    ]);
+    // Todas las líneas del desglose están presentes y explican el resultado
+    // (9.1 añade techo, alcance, listón de época y banda; la fatiga, si pega)…
+    const factors = g.lines.map((l) => l.factor);
+    for (const factor of ['fit', 'balance', 'features', 'polish', 'team', 'innovation', 'ceiling', 'scope', 'eraBar', 'band']) {
+      expect(factors).toContain(factor);
+    }
     // …incluidos el encaje y el balance ideal del género (breakdown), sin
     // depender de la investigación: la explicación posterior no se paga nunca.
     expect(g.breakdown.fit).toBeGreaterThan(0);

@@ -395,6 +395,21 @@ export function advanceMoral(state: GameState, rng: Rng): GameState {
     moralDrift: round2(studio.moralDrift * driftCfg.decayPerWeek),
   };
 
+  // La reputación DECAE sola (Fase 9.1, docs/19 §9.1): el cariño se erosiona
+  // hacia el objetivo si no das motivos nuevos. Por debajo del objetivo no hay
+  // cura gratis (la asimetría de docs/06 §3): recuperarse exige actuar.
+  const decayCfg = balance.reputation.decay;
+  const reputation = { ...studio.reputation };
+  let repDecayed = false;
+  for (const segment of Object.keys(reputation) as Segment[]) {
+    const value = reputation[segment];
+    if (value > decayCfg.target) {
+      reputation[segment] = round2(value - decayCfg.ratePerWeek * (value - decayCfg.target));
+      repDecayed = true;
+    }
+  }
+  if (repDecayed) studio = { ...studio, reputation };
+
   // Cuenta atrás de los escándalos activos (se conservan como historial).
   const scandals = state.scandals.map((s) =>
     s.weeksLeft > 0 ? { ...s, weeksLeft: s.weeksLeft - 1 } : s,

@@ -2,12 +2,17 @@ import { balance } from '../../data/balance';
 import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
 import { audienceLabels, factorTexts, sizeLabels, verdicts } from '../../data/reviewTexts';
+import { specialtyLabels } from '../../data/staffTexts';
+import type { ReviewMarketInfo } from '../model/market';
 import type { Audience, ProjectSize } from '../model/project';
 import type { FactorTone, QualityBreakdown, ReviewLine } from '../model/release';
+import type { Specialty } from '../model/staff';
 
 /**
- * De Q a reseña legible (docs/03 §5). En Fase 1 la reseña pública es igual a Q:
- * las modas, el hype y los segmentos (docs/04) la modularán en la Fase 3.
+ * De Q a reseña legible (docs/03 §5). Desde 9.1 el desglose también explica
+ * el techo dinámico, el encaje de alcance y los ajustes de mercado (listón de
+ * la época, fatiga de fórmula y banda de gusto): la nota deja de ser una
+ * calculadora, pero SIEMPRE se puede explicar en una frase (Pilar 2).
  */
 
 interface ReviewSubject {
@@ -34,16 +39,44 @@ function toneWith(value: number, good: number, ok: number): FactorTone {
   return 'bad';
 }
 
-/** Construye el desglose legible, una línea por factor (docs/03 §5). */
+/** Qué limita hoy el techo, en palabras (para la línea 'ceiling' del desglose). */
+function ceilingLimitLabel(binding: NonNullable<QualityBreakdown['capBinding']>, rol: string): string {
+  switch (binding) {
+    case 'madurez':
+      return 'la juventud del estudio';
+    case 'talento':
+      return `la falta de una estrella de ${rol}`;
+    case 'tech':
+      return 'la falta de I+D';
+    case 'era':
+      return 'la tecnología de la época';
+  }
+}
+
+/**
+ * Construye el desglose legible, una línea por factor (docs/03 §5). Con el
+ * contexto de 9.1 añade las líneas de techo dinámico y alcance (si el
+ * breakdown las trae) y las de mercado (listón de época, fatiga, banda).
+ */
 export function buildReviewLines(
   breakdown: QualityBreakdown,
   subject: ReviewSubject,
+  market?: ReviewMarketInfo,
 ): ReviewLine[] {
+  const rol =
+    breakdown.keySpecialty !== undefined
+      ? specialtyLabels[breakdown.keySpecialty as Specialty]
+      : '';
   const vars = {
     tema: getTheme(subject.themeId).name,
     genero: getGenre(subject.genreId).name,
     publico: audienceLabels[subject.audience],
     tamano: sizeLabels[subject.size],
+    techo: String(breakdown.qualityCap),
+    limite:
+      breakdown.capBinding !== undefined ? ceilingLimitLabel(breakdown.capBinding, rol) : '',
+    fatiga: String(Math.round(market?.fatiga ?? 0)),
+    banda: String(Math.abs(market?.banda ?? 0)),
   };
   const r = balance.reviews;
 
@@ -61,6 +94,38 @@ export function buildReviewLines(
       tone: toneWith(breakdown.innovationMod, r.innovationGoodThreshold, r.innovationOkThreshold),
     },
   ];
+
+  // Techo dinámico y alcance (9.1): solo cuando el breakdown trae el contexto
+  // (los juegos de saves previos no lo llevan y su desglose sigue válido).
+  if (breakdown.capParts !== undefined) {
+    tones.push({
+      factor: 'ceiling',
+      tone: toneWith(breakdown.qualityCap, r.ceilingGoodThreshold, r.ceilingOkThreshold),
+    });
+  }
+  if (breakdown.alcance01 !== undefined) {
+    tones.push({
+      factor: 'scope',
+      tone: toneWith(breakdown.alcance01, r.scopeGoodThreshold, r.scopeOkThreshold),
+    });
+  }
+
+  // Ajustes de mercado (9.1): listón de la época (sin revelar el número),
+  // fatiga de fórmula (solo si pega) y banda de gusto (siempre, es la que
+  // explica por qué la nota no es una calculadora).
+  if (market !== undefined) {
+    const eraDelta = market.eraDelta ?? 0;
+    tones.push({
+      factor: 'eraBar',
+      tone: eraDelta >= r.eraBarGoodDelta ? 'good' : eraDelta >= r.eraBarOkDelta ? 'ok' : 'bad',
+    });
+    const fatiga = market.fatiga ?? 0;
+    if (fatiga >= 1) {
+      tones.push({ factor: 'fatigue', tone: fatiga < r.fatigueBadPoints ? 'ok' : 'bad' });
+    }
+    const banda = market.banda ?? 0;
+    tones.push({ factor: 'band', tone: banda > 0 ? 'good' : banda === 0 ? 'ok' : 'bad' });
+  }
 
   return tones.map(({ factor, tone }) => {
     const text = factorTexts[factor][tone];

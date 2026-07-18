@@ -13,6 +13,11 @@ import { FACTORY, INDIE, STUDIO, runFullGame } from './bots';
 function snap(s: GameState): string {
   const year = 1979 + Math.ceil(s.week / 52);
   const rev = s.releasedGames.reduce((a, g) => a + g.totalRevenue, 0);
+  // 9.1: la escalada a vista de pájaro — mejor reseña histórica, techo del
+  // último juego y nº de obras maestras (85+).
+  const best = s.releasedGames.reduce((max, g) => Math.max(max, g.review), 0);
+  const masterpieces = s.releasedGames.filter((g) => g.review >= 85).length;
+  const lastCap = s.releasedGames[s.releasedGames.length - 1]?.breakdown.qualityCap ?? 0;
   return [
     `a${year} w${s.week} ${s.era}`,
     `cap ${Math.round(s.studio.capital / 1000)}k`,
@@ -25,6 +30,9 @@ function snap(s: GameState): string {
     `scand ${s.stats.scandalCount}`,
     `drift ${s.studio.moralDrift.toFixed(2)}`,
     `💡${s.research.points}/${s.research.unlocked.length}n`,
+    `best ${Math.round(best)}`,
+    `techo ${Math.round(lastCap)}`,
+    `85+ ×${masterpieces}`,
   ].join(' · ');
 }
 

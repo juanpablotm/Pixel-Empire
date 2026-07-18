@@ -6,6 +6,7 @@ import { getPlatform } from '../../data/platforms';
 import type { EraId } from '../model/era';
 import type { Audience, Project } from '../model/project';
 import type { QualityBreakdown } from '../model/release';
+import type { CeilingContext } from './maturity';
 
 /**
  * Sistema de Calidad Transparente (docs/03): produce la Calidad Real Q (0–100)
@@ -63,6 +64,12 @@ export interface QualityContext {
   comboRepeats: number;
   /** Aporte de rasgos del equipo (Visionarios) al innovationMod (docs/05 §3). */
   innovationBonus?: number;
+  /**
+   * Techo dinámico + encaje de alcance (Fase 9.1, core/systems/maturity.ts).
+   * Opcional: sin él solo aplica la envolvente de era (tests de composición
+   * y breakdowns antiguos siguen valiendo); releaseProject SIEMPRE lo pasa.
+   */
+  ceiling?: CeilingContext;
 }
 
 /** Nivel de bugs actual: clamp(deudaBugs − inversiónQA, 0, 1) (docs/03 factor D). */
@@ -77,9 +84,10 @@ export function realDesignShare(designPoints: number, techPoints: number): numbe
 }
 
 /**
- * Calidad Real Q (docs/03 §3):
+ * Calidad Real Q (docs/03 §3, techo dinámico desde 9.1):
  *   base = (wF·fit + wB·balance + wC·features + wD·polish) / Σw
- *   Q = 100 × clamp(base × teamFactor × innovationMod, 0, 1), con techo por era.
+ *   Q = 100 × clamp(base × teamFactor × innovationMod × alcanceFactor, 0, 1),
+ *   con techoQ = min(capEra, capMadurez, capTalento, capTech).
  */
 export function computeQuality(
   project: Project,
@@ -120,8 +128,28 @@ export function computeQuality(
     (w.fit * fit + w.balance * balanceScore + w.features * featureScore + w.polish * polishScore) /
     (w.fit + w.balance + w.features + w.polish);
 
-  const qualityCap = balance.quality.capByEraSize[ctx.era]?.[project.size] ?? 100;
-  const qRaw = 100 * clamp(base * ctx.teamFactor * innovationMod, 0, 1);
+  // Techo dinámico (9.1): el mínimo de los parciales manda, y se nombra.
+  const capEra = balance.quality.capByEraSize[ctx.era]?.[project.size] ?? 100;
+  const ceiling = ctx.ceiling;
+  let qualityCap = capEra;
+  let capBinding: 'era' | 'madurez' | 'talento' | 'tech' = 'era';
+  if (ceiling) {
+    const caps = [
+      { cap: ceiling.capMadurez, binding: 'madurez' },
+      { cap: ceiling.capTalento, binding: 'talento' },
+      { cap: ceiling.capTech, binding: 'tech' },
+    ] as const;
+    for (const { cap, binding } of caps) {
+      if (cap < qualityCap) {
+        qualityCap = cap;
+        capBinding = binding;
+      }
+    }
+    qualityCap = Math.round(qualityCap);
+  }
+
+  const alcanceFactor = ceiling?.alcanceFactor ?? 1;
+  const qRaw = 100 * clamp(base * ctx.teamFactor * innovationMod * alcanceFactor, 0, 1);
   const q = Math.round(Math.min(qRaw, qualityCap));
 
   return {
@@ -139,6 +167,20 @@ export function computeQuality(
       innovationMod,
       base,
       qualityCap,
+      ...(ceiling
+        ? {
+            capParts: {
+              era: capEra,
+              madurez: Math.round(ceiling.capMadurez),
+              talento: Math.round(ceiling.capTalento),
+              tech: Math.round(ceiling.capTech),
+            },
+            capBinding,
+            keySpecialty: ceiling.keySpecialty,
+            alcance01: ceiling.alcance01,
+            alcanceFactor: ceiling.alcanceFactor,
+          }
+        : {}),
     },
   };
 }

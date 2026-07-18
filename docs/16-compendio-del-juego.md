@@ -46,6 +46,17 @@ Features/Alcance · Pulido/Bugs · Multiplicador de Equipo, con un pequeño modi
 Pesos baseline: `wF=0.30, wB=0.25, wC=0.20, wD=0.25`; `innovationMod` 0.9–1.15; `teamFactor` 0.5–1.3.
 Detalle: `03`.
 
+**La escalada (Fase 9.1, docs/19 §9.1):** el juego ya **no se resuelve**. La `Q` tiene un **techo
+dinámico** — `min(era, madurez, talento, tecnología)` — que en el garaje ronda 45–52 juegues como
+juegues y sube DESPACIO con lanzamientos y escala; una **obra maestra (85+) exige una estrella**
+(skill ≥ 80) en el rol clave, y el AAA con estudio flojo **se hunde** (encaje de alcance). La reseña
+compara `Q` contra un **listón por era en parte oculto** (`nota = 70 + 1.3·(Q − listón)`, listón
+61→88), **repetir fórmula fatiga** la nota (y el público olvida con los años), y la nota lleva una
+**banda ±4** determinista y SIEMPRE explicada. La gala celebra "tu mejor juego hasta ahora": un 45
+temprano es un logro. El dilema muerde: la **reputación decae sola** hacia 50, solo las notas > 65
+dan cariño, la **codicia rinde más** (mtx 0.85·agg, dlc 1.25, f2p 1.1·agg) y el **marketing no tiene
+tope** (campañas re-comprables: amplificador de alta varianza).
+
 ---
 
 ## 3. La progresión (eras, años, escala y ritmo)
@@ -327,7 +338,7 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
-| Marketing escalonado | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva) |
+| Marketing escalonado (re-comprable sin tope, 9.1) | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva); cada compra repite coste y expectación |
 | Licencia de plataforma | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
 | Préstamos | hasta ~6 meses de costes fijos; interés ~1%/semana |

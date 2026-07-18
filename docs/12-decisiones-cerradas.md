@@ -35,13 +35,27 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 - Pesos de composición **v1**: `wF=0.30, wB=0.25, wC=0.20, wD=0.25`.
 - `innovationMod` en rango `0.9–1.15`.
 - `teamFactor` en rango típico `0.5–1.3`.
-- Techo de calidad por era activo (`techoQ`).
+- **Techo DINÁMICO desde 9.1** (docs/19 §9.1, doc 03 §3.1): `techoQ = min(capEra, capMadurez,
+  capTalento, capTech)` — madurez `45 + 55·exp/(exp+55)` (garaje ~45–52, sube despacio), talento
+  `45 + 50·mejorSkillClave` (obra maestra 85+ exige estrella ≥80 en el rol clave), tecnología
+  `55 + 45·techPoints/target(era)` (targets 0/3/6/10/14/20/24). El `capByEraSize` queda de envolvente.
+- **Encaje de alcance** (9.1): `Q ×= max(0.4, (poderEquipo/poderObjetivo)^1.25)`, objetivos
+  0.5/1.8/5/9.5/26 por tamaño — el AAA con estudio flojo se hunde.
 
 ## 4. Mercado (doc 04)
 
 - Reseñas calculadas **por segmento** (crítica, hardcore, casual, prensa, comunidad).
-- Fórmulas de Calidad→Reseña y Reseña→Ventas cerradas como baseline (parametrizadas en `balance.ts`).
-- Saturación con decaimiento temporal; hype de doble filo; curva de ventas pico + cola larga.
+- **Listón por era desde 9.1** (doc 04 §5): `notaBase = 70 + 1.3·(Q − listón)`, listón 61/66/69/72/
+  78/83/88 (E1→E7), en parte oculto (línea cualitativa en el desglose). Un 70 interno lee ~75 en E2
+  y ~60 en E5.
+- **Fatiga de fórmula** (9.1): `min(18, 5·repesRecientes(156 sem) + 5·max(0, satEff−0.6))` puntos de
+  nota — repetir decae; esperar años lo perdona.
+- **Banda legible** (9.1): desvío entero ±4 por lanzamiento (stream propio del PRNG), siempre
+  explicado en el desglose.
+- Saturación con decaimiento temporal (k 0.3, decay 0.95 desde 9.1); hype de doble filo; curva de
+  ventas pico + cola larga (`reviewExponent` 1.55, spike 1.6, tail 0.4 desde 9.1).
+- **Marketing sin tope** (9.1): campañas re-comprables, hype sin máximo, penalización de reseña en
+  pendiente (~13/punto de hype sobre 0.25), brecha de sobre-hype sin acotar (cola con suelo 90 %).
 - Ciclos de vida de plataformas activos.
 - Eventos de mercado (ferias, boom/recesión, nacimiento de modas, regulación) cerrados como sistema.
 
@@ -66,7 +80,7 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
-| Marketing escalonado (docs/17 E2) | Nota de prensa 2k (+0,08) / Anuncios 10k (+0,18) / Feria-Expo 40k (+0,32) / Campaña masiva 120k (+0,50 hype) |
+| Marketing escalonado (docs/17 E2; **re-comprable y sin tope** desde 9.1) | Nota de prensa 2k (+0,08) / Anuncios 10k (+0,18) / Feria-Expo 40k (+0,32) / Campaña masiva 120k (+0,50 de expectación); cada compra repite coste y empuje |
 | Licencia de plataforma | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
 
@@ -74,8 +88,10 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 brecha `clamp01((hype−0,65)/0,35) × clamp01((68−reseña)/68)` castiga la **cola de ventas** (hasta −45 %)
 y la reputación de **hardcore/comunidad** (hasta −5/−4 × brecha). El pico day-one no se toca.
 
-- `factorMonetización` v1: premium = 1.0; premium+dlc ≈ 1.15; premium+mtx ≈ 1.0 + 0.6·`aggressiveness`;
-  f2p ≈ 0.3 en ventas base + MTX ≈ baseInstalada · 0.8 · `aggressiveness`.
+- `factorMonetización` (subido en 9.1: la codicia rinde MÁS): premium = 1.0; premium+dlc ≈ **1.25**;
+  premium+mtx ≈ 1.0 + **0.85**·`aggressiveness`; f2p ≈ 0.3 en ventas base + MTX ≈ **1.1**·`aggressiveness`.
+- **Dilema con dientes (9.1):** la reputación decae sola hacia 50 (0.6 %/semana del exceso; sin cura
+  gratis por debajo) y solo las reseñas > **65** construyen reputación.
 - **Préstamos:** línea de crédito según reputación/activos; principal hasta ~6 meses de costes fijos;
   interés ~1%/semana; impago sostenido acelera la bancarrota.
 - **Premios anuales** (tipo Game Awards) confirmados como sistema.

@@ -335,7 +335,8 @@ describe('desarrollo por fases hasta el lanzamiento (docs/02 §2 pasos 3 y 6)', 
     expect(game.quality).toBeGreaterThan(0);
     expect(game.quality).toBeLessThanOrEqual(100);
     expect(game.verdict).not.toBe('');
-    expect(game.lines).toHaveLength(6);
+    // 9.1: a los 6 factores clásicos se suman techo, alcance, listón de época
+    // y banda (la fatiga solo aparece cuando pega). Todo sigue siendo legible.
     expect(game.lines.map((l) => l.factor)).toEqual([
       'fit',
       'balance',
@@ -343,6 +344,10 @@ describe('desarrollo por fases hasta el lanzamiento (docs/02 §2 pasos 3 y 6)', 
       'polish',
       'team',
       'innovation',
+      'ceiling',
+      'scope',
+      'eraBar',
+      'band',
     ]);
     expect(state.log.some((e) => e.type === 'lanzamiento')).toBe(true);
   });

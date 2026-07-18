@@ -3,8 +3,8 @@ import type { EraDef, EraId } from '../core/model/era';
 /**
  * Las 7 eras históricas (docs/02 §5, baseline v1). El paso de era es
  * automático por tiempo: `startWeek` marca su llegada (52 semanas = 1 año,
- * año 1 = 1980; ver balance.time). El listón de calidad (`eraStandard`) y los
- * techos de Q por era son números de balance y viven en data/balance.ts.
+ * año 1 = 1980; ver balance.time). El listón de nota por era (`eraBar`, 9.1)
+ * y los techos de Q por era son números de balance y viven en data/balance.ts.
  *
  * Los `unlocks` del esquema de docs/09 §7 se derivan del propio contenido
  * (campo `appearsInEra` de géneros/temas/plataformas/features/creadores/

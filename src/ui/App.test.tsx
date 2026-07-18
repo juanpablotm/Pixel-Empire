@@ -134,15 +134,18 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     // 3. Seis semanas después (proyecto pequeño), el juego se lanza solo.
     advanceWeeks(6);
 
-    // 4. Pantalla de reseña: nota media + segmentos + desglose de 6 factores (docs/03 §5, docs/04 §5).
+    // 4. Pantalla de reseña: nota media + segmentos + desglose legible
+    // (docs/03 §5, docs/04 §5; desde 9.1 con techo/alcance/listón/banda).
     expect(screen.getByText('Reseña media')).toBeInTheDocument();
     expect(screen.getByText('Crítica')).toBeInTheDocument();
     expect(screen.getByText('Hardcore')).toBeInTheDocument();
+    const game = useGameStore.getState().game.releasedGames[0];
     const breakdown = screen.getByText('Por qué esta nota').closest('section');
     expect(breakdown).not.toBeNull();
-    expect(within(breakdown as HTMLElement).getAllByRole('listitem')).toHaveLength(6);
+    expect(within(breakdown as HTMLElement).getAllByRole('listitem')).toHaveLength(
+      game.lines.length,
+    );
     expect(screen.getByText('Contenido escaso')).toBeInTheDocument(); // sin features → ✘
-    const game = useGameStore.getState().game.releasedGames[0];
     expect(game.lines.map((l) => l.factor)).toEqual([
       'fit',
       'balance',
@@ -150,6 +153,10 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
       'polish',
       'team',
       'innovation',
+      'ceiling',
+      'scope',
+      'eraBar',
+      'band',
     ]);
 
     // 5. De vuelta al estudio: el juego vende y se puede repetir el bucle.
@@ -189,14 +196,14 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
     fireEvent.click(screen.getByRole('button', { name: 'Empezar desarrollo' }));
 
     // En Concepto todavía no hay nada que anunciar (Fase 8.5).
-    expect(screen.queryByRole('meter', { name: 'Hype' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('meter', { name: 'Expectación' })).not.toBeInTheDocument();
     expect(screen.getByText(/las campañas abren en la fase de Producción/i)).toBeInTheDocument();
 
     // Dos semanas después el proyecto entra en Producción: el hito reabre la
     // ventana y ya sí hay manómetro.
     advanceWeeks(2);
     expect(useGameStore.getState().game.projects[0].phase).toBe(2);
-    const gauge = screen.getByRole('meter', { name: 'Hype' });
+    const gauge = screen.getByRole('meter', { name: 'Expectación' });
     expect(gauge).toHaveAttribute('aria-valuenow', '0');
   });
 

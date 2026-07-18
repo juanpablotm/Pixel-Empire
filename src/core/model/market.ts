@@ -71,10 +71,19 @@ export interface MarketState {
 
 /** Ajustes de mercado aplicados a la reseña, guardados para explicarla (docs/04 §5). */
 export interface ReviewMarketInfo {
-  /** reseñaBase = Q × estándarEra(era). */
+  /** notaBase = barScore + gain·(Q − listón(era)) (Fase 9.1, docs/19 §9.1). */
   base: number;
   /** afinidadModa: ± puntos según la popularidad actual del combo. */
   modaBonus: number;
   /** penalizaciónExpectativas: puntos restados por el hype (siempre ≥ 0). */
   hypePenalty: number;
+  /**
+   * Fase 9.1 (opcionales: juegos de saves previos no los llevan):
+   * `eraDelta` = Q − listón de la era (el listón exacto sigue oculto);
+   * `fatiga` = puntos restados por repetir fórmula / saturación (≥ 0);
+   * `banda` = desvío entero de gusto/humor del mercado en [−band, +band].
+   */
+  eraDelta?: number;
+  fatiga?: number;
+  banda?: number;
 }

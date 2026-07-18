@@ -21,7 +21,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -240,6 +240,12 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       studio: { ...file.state.studio, lastCeremony: null },
     },
   }),
+  // v11 (Fase 8.10) → v12 (Fase 9.1): techo dinámico, listón por era, fatiga,
+  // banda y reencuadre. No destructivo: todos los campos nuevos son opcionales
+  // (capParts/capBinding/alcance en el breakdown; eraDelta/fatiga/banda en
+  // reviewMarket; personalBest en el juego) y los juegos ya lanzados conservan
+  // su reseña histórica tal cual — las reglas nuevas solo aplican al lanzar.
+  11: (file) => ({ saveVersion: 12, state: file.state }),
 };
 
 /**

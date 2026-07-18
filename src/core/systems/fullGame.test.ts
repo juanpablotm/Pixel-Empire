@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
 import { getEra } from '../../data/eras';
-import { FACTORY, INDIE, STUDIO, runFullGame, type Philosophy } from '../../test/bots';
+import { FACTORY, FINAL_WEEK, INDIE, STUDIO, runFullGame, type Philosophy } from '../../test/bots';
 import type { GameState, ScaleStage } from '../model/gameState';
 import { computeLegacy } from './legacy';
 import { aggregateReputation } from './reputation';
@@ -88,19 +88,68 @@ describe('Bots de partida completa: las tres filosofías de docs/01 §5 (docs/00
   });
 
   it('el "punto dulce" ha muerto (docs/18 V4-d): la corporación quema y puede perder', () => {
-    // La fábrica en Corporación NO es riesgo cero: su caja final queda muy por
+    // La fábrica en Corporación NO es riesgo cero: su caja final queda por
     // debajo del pico histórico — sostener la torre se come los millones si
     // los lanzamientos no rinden (con peor juego, la misma partida quiebra).
     //
-    // El margen bajó de ×2 a ×1.5 en la 8.10: el bot dejó de elegir combos por
-    // fit ciego y ahora lee también el panel de tendencias (docs/04 §2), como
-    // un jugador real, así que vende más y devuelve un tercio del pico en vez
-    // de la mitad. La tesis no cambia: sigue perdiendo decenas de millones
-    // sosteniendo la torre. Que "puede perder" no es teoría — con la versión
-    // ciega del bot esta misma partida quebraba en E3.
-    expect(factory.stats.peakCapital).toBeGreaterThan(factory.studio.capital * 1.5);
+    // El margen bajó de ×1.5 a ×1.15 en la 9.1: la codicia rinde MÁS por
+    // diseño (docs/19 §9.1, mtx 0.85), así que la máquina de cajas engorda la
+    // caja aunque la crítica la destroce — el contrapeso del dilema ya no es
+    // solo el burn, sino la reputación por los suelos (≤25), los escándalos y
+    // la fatiga. El drawdown sigue siendo real: decenas de millones desde el
+    // pico sosteniendo AAAs que la crítica hunde.
+    expect(factory.stats.peakCapital).toBeGreaterThan(factory.studio.capital * 1.15);
     // Y su libro de caja reciente tiene semanas en rojo: el burn es real.
     expect(factory.cashflow.some((c) => c.expenses > c.income)).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // CA de la Fase 9.1 (docs/19 §9.1): "el juego que no se resuelve"
+  // -------------------------------------------------------------------------
+
+  it('CA 9.1(a): el juego NO se resuelve en E2 — nadie imprime 80+ pronto', () => {
+    const e3Start = getEra('E3').startWeek;
+    for (const { name, state } of bots) {
+      const early = state.releasedGames.filter((g) => g.releaseWeek < e3Start);
+      expect(early.length, `${name}: lanzamientos antes de E3`).toBeGreaterThan(10);
+      // Ninguna obra maestra (85+) antes de E3, ni de nota ni de calidad
+      // interna: el techo dinámico lo hace imposible, no improbable.
+      for (const g of early) {
+        expect(g.review, `${name}: «${g.name}» sem ${g.releaseWeek}`).toBeLessThan(85);
+        expect(g.quality, `${name}: «${g.name}» sem ${g.releaseWeek}`).toBeLessThan(80);
+      }
+      // Y las notas tempranas viven en la media tabla: nada de imprimir 80+.
+      const early80s = early.filter((g) => g.review >= 80).length;
+      expect(early80s / early.length, `${name}: proporción de 80+ tempranos`).toBeLessThan(0.1);
+    }
+  });
+
+  it('CA 9.1(b): las obras maestras aparecen a media/tarde partida y se ganan', () => {
+    // Alguna filosofía alcanza el 85+ (se puede ganar)…
+    const masters = bots.map(({ state }) =>
+      state.releasedGames.find((g) => g.review >= 85),
+    );
+    expect(masters.some((g) => g !== undefined)).toBe(true);
+    // …pero nunca antes del 40 % de la partida (media/tarde, docs/19 §9.1).
+    for (const [i, first] of masters.entries()) {
+      if (first) {
+        expect(
+          first.releaseWeek,
+          `${bots[i].name}: primera obra maestra`,
+        ).toBeGreaterThan(FINAL_WEEK * 0.4);
+      }
+    }
+  });
+
+  it('CA 9.1(d): la escalada no rompe la viabilidad — las tres siguen creciendo', () => {
+    // Complemento del test de rejugabilidad: además de llegar vivas, las tres
+    // multiplican con creces el capital inicial (la escalada endurece la
+    // partida, no la convierte en una marcha fúnebre).
+    for (const { name, state } of bots) {
+      expect(state.studio.capital, `${name}: caja final`).toBeGreaterThan(
+        balance.economy.initialCapital * 100,
+      );
+    }
   });
 
   it('tensión moral (docs/00 §9.3): la codicia paga de verdad…', () => {

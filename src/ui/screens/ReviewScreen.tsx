@@ -92,6 +92,10 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
         {act === 0 && <p className="text-sm italic text-ink-mute">La crítica delibera…</p>}
         {act >= FINAL_ACT && <p className="gala-verdict text-lg text-ink">«{game.verdict}»</p>}
 
+        {/* Reencuadre de trayectoria (9.1): un 45 temprano es un logro. La
+            nota se compara con TU historia, no con un absoluto (docs/19). */}
+        {act >= FINAL_ACT && <TrajectoryChip game={game} />}
+
         {/* Cada público juzga distinto (docs/04 §5): chips que voltean. */}
         {act >= 2 && (
           <ul className="mt-3 flex flex-wrap justify-center gap-2">
@@ -166,6 +170,35 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
                   −{game.reviewMarket.hypePenalty}
                 </span>
               </span>
+              {/* Fatiga de fórmula y banda de gusto (9.1): números pequeños y
+                  SIEMPRE visibles — la banda existe pero se explica (Pilar 2).
+                  El listón de la época no se muestra en cifra: queda en su
+                  línea cualitativa del desglose (docs/19 §9.1). */}
+              {(game.reviewMarket.fatiga ?? 0) > 0 && (
+                <span>
+                  Fatiga de fórmula{' '}
+                  <span className="font-semibold tabular-nums text-danger">
+                    −{game.reviewMarket.fatiga}
+                  </span>
+                </span>
+              )}
+              {game.reviewMarket.banda !== undefined && (
+                <span>
+                  Gusto del momento{' '}
+                  <span
+                    className={`font-semibold tabular-nums ${
+                      game.reviewMarket.banda > 0
+                        ? 'text-ok'
+                        : game.reviewMarket.banda < 0
+                          ? 'text-danger'
+                          : 'text-ink'
+                    }`}
+                  >
+                    {game.reviewMarket.banda > 0 ? '+' : ''}
+                    {game.reviewMarket.banda}
+                  </span>
+                </span>
+              )}
             </div>
           )}
         </section>
@@ -196,6 +229,38 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
       )}
     </main>
   );
+}
+
+/**
+ * Reencuadre de trayectoria (Fase 9.1, docs/19 §9.1): la gala celebra "tu
+ * mejor juego hasta ahora" — relativo a tu historia, no al absoluto. Eres una
+ * persona con un casete en un garaje: un 45 es un buen primer juego.
+ */
+function TrajectoryChip({ game }: { game: ReleasedGame }) {
+  if (game.personalBest === undefined) return null; // juegos de saves previos
+  if (game.personalBest && game.previousBestReview === undefined) {
+    return (
+      <p className="gala-chip rounded-full bg-raised px-4 py-1.5 text-sm font-medium text-ink">
+        🌱 Tu primer lanzamiento: aquí empieza la leyenda
+      </p>
+    );
+  }
+  if (game.personalBest) {
+    return (
+      <p className="gala-chip rounded-full bg-raised px-4 py-1.5 text-sm font-medium text-ok">
+        🏆 ¡Tu mejor juego hasta ahora! (superas tu {game.previousBestReview})
+      </p>
+    );
+  }
+  const gap = (game.previousBestReview ?? 0) - game.review;
+  if (gap > 0 && gap <= 5) {
+    return (
+      <p className="gala-chip rounded-full bg-raised px-4 py-1.5 text-sm text-ink-mute">
+        A {gap} {gap === 1 ? 'punto' : 'puntos'} de tu récord ({game.previousBestReview})
+      </p>
+    );
+  }
+  return null;
 }
 
 /**

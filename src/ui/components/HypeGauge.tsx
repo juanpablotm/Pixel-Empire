@@ -5,6 +5,10 @@ import { balance } from '../../data/balance';
  * semicircular con zona roja de sobre-hype. El doble filo (docs/04 §4): más
  * ventas de salida, pero reseñas más duras si las expectativas no se cumplen.
  * La aguja se mueve por transición CSS y TIEMBLA dentro de la zona roja.
+ *
+ * Desde 9.1 el hype NO tiene tope (docs/19 §9.1): la cifra de Expectación
+ * crece sin límite (un número que impresione); la esfera solo dibuja el tramo
+ * 0–100 y la aguja se clava al fondo cuando la presión lo desborda.
  */
 
 const CX = 60;
@@ -35,21 +39,23 @@ export function HypeGauge({ hype }: { hype: number }) {
         <span
           tabIndex={0}
           className="tip cursor-help font-semibold uppercase tracking-wide text-ink-mute"
-          data-tip="Expectación del público: sube ventas de salida, pero en zona roja el juego se compara con lo prometido — si no cumple, la reseña y la comunidad lo castigan."
+          data-tip="Expectación del público: sube ventas de salida, pero en zona roja el juego se compara con lo prometido — si no cumple, la reseña y la comunidad lo castigan. No tiene tope: cuanto más metas, más alto vuela… y más dura la caída."
         >
-          📣 Hype
+          📣 Expectación
         </span>
         <span className={`tabular-nums ${overHyped ? 'font-semibold text-danger' : 'text-ink'}`}>
-          {pct} %{overHyped && ' — ¡sobre-hype!'}
+          {pct > 100 && <span aria-hidden>🔥 </span>}
+          <span className={pct > 100 ? 'text-base font-bold' : ''}>{pct}</span>
+          {overHyped && ' — ¡sobre-hype!'}
         </span>
       </div>
 
       <div
         role="meter"
-        aria-label="Hype"
+        aria-label="Expectación"
         aria-valuenow={pct}
         aria-valuemin={0}
-        aria-valuemax={100}
+        aria-valuemax={Math.max(100, pct)}
         className="flex justify-center"
       >
         <svg width="150" height="86" viewBox="0 0 120 70" aria-hidden>
@@ -114,7 +120,7 @@ export function HypeGauge({ hype }: { hype: number }) {
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className={`flex items-center gap-1 ${overHyped ? 'text-ink-faint' : 'text-ok'}`}>
           <span aria-hidden>🟢</span> Zona segura
-          <span className="text-ink-faint">(&lt;{Math.round(threshold * 100)} %)</span>
+          <span className="text-ink-faint">(&lt;{Math.round(threshold * 100)})</span>
         </span>
         <span className={`flex items-center gap-1 ${overHyped ? 'text-danger' : 'text-ink-faint'}`}>
           <span aria-hidden>🔴</span> Zona de riesgo
@@ -122,8 +128,9 @@ export function HypeGauge({ hype }: { hype: number }) {
       </div>
 
       <p className="text-xs text-ink-faint">
-        Más hype = más ventas de salida, pero el público juzgará el juego con más dureza. En zona de
-        riesgo, si la reseña no cumple lo prometido, la cola de ventas y la reputación se resienten.
+        Más expectación = más ventas de salida, pero el público juzgará el juego con más dureza. No
+        hay tope: cada campaña suma. En zona de riesgo, si la reseña no cumple lo prometido, la cola
+        de ventas y la reputación caen tanto como subió el bombo.
       </p>
     </div>
   );

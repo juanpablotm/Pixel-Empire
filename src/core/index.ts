@@ -96,6 +96,16 @@ export {
 } from './systems/quality';
 export type { ConceptDraft, FitBand, FitResult, QualityContext } from './systems/quality';
 export {
+  bestKeySkill01,
+  computeCeilingContext,
+  keySpecialtyOf,
+  maturity01,
+  studioExperience,
+  teamPower,
+  techDepth01,
+} from './systems/maturity';
+export type { CeilingContext } from './systems/maturity';
+export {
   advanceProjects,
   estimateProject,
   findProject,

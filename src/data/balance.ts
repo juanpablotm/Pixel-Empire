@@ -141,19 +141,20 @@ export const balance = {
     /** Multiplicador de los ingresos por venta: unidades × precio × factor. */
     salesFactor: {
       premium: 1,
-      'premium+dlc': 1.15,
+      'premium+dlc': 1.25,
       'premium+mtx': 1,
       f2p: 0.3,
     } satisfies Record<MonetizationModel, number>,
     /**
-     * Ingresos MTX semanales = unidades × precio × coef × agresividad
-     * (premium+mtx ≈ +0.6·agg; f2p ≈ 0.8·agg sobre su valor de referencia).
+     * Ingresos MTX semanales = unidades × precio × coef × agresividad.
+     * Subidos en 9.1 (dilema con dientes): las palancas de codicia rinden
+     * MÁS dinero, para que ser querido cueste un sacrificio real.
      */
     mtxCoef: {
       premium: 0,
       'premium+dlc': 0,
-      'premium+mtx': 0.6,
-      f2p: 0.8,
+      'premium+mtx': 0.85,
+      f2p: 1.1,
     } satisfies Record<MonetizationModel, number>,
     /** Un juego gratis llega a más gente: multiplicador de demanda del F2P. */
     f2pDemandBoost: 1.3,
@@ -168,8 +169,15 @@ export const balance = {
     initial: 50,
     /** Asimetría [DECIDIDO, docs/06 §3]: perder reputación es más rápido que ganarla. */
     lossMultiplier: 1.5,
-    /** Deltas por reseña al lanzar: (reseña_seg − neutral) / divisor, con topes. */
-    review: { neutral: 60, divisor: 8, maxGain: 3, maxLoss: 4 },
+    /**
+     * La reputación DECAE sola (Fase 9.1, docs/19 §9.1): cada semana el exceso
+     * sobre el objetivo se erosiona (el público olvida a quien no lanza).
+     * Por debajo del objetivo NO hay cura gratis: recuperarse exige actuar.
+     */
+    decay: { target: 50, ratePerWeek: 0.006 },
+    /** Deltas por reseña al lanzar: (reseña_seg − neutral) / divisor, con topes.
+     * neutral 65 desde 9.1: el público exigente ya no premia notas mediocres. */
+    review: { neutral: 65, divisor: 8, maxGain: 3, maxLoss: 4 },
     /** La comunidad reacciona a la reseña media, algo más fría. */
     communityReview: { divisor: 10, maxGain: 2.5, maxLoss: 3 },
     /** Colchón de comunidad en ventas (docs/06 §3): 1 + coef·(rep−50)/50. */
@@ -373,9 +381,10 @@ export const balance = {
       repeatStep: 0.05,
     },
     /**
-     * techoQ(era, tamaño): límite de Q por era (docs/03 §3). Sube con las
-     * eras (mejor tecnología permite mejores juegos); en eras tardías un
-     * juego pequeño ya no puede ser una obra maestra absoluta.
+     * techoQ(era, tamaño): envolvente de Q por era (docs/03 §3). Desde la
+     * Fase 9.1 es solo UNO de los techos parciales (el techo real es el
+     * mínimo con madurez/talento/tech, ver `ceiling`); en 9.2 esta envolvente
+     * pasará a ser el motor.
      */
     capByEraSize: {
       E1: { pequeno: 85, mediano: 85, grande: 85, muyGrande: 85, aaa: 85 },
@@ -386,6 +395,77 @@ export const balance = {
       E6: { pequeno: 93, mediano: 96, grande: 98, muyGrande: 98, aaa: 98 },
       E7: { pequeno: 94, mediano: 97, grande: 100, muyGrande: 100, aaa: 100 },
     } satisfies Record<EraId, Record<ProjectSize, number>>,
+
+    /**
+     * El techo dinámico (Fase 9.1, docs/19 §9.1 y docs/03 §3):
+     *   techoQ = min(capEra, capMadurez, capTalento, capTech)
+     * Siempre hay UN término que manda y el desglose lo nombra (Pilar 2).
+     */
+    ceiling: {
+      /**
+       * capMadurez = min + (max − min) · exp/(exp + halfway). La experiencia
+       * se gana lanzando (sizeExp por juego) y creciendo (stageExp por etapa):
+       * en el garaje el techo es ~45–52 juegues como juegues, y sube DESPACIO.
+       */
+      maturity: {
+        min: 45,
+        max: 100,
+        sizeExp: {
+          pequeno: 1.5,
+          mediano: 2.5,
+          grande: 5,
+          muyGrande: 8,
+          aaa: 12,
+        } satisfies Record<ProjectSize, number>,
+        /** La escala pesa fuerte: la cima de la madurez exige crecer, no solo
+         * encadenar juegos pequeños (docs/02 §4 — cada etapa cambia el juego). */
+        stageExp: { 1: 0, 2: 3, 3: 8, 4: 18, 5: 30 } satisfies Record<ScaleStage, number>,
+        halfway: 55,
+      },
+      /**
+       * capTalento = min + span · (mejor skill de la especialidad CLAVE del
+       * género entre los asignados)/100. El mejor individuo, no la media: una
+       * obra maestra (85+) exige una ESTRELLA (skill ≥ 80) en el rol clave.
+       */
+      talent: { min: 45, span: 50 },
+      /**
+       * capTech = min + span · clamp01(techPoints/targetByEra). Los puntos
+       * son los `techValue` de los nodos de I+D comprados (data/research.ts);
+       * el objetivo sube con la era: llegar a E4+ sin I+D topa el techo en 55.
+       * Un objetivo 0 (E1) significa "sin expectativa": profundidad completa.
+       */
+      tech: {
+        min: 55,
+        span: 45,
+        targetByEra: {
+          E1: 0,
+          E2: 3,
+          E3: 6,
+          E4: 10,
+          E5: 14,
+          E6: 20,
+          E7: 24,
+        } satisfies Record<EraId, number>,
+      },
+    },
+
+    /**
+     * Encaje de alcance (ambición vs capacidad, docs/19 §9.1): no es un techo
+     * sino un multiplicador de Q. poderEquipo = Σ asignados skill ponderada
+     * por género (cuerpos Y talento); si no llena el objetivo del tamaño, la
+     * calidad se hunde: alcanceFactor = max(suelo, alcance01^exponente).
+     */
+    scope: {
+      powerTarget: {
+        pequeno: 0.5,
+        mediano: 1.8,
+        grande: 5,
+        muyGrande: 9.5,
+        aaa: 26,
+      } satisfies Record<ProjectSize, number>,
+      floor: 0.4,
+      exponent: 1.25,
+    },
   },
 
   reviews: {
@@ -403,6 +483,17 @@ export const balance = {
     innovationOkThreshold: 1.0,
     /** Medidor de Fit en la concepción: verde ≥, ámbar ≥, rojo debajo (docs/03 factor A). */
     fitMeter: { verde: 0.75, ambar: 0.55 },
+    /** Umbrales de tono del techo dinámico (9.1): sobre el techoQ aplicado. */
+    ceilingGoodThreshold: 85,
+    ceilingOkThreshold: 65,
+    /** Umbrales de tono del encaje de alcance (9.1): sobre alcance01. */
+    scopeGoodThreshold: 0.95,
+    scopeOkThreshold: 0.75,
+    /** Umbrales de tono del listón de época (9.1): sobre Q − listón. */
+    eraBarGoodDelta: 5,
+    eraBarOkDelta: -5,
+    /** Desde estos puntos de fatiga la línea pasa de ~ a ✘ (9.1). */
+    fatigueBadPoints: 8,
   },
 
   staff: {
@@ -712,8 +803,8 @@ export const balance = {
      * listón de industria que sube con la era + nominados ficticios.
      *
      * Por qué solo es realista ganar en E6–E7: tu reseña NO crece con las eras
-     * (está normalizada por `sales.review.eraStandard` 1→0.86 contra los techos
-     * de `quality.capByEraSize` 85→100, así que el techo real ronda 85–90 en
+     * (desde 9.1 el listón `market.reviews.eraBar` 61→88 persigue al techo
+     * dinámico de `quality.ceiling`, así que la nota alcanzable ronda 70–90 en
      * todas las eras) y la reputación satura pronto. Lo único que crece de
      * verdad es la ESCALA: por eso el listón sube ~6.5 puntos de E1 a E7 y el
      * bonus de tamaño vale hasta +12. Un garaje con un juego pequeño excelente
@@ -831,9 +922,9 @@ export const balance = {
       /** Peso de la saturación de otros temas del mismo género (secuelas "de género"). */
       sameGenreWeight: 0.5,
       /** Decaimiento multiplicativo semanal del contador (el público "olvida"). */
-      decayPerWeek: 0.94,
-      /** k del modificador: modificadorVentas = 1 − k·saturación [DECIDIDO, docs/04 §3]. */
-      k: 0.25,
+      decayPerWeek: 0.95,
+      /** k del modificador: modificadorVentas = 1 − k·saturación [docs/04 §3; +peso en 9.1]. */
+      k: 0.3,
       /** Un juego similar reciente es "lo normal": no penaliza hasta superar este margen. */
       freeAllowance: 1,
       /** Suelo del modificador de ventas por saturación. */
@@ -878,7 +969,6 @@ export const balance = {
       /** La moda alimenta la expectación: ganancia × (base + span·popCombo). */
       popCouplingBase: 0.4,
       popCouplingSpan: 0.6,
-      max: 1,
       /** Zona roja del Manómetro de Hype (docs/10 §7.5): sobre-hype a partir de aquí. */
       overHypeThreshold: 0.65,
       /**
@@ -897,10 +987,21 @@ export const balance = {
         reviewBar: 68,
         minGap: 0.05,
         tailPenaltyMax: 0.45,
+        /**
+         * Suelo de la cola (Fase 9.1): con el marketing SIN TOPE la brecha ya
+         * no está acotada a 1, así que la pérdida de cola se limita aquí (una
+         * cola nunca cae más del 90 %). El golpe de reputación sí escala con
+         * la brecha completa (la reputación ya se acota sola en 0).
+         */
+        tailPenaltyCap: 0.9,
         repHit: { hardcore: 5, comunidad: 4 },
       },
-      /** Puntos de reseña restados con hype 1.0 (penalizaciónExpectativas, docs/04 §5). */
-      reviewPenaltyMax: 10,
+      /**
+       * Puntos de reseña restados por PUNTO de hype por encima de freeHype
+       * (Fase 9.1: pendiente sin tope — el marketing es un amplificador de
+       * alta varianza; con hype 1.0 resta ~9.75, con 2.0 resta ~22.75).
+       */
+      reviewPenaltyPerHype: 13,
       /** Hasta este hype las expectativas no endurecen la reseña. */
       freeHype: 0.25,
       /** Empuje a las ventas de salida: pico × (1 + coef·hype) (docs/04 §6). */
@@ -910,22 +1011,50 @@ export const balance = {
     /** De Calidad a Reseña (docs/04 §5). Los sesgos por segmento viven en data/segments.ts. */
     reviews: {
       /**
-       * estándarEra (docs/02 §5): el listón del público sube con las eras —
-       * la misma Q puntúa peor cuanto más tarde (lo compensan los techos de
-       * calidad crecientes, las features nuevas y la investigación).
+       * El listón por era (Fase 9.1, docs/19 §9.1): la reseña compara la Q
+       * interna contra un listón EN PARTE OCULTO que sube más rápido que tu
+       * comodidad. notaBase = barScore + gain·(Q − eraBar). Un mismo 70
+       * interno saca ~80 en E2 y ~60 en E5. La UI nunca muestra el número:
+       * solo la línea cualitativa del desglose.
        */
-      eraStandard: {
-        E1: 1,
-        E2: 0.97,
-        E3: 0.94,
-        E4: 0.92,
-        E5: 0.9,
-        E6: 0.88,
-        E7: 0.86,
+      eraBar: {
+        E1: 61,
+        E2: 66,
+        E3: 69,
+        E4: 72,
+        E5: 78,
+        E6: 83,
+        E7: 88,
       } satisfies Record<EraId, number>,
+      /** Nota que saca un juego exactamente EN el listón de su era. */
+      barScore: 70,
+      /** Pendiente: gain > 1 amplifica las diferencias de Q (el techo importa más). */
+      gain: 1.3,
       /** afinidadModa = span × (popCombo − neutral): ± puntos por estar (o no) de moda. */
       modaSpan: 12,
       modaNeutral: 0.5,
+      /**
+       * La repetición SATURA la nota (docs/19 §9.1 [DECIDIDO]): la ejecución
+       * perfecta de un juego seguro alcanza el techo UNA vez; repetir la misma
+       * fórmula fatiga a público y crítica.
+       *   fatiga = min(max, perRepeat·repesRecientes + perSaturation·max(0, satEff − satMargin))
+       * repesRecientes cuenta lanzamientos del MISMO combo tema×género dentro
+       * de la ventana rodante (el público olvida con los años).
+       */
+      fatigue: {
+        perRepeat: 5,
+        repeatWindowWeeks: 156,
+        perSaturation: 5,
+        satMargin: 0.6,
+        max: 18,
+      },
+      /**
+       * Banda legible (docs/19 §9.1 [DECIDIDO]): la nota final lleva un
+       * desvío entero en [−band, +band] ("gusto crítico y humor del mercado"),
+       * determinista (stream propio del PRNG) y SIEMPRE explicado en el
+       * desglose. Deja de ser calculadora sin volverse injusto.
+       */
+      band: 4,
     },
 
     /** Ciclos de vida de plataformas (docs/04 §7). */
@@ -1091,8 +1220,10 @@ export const balance = {
   },
 
   sales: {
-    /** factorReseña = (reseña/100)^exponente: las reseñas altas venden desproporcionadamente más. */
-    reviewExponent: 2,
+    /** factorReseña = (reseña/100)^exponente: las reseñas altas venden desproporcionadamente más.
+     * Bajado en 9.1: con el listón nuevo las notas tempranas rondan 45–55 y
+     * el exponente 2 asfixiaba la economía de E1–E2. */
+    reviewExponent: 1.55,
     /**
      * La demanda escala con el tamaño del proyecto. Recalibrado al fijar el
      * calendario (la plantilla ya no acelera): un juego grande cuesta ahora
@@ -1114,12 +1245,15 @@ export const balance = {
      *   curva(t) = pico(hype)·spikeDecay^t + tailAmp·tailDecay(reseña)^t
      */
     launch: {
-      /** Altura base del pico de salida (se multiplica por el empuje del hype). */
-      spikeBase: 1.5,
+      /** Altura base del pico de salida (se multiplica por el empuje del hype).
+       * Subido en 9.1 junto a tailAmp: con las notas tempranas en 45–65, el
+       * margen de E1–E2 quedaba tan fino que la "novatada" del primer equipo
+       * (un mediano flojo con juniors recién fichados) quebraba al estudio. */
+      spikeBase: 1.6,
       /** Decaimiento semanal del pico (rápido: las primeras semanas concentran ventas). */
       spikeDecay: 0.55,
       /** Altura de la cola larga. */
-      tailAmp: 0.35,
+      tailAmp: 0.4,
       /** Decaimiento semanal de la cola, interpolado por reseña: mala → Min, perfecta → Max. */
       tailDecayMin: 0.88,
       tailDecayMax: 0.96,

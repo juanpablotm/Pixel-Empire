@@ -51,6 +51,19 @@ modificadorVentas_saturación = 1 - k·saturación   // rendimientos decreciente
 Consecuencia estratégica: **exprimir** un mismo género con secuelas rápidas (palanca de codicia, `06`)
 lo satura y erosiona sus ventas — dinero rápido hoy, mercado quemado mañana.
 
+**Desde 9.1 la repetición también decae la NOTA** (docs/19 §9.1 `[DECIDIDO]`): la ejecución perfecta
+de un juego seguro PUEDE alcanzar el techo una vez, pero repetir la misma fórmula fatiga a público y
+crítica:
+
+```
+fatiga = min(18, 5·repesRecientes + 5·max(0, satEff − 0.6))
+// repesRecientes = lanzamientos del MISMO tema×género en una ventana rodante de 156 semanas
+```
+
+La 2.ª entrega en 3 años pierde ~5 puntos de nota; la 3.ª, ~10 — y esperar años lo perdona (el
+público olvida). Siempre con su línea en el desglose ("El público está cansado de esta fórmula").
+La saturación de ventas también pesa más desde 9.1 (`k 0.3`, decaimiento 0.95).
+
 ## 4. Hype y expectativas `[DECIDIDO]`
 
 El **Hype (📣)** se acumula antes del lanzamiento por marketing y campaña de creadores (`07`). Tiene
@@ -66,17 +79,38 @@ severidadReseña ↑ con hype        // se juzga con más dureza; expectativas a
 - **Hype bajo con juego excelente** = ventas lentas al inicio pero **cola larga** por boca a boca y
   reputación creciente (el clásico "sleeper hit").
 
-## 5. De Calidad a Reseña `[DECIDIDO · baseline v1]`
+**Marketing SIN TOPE (9.1, docs/19 §9.1):** el límite del 100 % desaparece. Las campañas son
+**re-comprables** (cada compra vuelve a pagar su coste y a sumar su empuje) y la **Expectación** se
+muestra como un número sin barra (puede superar 100, con 🔥). El marketing es un **amplificador de
+alta varianza**: el pico day-one crece linealmente con el hype sin límite, y el castigo también —
+la penalización de reseña es una pendiente sin tope (~13 puntos por punto de hype sobre 0.25), la
+brecha de sobre-hype ya no se acota a 1 (la cola cae hasta un suelo del 90 % y el golpe de
+reputación escala completo). Más metes, más subes si cumples y más te hundes si fallas. El hype
+**pasivo** conserva su meseta (0.35): la zona roja solo se alcanza pagando.
+
+## 5. De Calidad a Reseña `[DECIDIDO · reescrito en 9.1]`
+
+La reseña compara la calidad interna contra un **listón por era, en parte oculto** (docs/19 §9.1):
+desacopla calidad de nota y evita acomodarse — las expectativas suben más rápido que tu comodidad.
 
 ```
-reseñaBase = Q × estándarEra(era)             // el listón sube con las eras
+notaBase = 70 + 1.3 × (Q − listón(era))       // listón: E1 61 · E2 66 · E3 69 · E4 72 · E5 78 · E6 83 · E7 88
 reseña_segmento = clamp(
-      reseñaBase
+      notaBase
     + afinidadModa(género,tema)               // ±: ¿está de moda?
-    - penalizaciónExpectativas(hype)          // hype alto = más exigencia
+    - penalizaciónExpectativas(hype)          // hype alto = más exigencia (pendiente sin tope, §4)
+    - fatiga(repetición, saturación)          // repetir fórmula decae la nota (§3)
+    + banda                                    // gusto/humor del mercado: entero en ±4, determinista
     + sesgoSegmento(segmento, género, monetización)   // cada público juzga distinto (ver 06/07)
     , 0, 100)
 ```
+
+- Un mismo **70 interno** lee ~75 en E2 y ~60 en E5. La pendiente 1.3 amplifica las diferencias de Q:
+  el techo dinámico (`03` §3.1) importa más que nunca.
+- El número del listón **no se muestra**: el desglose lleva una línea cualitativa ("A la altura de su
+  tiempo" / "Por detrás de su tiempo").
+- La **banda** ±4 (stream propio del PRNG, misma semilla → misma banda) hace que un gran juego tenga
+  un rango, no un número exacto — pero SIEMPRE con su línea explicativa (Pilar 2, docs/19 `[DECIDIDO]`).
 
 La **reseña se calcula por segmento** (crítica, hardcore, casual, prensa), porque cada público valora
 cosas distintas. Un mismo juego puede sacar 88 de la crítica y 60 de los hardcore si, por ejemplo,

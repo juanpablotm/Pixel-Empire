@@ -77,6 +77,58 @@ export const factorTexts: Record<QualityFactor, Record<FactorTone, LineText>> = 
       detail: 'Otro {genero} de {tema}; el mercado empieza a cansarse',
     },
   },
+  // --- Fase 9.1: techo dinámico, alcance y ajustes de mercado ---------------
+  // {limite} lo compone review.ts según el techo parcial que manda (madurez /
+  // estrella del rol clave / I+D / era); {techo}, {fatiga} y {banda} son números.
+  ceiling: {
+    good: {
+      title: 'Sin techo a la vista',
+      detail: 'Un estudio hecho y derecho: el listón de lo posible ronda {techo}',
+    },
+    ok: { title: 'Techo a la vista', detail: 'Hoy {limite} deja el listón de lo posible en {techo}' },
+    bad: { title: 'Techo bajo', detail: 'Hoy {limite} deja el listón de lo posible en {techo}' },
+  },
+  scope: {
+    good: { title: 'Ambición cubierta', detail: 'El equipo llena de sobra un proyecto {tamano}' },
+    ok: { title: 'Alcance justo', detail: 'Al equipo le cuesta llenar un proyecto {tamano}' },
+    bad: {
+      title: 'La ambición queda grande',
+      detail: 'Un proyecto {tamano} exige mucho más equipo del que tiene el estudio',
+    },
+  },
+  eraBar: {
+    good: {
+      title: 'Adelantado a su tiempo',
+      detail: 'Por encima de lo que el público de la época espera',
+    },
+    ok: {
+      title: 'A la altura de su tiempo',
+      detail: 'Cumple lo que el público de hoy espera, sin más',
+    },
+    bad: { title: 'Por detrás de su tiempo', detail: 'El público de hoy espera bastante más' },
+  },
+  fatigue: {
+    good: { title: 'Fórmula fresca', detail: 'Nadie está cansado de esta combinación' },
+    ok: {
+      title: 'Fórmula repetida',
+      detail: 'Otro {genero} de {tema} tan pronto; el público bosteza (−{fatiga})',
+    },
+    bad: {
+      title: 'Fórmula agotada',
+      detail: 'El mercado está harto de {genero} de {tema} (−{fatiga})',
+    },
+  },
+  band: {
+    good: {
+      title: 'El humor del mercado, a favor',
+      detail: 'A la crítica le pilló de buenas (+{banda})',
+    },
+    ok: { title: 'Gusto neutral', detail: 'Ni viento a favor ni en contra esta semana' },
+    bad: {
+      title: 'El humor del mercado, en contra',
+      detail: 'A la crítica no le entró este juego (−{banda})',
+    },
+  },
 };
 
 /** Etiquetas legibles para interpolar en los textos. */

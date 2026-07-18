@@ -55,13 +55,22 @@ palanca de codicia haya una tentación real (dinero significativo) y un castigo 
 | **Arriesgar creativamente / innovar** | Reputación ↑ (crítica), riesgo de mercado ↑ (`04`) |
 | **Transparencia con la comunidad** (`07`) | Confianza ↑, perdona flops |
 
-## 3. La asimetría que hace el dilema interesante `[DECIDIDO]`
+## 3. La asimetría que hace el dilema interesante `[DECIDIDO · con dientes desde 9.1]`
 
 - **La Reputación es lenta de construir y rápida de perder.** Años de buen hacer, un escándalo la hunde.
+- **La Reputación DECAE sola con el tiempo** (9.1, docs/19 §9.1): cada semana el exceso sobre 50 se
+  erosiona (~0.6 %/semana: el exceso se media en unos 2 años). El público olvida a quien no lanza —
+  ser querido exige seguir ganándotelo. Por debajo de 50 **no hay cura gratis**: recuperarse exige
+  actuar (la asimetría de siempre).
+- **El público es más exigente**: solo las reseñas por encima de 65 construyen reputación (antes 60) —
+  se acabó farmear cariño con notas mediocres. Y el listón de nota por era (`04` §5) sube más rápido
+  que tu comodidad.
 - **La Reputación alta es un "colchón":** una comunidad que te adora **perdona un flop**, pre-ordena a
   ciegas y te defiende en las crisis (`07`). Es capital social.
 - **La codicia da liquidez inmediata pero acumula "deuda de reputación"** que puede estallar como
   escándalo (§5). Es beneficio frágil.
+- **Y desde 9.1 la codicia rinde MÁS dinero** (§4): las palancas de codicia son de verdad más
+  rentables, para que ser querido cueste un sacrificio real.
 - Por eso **ambas estrategias son viables** pero se sienten distintas: el indie de culto vive del
   colchón de reputación; la fábrica AAA vive del flujo de caja y reza para que no estalle nada.
 
@@ -93,7 +102,7 @@ Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
-| **Campaña de marketing** (escalonada, docs/17 E2) | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva) |
+| **Campaña de marketing** (escalonada, docs/17 E2; **re-comprable sin tope** desde 9.1) | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva); cada compra vuelve a pagar y a sumar expectación |
 | Licencia de plataforma (dev-kit) | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
 
@@ -106,8 +115,9 @@ Corporación con 40 en plantilla. Así ir a lo grande es una apuesta económica 
 nunca riesgo cero — una Corporación quema ~1,5M 💰/año solo en infraestructura (más ~1,6M de nóminas
 con 40 empleados). Sostener la torre exige seguir sacando éxitos: el "punto dulce" invencible no existe.
 
-`factorMonetización` v1: premium = 1.0; premium+dlc ≈ 1.15; premium+mtx ≈ 1.0 + 0.6·`aggressiveness`;
-f2p ≈ 0.3 en ventas base pero MTX ≈ baseInstalada · 0.8 · `aggressiveness`.
+`factorMonetización` (subido en 9.1 — la codicia rinde MÁS, docs/19 §9.1): premium = 1.0;
+premium+dlc ≈ **1.25**; premium+mtx ≈ 1.0 + **0.85**·`aggressiveness`; f2p ≈ 0.3 en ventas base pero
+MTX ≈ **1.1**·`aggressiveness` sobre su referencia.
 
 ### Salud financiera
 - Flujo de caja semanal visible; alertas cuando el runway es corto.
@@ -170,12 +180,12 @@ y un **puesto** ("Estudio del año: 4.º"). Ganar es difícil y aspiracional.
   puesto     = 1 + nº de nominados por encima de ti
   ```
 
-- **Solo es realista ganar en E6–E7.** Tu reseña **no crece con las eras** (está normalizada: el
-  `eraStandard` baja de 1 a 0.86 contra techos de Q que suben de 85 a 100) y la reputación satura
-  pronto. Lo único que crece de verdad es la **escala**, y los gates de tamaño de `18` V4-b la
-  reparten por eras. Por eso el listón va **por delante** de tu techo hasta E5 y **por detrás** en
-  E6–E7: en el garaje aspiras a entrar en el ranking; el gordo cae cuando eres Corporación y sacas
-  un AAA excelente.
+- **Solo es realista ganar en E6–E7.** Tu reseña **no crece con las eras** (desde 9.1, el listón de
+  nota por era sube de 61 a 88 mientras tu techo dinámico de Q lo persigue — `03` §3.1 y `04` §5) y
+  la reputación satura pronto (y decae sola). Lo único que crece de verdad es la **escala**, y los
+  gates de tamaño de `18` V4-b la reparten por eras. Por eso el listón va **por delante** de tu techo
+  hasta E5 y **por detrás** en E6–E7: en el garaje aspiras a entrar en el ranking; el gordo cae
+  cuando eres Corporación y sacas un AAA excelente.
 - **Ni la escala ni el cariño bastan por separado.** La fábrica cínica no pasa el umbral (sus
   reseñas son malas) y el indie de culto no tiene escala: **el premio va a quien navegó el dilema**.
   Y la escala **no compra la Innovación** (`scaleWeight` 0.25): ahí compite la idea.

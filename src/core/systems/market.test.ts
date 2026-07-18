@@ -258,10 +258,16 @@ describe('reseñas por segmento (docs/04 §5, CA)', () => {
     expect(result.average).toBeLessThan(result.bySegment.hardcore ?? 100);
   });
 
-  it('reseñaBase = Q × estándarEra y la moda suma o resta', () => {
+  it('notaBase = barScore + gain·(Q − listón) y la moda suma o resta (9.1)', () => {
     const result = computeSegmentReviews(input);
-    expect(result.info.base).toBe(80); // E1: estándar 1.0
+    const r = balance.market.reviews;
+    // Q 80 en E1: muy por encima del listón (61) → nota base alta y trazable.
+    expect(result.info.base).toBeCloseTo(r.barScore + r.gain * (80 - r.eraBar.E1), 5);
+    expect(result.info.eraDelta).toBeCloseTo(80 - r.eraBar.E1, 5);
     expect(result.info.hypePenalty).toBe(0);
+    // Sin repetición ni mercado inundado, la fatiga no pega; banda 0 sin stream.
+    expect(result.info.fatiga).toBe(0);
+    expect(result.info.banda).toBe(0);
     // Fantasía + RPG están por encima del neutro en la semana 1 → bonus positivo.
     expect(result.info.modaBonus).toBeGreaterThan(0);
   });
@@ -419,8 +425,10 @@ describe('hype — doble filo en ventas (docs/04 §4, CA)', () => {
   });
 });
 
-describe('el hype nunca desborda su tope (docs/17 B2)', () => {
-  const max = balance.market.hype.max;
+describe('el hype sin marketing no alcanza la zona roja; comprado, no tiene tope (9.1)', () => {
+  /** Sin comprar nada, el hype "gratis" (pasivo + premios + estrellas) queda
+   * SIEMPRE por debajo de la zona roja: llegar arriba exige decisión (dinero). */
+  const freeCeiling = balance.market.hype.overHypeThreshold;
 
   /** Estrella mediática: aporta hype extra al equipo (docs/07 §6). */
   function mediaStar(): Employee {
@@ -453,13 +461,13 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
     }));
   }
 
-  it('clampHype acota a [0, tope] venga el valor de donde venga', () => {
-    expect(clampHype(5)).toBe(max);
+  it('clampHype solo impide el hype negativo: sin tope superior (docs/19 §9.1)', () => {
+    expect(clampHype(5)).toBe(5);
     expect(clampHype(-3)).toBe(0);
     expect(clampHype(0.42)).toBeCloseTo(0.42, 10);
   });
 
-  it('acumular todas las fuentes base sin comprar marketing nunca pasa del tope', () => {
+  it('acumular todas las fuentes base sin comprar marketing no llega a la zona roja', () => {
     // Estudio pequeño con una Estrella mediática (hype extra) y premios
     // pendientes al máximo: todas las fuentes "gratis" de hype a la vez, y un
     // AAA que se cuece muchas semanas. Sin una sola campaña de marketing.
@@ -485,8 +493,8 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
       ...s,
       projects: s.projects.map((p) => ({ ...p, assignedStaff: ['fundador', 'estrella'] })),
     };
-    // El anuncio nace con el hype de los premios, ya clampeado a su rango.
-    for (const p of s.projects) expect(p.hype).toBeLessThanOrEqual(max);
+    // El anuncio nace con el hype de los premios, muy por debajo de la zona roja.
+    for (const p of s.projects) expect(p.hype).toBeLessThan(freeCeiling);
 
     // Un AAA se cuece ~120 semanas de calendario (docs/02 §6): el presupuesto
     // de ticks cubre su duración completa.
@@ -494,15 +502,15 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
       s = tick(s);
       for (const p of s.projects) {
         expect(p.hype).toBeGreaterThanOrEqual(0);
-        expect(p.hype).toBeLessThanOrEqual(max);
+        expect(p.hype).toBeLessThan(freeCeiling);
       }
     }
     expect(s.releasedGames.length).toBeGreaterThan(0);
-    // El hype con el que salió al mercado tampoco desborda.
-    for (const g of s.releasedGames) expect(g.hypeAtRelease).toBeLessThanOrEqual(max);
+    // El hype con el que salió al mercado tampoco roza el sobre-hype.
+    for (const g of s.releasedGames) expect(g.hypeAtRelease).toBeLessThan(freeCeiling);
   });
 
-  it('acumular con el manómetro ya en el tope lo deja en el tope, no por encima', () => {
+  it('por encima de la meseta, el hype pasivo deja de aportar (solo el comprado sube)', () => {
     // El AAA exige Corporación (docs/18 V4-b): etapa 5 y 40 en nómina.
     const base = createInitialState(SEED);
     const corp: GameState = {
@@ -511,10 +519,11 @@ describe('el hype nunca desborda su tope (docs/17 B2)', () => {
       staff: [...base.staff, ...team(40)],
     };
     let s = startProject(corp, { ...CONCEPT, size: 'aaa' });
-    // Forzar Producción (el hype ya corre) y saturar el manómetro; una semana más.
-    s = { ...s, projects: s.projects.map((p) => ({ ...p, phase: 2, hype: max })) };
+    // Forzar Producción (el hype ya corre) con el manómetro ya inflado por
+    // marketing (2.0, sin tope desde 9.1); el pasivo no añade nada encima.
+    s = { ...s, projects: s.projects.map((p) => ({ ...p, phase: 2, hype: 2 })) };
     const after = tick(s);
-    expect(after.projects[0].hype).toBe(max);
+    expect(after.projects[0].hype).toBe(2);
   });
 });
 

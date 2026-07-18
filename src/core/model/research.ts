@@ -40,6 +40,12 @@ export interface ResearchNodeDef {
   effects?: Partial<Record<StudioCapability, number>>;
   /** Faceta de conocimiento de mercado que revela globalmente (docs/17 P2). */
   reveals?: MarketKnowledge;
+  /**
+   * Profundidad tecnológica que aporta al techo dinámico (Fase 9.1, docs/19
+   * §9.1): capTech compara la suma de `techValue` comprados contra el objetivo
+   * de la era (balance.quality.ceiling.tech). Los nodos de mercado aportan 0.
+   */
+  techValue?: number;
 }
 
 /** Estado de la investigación dentro de GameState (docs/08 §5). */

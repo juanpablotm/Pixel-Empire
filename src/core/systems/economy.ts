@@ -94,7 +94,13 @@ export function repayLoan(state: GameState, amount: number): GameState {
 // Marketing como coste (docs/06 §4): campañas por nivel que compran hype
 // ---------------------------------------------------------------------------
 
-/** Acción: comprar una campaña de marketing para un proyecto (sin id, el primero). */
+/**
+ * Acción: comprar una campaña de marketing para un proyecto (sin id, el
+ * primero). Desde 9.1 las campañas son RE-COMPRABLES (marketing sin tope,
+ * docs/19 §9.1): cada compra vuelve a pagar su coste y suma su hype; el
+ * límite lo pone la caja, no una barra. `marketingUsed` guarda una entrada
+ * por compra (con repetidos).
+ */
 export function launchMarketingCampaign(
   state: GameState,
   level: number,
@@ -108,9 +114,6 @@ export function launchMarketingCampaign(
   if (!project) throw new Error('No hay proyecto en desarrollo');
   const campaign = balance.economy.marketing.levels[level];
   if (!campaign) throw new Error(`Nivel de campaña desconocido: ${level}`);
-  if (project.marketingUsed.includes(level)) {
-    throw new Error('Esa campaña ya se lanzó para este proyecto');
-  }
   if (project.phase < balance.market.hype.startPhase) {
     throw new Error('Demasiado pronto: el marketing arranca con la Producción (el anuncio)');
   }

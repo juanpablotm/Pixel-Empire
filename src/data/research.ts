@@ -40,6 +40,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
       'Cruzas datos de miles de lanzamientos: el medidor de Fit deja de ser difuso para cualquier combinación tema×género.',
     cost: 16,
     era: 'E2',
+    techValue: 1,
     reveals: 'fit',
   },
 
@@ -52,6 +53,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Deja de reinventar la rueda: tu primer motor reutilizable. El equipo cunde un 10 % más.',
     cost: 25,
     era: 'E2',
+    techValue: 3,
     effects: { devOutput: 0.1 },
   },
   {
@@ -60,6 +62,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Motor 3D con herramientas de equipo. El equipo cunde un 15 % más.',
     cost: 70,
     era: 'E4',
+    techValue: 4,
     requiresNodes: ['motorPropio1'],
     effects: { devOutput: 0.15 },
   },
@@ -69,6 +72,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Pipeline de nueva generación. El equipo cunde un 20 % más.',
     cost: 140,
     era: 'E6',
+    techValue: 5,
     requiresNodes: ['motorPropio2'],
     effects: { devOutput: 0.2 },
   },
@@ -80,6 +84,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Un equipo de testers de verdad: el pulido rinde un 30 % más.',
     cost: 35,
     era: 'E3',
+    techValue: 2,
     effects: { qaEfficiency: 0.3 },
   },
   {
@@ -88,6 +93,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Tests que corren solos por la noche. +40 % extra al pulido.',
     cost: 90,
     era: 'E5',
+    techValue: 3,
     requiresNodes: ['qaProfesional'],
     effects: { qaEfficiency: 0.4 },
   },
@@ -99,6 +105,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Estudios de mercado y anuncios con puntería: el hype crece un 20 % más rápido.',
     cost: 30,
     era: 'E3',
+    techValue: 1,
     effects: { hypeGain: 0.2 },
   },
   {
@@ -107,6 +114,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Campañas hechas para compartirse. +30 % extra de hype.',
     cost: 80,
     era: 'E5',
+    techValue: 1,
     requiresNodes: ['marketingDirigido'],
     effects: { hypeGain: 0.3 },
   },
@@ -118,6 +126,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Tiempo protegido para experimentar: la investigación rinde un 50 % más.',
     cost: 40,
     era: 'E2',
+    techValue: 1,
     effects: { researchSpeed: 0.5 },
   },
 
@@ -128,6 +137,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Netcode propio: desbloquea el multijugador online.',
     cost: 60,
     era: 'E4',
+    techValue: 2,
   },
   {
     id: 'generacionProcedural',
@@ -135,6 +145,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Mundos que se construyen solos: desbloquea el género Sandbox y los mundos procedurales.',
     cost: 70,
     era: 'E5',
+    techValue: 2,
   },
   {
     id: 'serviciosOnline',
@@ -142,6 +153,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Infraestructura para cientos de jugadores a la vez: desbloquea el Battle Royale.',
     cost: 100,
     era: 'E6',
+    techValue: 2,
     requiresNodes: ['tecnologiaOnline'],
   },
   {
@@ -150,6 +162,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Servidores elásticos en la nube: desbloquea el cross-play.',
     cost: 110,
     era: 'E6',
+    techValue: 2,
     requiresNodes: ['serviciosOnline'],
   },
   {
@@ -158,6 +171,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Modelos que improvisan diálogo y mundo: desbloquea el compañero con IA.',
     cost: 150,
     era: 'E7',
+    techValue: 3,
   },
 ];
 

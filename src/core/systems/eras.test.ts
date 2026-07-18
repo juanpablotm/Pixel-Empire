@@ -236,13 +236,15 @@ describe('CA de Fase 6: la progresión larga E1→E7 (docs/11)', () => {
 });
 
 describe('el listón de calidad sube con las eras (docs/02 §5 y docs/04 §5)', () => {
-  it('eraStandard no crece y capByEraSize no decrece a lo largo de las eras', () => {
+  it('el listón por era (eraBar) no decrece y capByEraSize no decrece a lo largo de las eras', () => {
     const sizes: ProjectSize[] = ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'];
     for (let i = 1; i < eraOrder.length; i++) {
       const prev = eraOrder[i - 1];
       const cur = eraOrder[i];
-      expect(balance.market.reviews.eraStandard[cur]).toBeLessThanOrEqual(
-        balance.market.reviews.eraStandard[prev],
+      // 9.1: el listón SUBE con las eras (las expectativas crecen más rápido
+      // que tu comodidad, docs/19 §9.1).
+      expect(balance.market.reviews.eraBar[cur]).toBeGreaterThanOrEqual(
+        balance.market.reviews.eraBar[prev],
       );
       for (const size of sizes) {
         expect(balance.quality.capByEraSize[cur][size]).toBeGreaterThanOrEqual(
@@ -272,6 +274,35 @@ describe('el listón de calidad sube con las eras (docs/02 §5 y docs/04 §5)', 
     const e1 = computeSegmentReviews({ ...base, era: 'E1' });
     const e6 = computeSegmentReviews({ ...base, era: 'E6' });
     expect(e6.average).toBeLessThan(e1.average);
-    expect(e6.info.base).toBeCloseTo(80 * balance.market.reviews.eraStandard.E6, 5);
+    const r = balance.market.reviews;
+    expect(e6.info.base).toBeCloseTo(r.barScore + r.gain * (80 - r.eraBar.E6), 5);
+  });
+
+  it('CA 9.1: un mismo 70 interno saca ~8/10 en E2 y ~6/10 en E5 (docs/19 §9.1)', () => {
+    const market = createMarketState(1);
+    const base = {
+      quality: 70,
+      genreId: 'rpg',
+      themeId: 'fantasia',
+      audience: 'amplio' as const,
+      hype: 0,
+      monetization: {
+        model: 'premium' as const,
+        aggressiveness: 0,
+        hasLootBoxes: false,
+        hasBattlePass: false,
+        dayOneDLC: false,
+      },
+      market,
+    };
+    // info.base aísla el listón (sin moda/sesgos): el desacople calidad↔nota.
+    // Un 70 interno lee ~7.5/10 en E2 y ~6/10 en E5 (docs/19 §9.1: "~8/10 y
+    // ~6/10"; el anclaje exacto es balance, la escalera es el diseño).
+    const e2 = computeSegmentReviews({ ...base, era: 'E2' });
+    const e5 = computeSegmentReviews({ ...base, era: 'E5' });
+    expect(e2.info.base).toBeGreaterThanOrEqual(73);
+    expect(e2.info.base).toBeLessThanOrEqual(80);
+    expect(e5.info.base).toBeGreaterThanOrEqual(56);
+    expect(e5.info.base).toBeLessThanOrEqual(63);
   });
 });

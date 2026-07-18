@@ -41,13 +41,14 @@ const clamp = (value: number, min: number, max: number): number =>
 const round1 = (value: number): number => Math.round(value * 10) / 10;
 
 /**
- * Clamp del hype a su rango [0, tope] (docs/04 §4). Punto ÚNICO por el que
- * pasa toda suma de hype —desarrollo, creadores, marketing, premios, dilemas—
- * para que NUNCA desborde el tope, venga de donde venga (docs/17 B2). Si en el
- * futuro nace otra fuente de hype, clampearla aquí basta para mantener el tope.
+ * Punto ÚNICO por el que pasa toda suma de hype —desarrollo, creadores,
+ * marketing, premios, dilemas— (docs/17 B2). Desde 9.1 el hype NO tiene tope
+ * superior (marketing sin tope, docs/19 §9.1): cuanto más metes, más subes si
+ * el juego cumple y más te hundes si falla. Solo se garantiza que nunca sea
+ * negativo. El hype PASIVO sigue frenado por su meseta en advanceMarket.
  */
 export function clampHype(value: number): number {
-  return clamp(value, 0, balance.market.hype.max);
+  return Math.max(0, value);
 }
 
 // ---------------------------------------------------------------------------
@@ -195,12 +196,22 @@ export interface SegmentReviewsInput {
   genreId: string;
   themeId: string;
   audience: Audience;
-  /** Hype acumulado al lanzar, 0..1. */
+  /** Hype acumulado al lanzar (≥ 0; desde 9.1 sin tope superior). */
   hype: number;
   /** Modelo de negocio: cada público lo juzga distinto (docs/04 §5 y docs/06). */
   monetization: MonetizationConfig;
   era: EraId;
   market: MarketState;
+  /**
+   * Fase 9.1: lanzamientos previos del MISMO combo tema×género dentro de la
+   * ventana de fatiga (releaseProject los cuenta sobre releasedGames).
+   */
+  recentRepeats?: number;
+  /**
+   * Fase 9.1: desvío entero de la banda legible en [−band, +band], generado
+   * por releaseProject con su stream del PRNG. Los tests unitarios pasan 0.
+   */
+  bandOffset?: number;
 }
 
 export interface SegmentReviewsResult {
@@ -211,19 +222,32 @@ export interface SegmentReviewsResult {
 }
 
 /**
- * De Calidad a Reseña por segmento (docs/04 §5):
- *   reseñaBase = Q × estándarEra(era)
- *   reseña_seg = clamp(base + afinidadModa − penalizaciónExpectativas + sesgoSegmento, 0, 100)
+ * De Calidad a Reseña por segmento (docs/04 §5, reescrito en 9.1):
+ *   notaBase = barScore + gain·(Q − listón(era))   // listón EN PARTE oculto
+ *   reseña_seg = clamp(notaBase + afinidadModa − penalizaciónExpectativas
+ *                      − fatiga + banda + sesgoSegmento, 0, 100)
+ * El listón sube más rápido que tu comodidad: un mismo 70 interno saca ~80 en
+ * E2 y ~60 en E5. La fatiga cobra la repetición de fórmula y la banda añade
+ * el gusto del momento — ambas SIEMPRE explicadas en el desglose (Pilar 2).
  */
 export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReviewsResult {
   const r = balance.market.reviews;
   const h = balance.market.hype;
 
-  const base = input.quality * (r.eraStandard[input.era] ?? 1);
+  const eraDelta = input.quality - (r.eraBar[input.era] ?? r.barScore);
+  const base = r.barScore + r.gain * eraDelta;
   const pop = comboPopularity(input.market, input.genreId, input.themeId);
   const modaBonus = r.modaSpan * (pop - r.modaNeutral);
-  const hypePenalty =
-    (h.reviewPenaltyMax * Math.max(0, input.hype - h.freeHype)) / (1 - h.freeHype);
+  const hypePenalty = h.reviewPenaltyPerHype * Math.max(0, input.hype - h.freeHype);
+
+  const f = r.fatigue;
+  const satEff = effectiveSaturation(input.market, input.genreId, input.themeId);
+  const fatiga = Math.min(
+    f.max,
+    f.perRepeat * (input.recentRepeats ?? 0) +
+      f.perSaturation * Math.max(0, satEff - f.satMargin),
+  );
+  const banda = input.bandOffset ?? 0;
 
   const bySegment: Partial<Record<Segment, number>> = {};
   let weighted = 0;
@@ -235,7 +259,7 @@ export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReview
       // sesgoSegmento(segmento, monetización): las MTX enfurecen al hardcore,
       // los casual apenas lo notan (docs/04 §5 y docs/06 §1).
       monetizationReviewBias(segment, input.monetization);
-    const score = Math.round(clamp(base + modaBonus - hypePenalty + bias, 0, 100));
+    const score = Math.round(clamp(base + modaBonus - hypePenalty - fatiga + banda + bias, 0, 100));
     bySegment[segment.id] = score;
     weighted += segment.weight * score;
     totalWeight += segment.weight;
@@ -244,7 +268,14 @@ export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReview
   return {
     bySegment,
     average: Math.round(weighted / totalWeight),
-    info: { base: round1(base), modaBonus: round1(modaBonus), hypePenalty: round1(hypePenalty) },
+    info: {
+      base: round1(base),
+      modaBonus: round1(modaBonus),
+      hypePenalty: round1(hypePenalty),
+      eraDelta: round1(eraDelta),
+      fatiga: round1(fatiga),
+      banda,
+    },
   };
 }
 
@@ -253,13 +284,14 @@ export function computeSegmentReviews(input: SegmentReviewsInput): SegmentReview
  * que la reseña entrega. Solo es > 0 cuando el hype entró en la zona roja
  * (≥ overHypeThreshold) Y el juego no cumple (reseña < reviewBar): el producto
  * de ambos excesos, así que hace falta mucho hype Y reseña baja a la vez. Por
- * debajo de minGap se ignora (ruido). Determinista y puro; alimenta la
- * penalización de la cola de ventas y el golpe de reputación al lanzar.
+ * debajo de minGap se ignora (ruido). Desde 9.1 el exceso de hype NO se acota
+ * a 1 (marketing sin tope): la brecha crece con cada campaña de más, y con
+ * ella el golpe de cola y de reputación. Determinista y puro.
  */
 export function overHypeGap(hype: number, review: number): number {
   const h = balance.market.hype;
   const o = h.overHype;
-  const hypeExcess = clamp((hype - h.overHypeThreshold) / (1 - h.overHypeThreshold), 0, 1);
+  const hypeExcess = Math.max(0, (hype - h.overHypeThreshold) / (1 - h.overHypeThreshold));
   const shortfall = clamp((o.reviewBar - review) / o.reviewBar, 0, 1);
   const gap = hypeExcess * shortfall;
   return gap >= o.minGap ? gap : 0;

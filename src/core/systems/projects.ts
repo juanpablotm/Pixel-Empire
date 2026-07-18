@@ -6,6 +6,7 @@ import { defaultMonetization, getMonetizationModel } from '../../data/monetizati
 import { getPlatform } from '../../data/platforms';
 import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
+import { makeRng } from '../engine/rng';
 import type { GameState } from '../model/gameState';
 import type { MonetizationConfig } from '../model/moral';
 import type {
@@ -26,6 +27,7 @@ import {
   registerReleaseSaturation,
 } from './market';
 import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
+import { computeCeilingContext } from './maturity';
 import { computeQuality } from './quality';
 import { addReleaseResearchPoints, capabilityBonus, themeResearchStatus } from './research';
 import { withReputationDeltas } from './reputation';
@@ -373,6 +375,25 @@ function comboRepeats(state: GameState, themeId: string, genreId: string): numbe
   return state.releasedGames.filter((g) => g.themeId === themeId && g.genreId === genreId).length;
 }
 
+/**
+ * Lanzamientos del mismo combo dentro de la ventana de fatiga (Fase 9.1,
+ * docs/19 §9.1): la repetición reciente cansa a público y crítica; los
+ * clásicos de hace años se perdonan (el público olvida).
+ */
+function recentComboRepeats(state: GameState, themeId: string, genreId: string): number {
+  const window = balance.market.reviews.fatigue.repeatWindowWeeks;
+  return state.releasedGames.filter(
+    (g) =>
+      g.themeId === themeId && g.genreId === genreId && state.week - g.releaseWeek < window,
+  ).length;
+}
+
+/**
+ * Stream del PRNG para la banda legible de la reseña (9.1): separado del resto
+ * para no alterar sus secuencias (mismo criterio que engine/tick.ts).
+ */
+const RELEASE_STREAM = 8 << 20;
+
 /** Empleados de la plantilla asignados al proyecto. */
 function assignedTeam(state: GameState, project: Project): Employee[] {
   return state.staff.filter((e) => project.assignedStaff.includes(e.id));
@@ -382,11 +403,15 @@ function assignedTeam(state: GameState, project: Project): Employee[] {
 function releaseProject(state: GameState, project: Project): GameState {
   const team = assignedTeam(state, project);
   const teamResult = computeTeamFactor(team, project.genreId);
+  // Techo dinámico (9.1): madurez del estudio, mejor talento en el rol clave,
+  // adecuación tecnológica y encaje de alcance (core/systems/maturity.ts).
+  const ceiling = computeCeilingContext(state, team, project.genreId, project.size);
   const { q, breakdown } = computeQuality(project, {
     era: state.era,
     teamFactor: teamResult.teamFactor,
     comboRepeats: comboRepeats(state, project.themeId, project.genreId),
     innovationBonus: teamInnovationBonus(team),
+    ceiling,
   });
   const fullBreakdown = {
     ...breakdown,
@@ -396,8 +421,13 @@ function releaseProject(state: GameState, project: Project): GameState {
       synergyFactor: teamResult.synergyFactor,
     },
   };
-  // El mercado transforma Q en reseñas por segmento (docs/04 §5): moda,
-  // expectativas del hype y sesgo de cada público (incluida la monetización).
+  // Banda legible (9.1): el gusto crítico y el humor del mercado, determinista
+  // (stream propio) y siempre explicado en el desglose.
+  const bandRng = makeRng(state.seed, RELEASE_STREAM + state.week);
+  const banda = bandRng.int(-balance.market.reviews.band, balance.market.reviews.band);
+  // El mercado transforma Q en reseñas por segmento (docs/04 §5): listón de la
+  // era, moda, expectativas del hype, fatiga de fórmula, banda y sesgo de cada
+  // público (incluida la monetización).
   const reviews = computeSegmentReviews({
     quality: q,
     genreId: project.genreId,
@@ -407,14 +437,23 @@ function releaseProject(state: GameState, project: Project): GameState {
     monetization: project.monetization,
     era: state.era,
     market: state.market,
+    recentRepeats: recentComboRepeats(state, project.themeId, project.genreId),
+    bandOffset: banda,
   });
   const review = reviews.average;
   // Castigo por sobre-hype (docs/17 E2): si el hype entró en zona roja y el
   // juego no cumple, la brecha se cobra en la cola de ventas (aquí, fijada al
   // lanzar) y en la reputación de quienes se sienten estafados (más abajo).
+  // Desde 9.1 la brecha no está acotada (marketing sin tope): la cola tiene
+  // suelo (tailPenaltyCap) pero el golpe de reputación escala completo.
   const overHypeBrecha = overHypeGap(project.hype, review);
+  const o = balance.market.hype.overHype;
   const overHypeTailPenalty =
-    Math.round(overHypeBrecha * balance.market.hype.overHype.tailPenaltyMax * 100) / 100;
+    Math.round(Math.min(o.tailPenaltyCap, overHypeBrecha * o.tailPenaltyMax) * 100) / 100;
+  // Reencuadre de trayectoria (9.1): tu mejor juego HASTA AHORA es un logro,
+  // aunque sea un 45 — eres una persona con un casete en un garaje.
+  const previousBest = state.releasedGames.reduce((best, g) => Math.max(best, g.review), 0);
+  const personalBest = state.releasedGames.length === 0 || review > previousBest;
   const released: ReleasedGame = {
     id: project.id,
     name: project.name,
@@ -433,7 +472,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     saturationAtRelease: effectiveSaturation(state.market, project.genreId, project.themeId),
     verdict: reviewVerdict(review),
     breakdown: fullBreakdown,
-    lines: buildReviewLines(fullBreakdown, project),
+    lines: buildReviewLines(fullBreakdown, project, reviews.info),
     releaseWeek: state.week,
     weeklySales: [],
     totalUnits: 0,
@@ -443,6 +482,8 @@ function releaseProject(state: GameState, project: Project): GameState {
     salesActive: true,
     overPromised: project.overPromised,
     overHypeTailPenalty,
+    personalBest,
+    previousBestReview: state.releasedGames.length > 0 ? previousBest : undefined,
   };
   let next: GameState = {
     ...state,
@@ -455,12 +496,12 @@ function releaseProject(state: GameState, project: Project): GameState {
   next = appendLog(
     next,
     'lanzamiento',
-    `«${released.name}» sale a la venta: reseña media ${review}/100.`,
+    `«${released.name}» sale a la venta: reseña media ${review}/100.` +
+      (personalBest && state.releasedGames.length > 0 ? ' ¡Tu mejor juego hasta ahora!' : ''),
   );
   // El sobre-hype que no cumple se paga (docs/17 E2): golpe a hardcore/comunidad
   // proporcional a la brecha; la cola de ventas ya lo lleva en overHypeTailPenalty.
   if (overHypeBrecha > 0) {
-    const o = balance.market.hype.overHype;
     next = {
       ...next,
       studio: withReputationDeltas(next.studio, {

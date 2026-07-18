@@ -20,6 +20,7 @@ import {
   researchTheme,
   themeResearchCost,
   themeResearchStatus,
+  toggleResearchAssignment,
 } from '../core/systems/research';
 import {
   expandBlockReason,
@@ -83,9 +84,10 @@ export const INDIE: Philosophy = {
   useDlc: false,
   care: true,
   // Con el gate de tamaños (docs/17 E1) el mediano exige 3 personas: el indie
-  // llega a 3 pronto para no quedarse encerrado en pequeños, y sigue siendo de
-  // culto (≤6, lo que exige comprar la etapa 3 — su techo por identidad).
-  teamTargetByEra: [1, 3, 3, 4, 5, 6, 6],
+  // llega a 4 pronto (3 al tajo + 1 en el laboratorio, que con el techo
+  // tecnológico de 9.1 ya no es opcional) y sigue siendo de culto (≤6, lo que
+  // exige comprar la etapa 3 — su techo por identidad).
+  teamTargetByEra: [1, 4, 4, 5, 6, 6, 6],
   sizeAmbition: 'indie',
   stageAmbition: 3,
   crisisResponse: 'disculpa',
@@ -107,7 +109,10 @@ export const FACTORY: Philosophy = {
   useLootBoxes: true,
   useDlc: true,
   care: true,
-  teamTargetByEra: [1, 4, 8, 12, 16, 40, 44],
+  // Holgura sobre los mínimos (40 del AAA): un proyecto de 120 semanas exige
+  // rotar gente para no fundirla (docs/05 §4) — ir con la plantilla justa
+  // convierte el tramo final en bugs y burnout (lección de bots de 9.1).
+  teamTargetByEra: [1, 4, 8, 12, 20, 46, 48],
   sizeAmbition: 'aaa',
   stageAmbition: 5,
   crisisResponse: 'silencio',
@@ -122,7 +127,9 @@ export const STUDIO: Philosophy = {
   useLootBoxes: false,
   useDlc: true,
   care: true,
-  teamTargetByEra: [1, 3, 5, 8, 10, 15, 16],
+  // Holgura sobre el mínimo del muy grande (15): sin manos de sobra para
+  // rotar, los proyectos de 72 semanas acaban en burnout y bugs (9.1).
+  teamTargetByEra: [1, 4, 5, 8, 12, 18, 20],
   sizeAmbition: 'media',
   stageAmbition: 4,
   crisisResponse: 'corporativo',
@@ -419,15 +426,15 @@ function maybeResearch(state: GameState): GameState {
       return buyResearch(state, node.id);
     }
   }
-  // Reserva para el nodo más barato al alcance ('sinPuntos' = era y
-  // prerequisitos OK, solo faltan 💡). Sin ella el bot se funde los puntos en
-  // temas —siempre más baratos que un nodo— y no desbloquea NINGUNA capacidad:
-  // con los 29 temas de la 8.10 (docs/18 V6) eso lo dejaba a 0 nodos y llevaba
-  // a la fábrica a la quiebra en E2. Es la regla que este bot ya decía seguir:
-  // capacidades primero, temas con lo que SOBRE.
+  // Reserva para el nodo de capacidad más barato aún sin comprar, AUNQUE su
+  // era no haya llegado (9.1): con el techo tecnológico, entrar en E2 sin los
+  // 25 💡 del primer motor es condenarse a un techo de 55 durante años — el
+  // jugador previsor ahorra ANTES del cambio de era. Sin la reserva el bot se
+  // funde los puntos en temas —siempre más baratos— y no desbloquea NINGUNA
+  // capacidad (la fábrica quebraba en E2 por esto en la 8.10).
   const reserve =
     researchNodes
-      .filter((n) => !n.reveals && researchNodeStatus(state, n.id) === 'sinPuntos')
+      .filter((n) => !n.reveals && researchNodeStatus(state, n.id) !== 'comprado')
       .sort((a, b) => a.cost - b.cost)[0]?.cost ?? 0;
 
   const theme = researchableThemes(state)
@@ -439,6 +446,63 @@ function maybeResearch(state: GameState): GameState {
     return researchTheme(state, theme.id);
   }
   return state;
+}
+
+/**
+ * Personal en I+D (9.1): con el techo tecnológico (docs/19 §9.1) la
+ * investigación deja de ser opcional, así que el bot hace lo que haría un
+ * jugador: el fundador investiga en los respiros entre juegos, y un estudio
+ * con plantilla mantiene una plaza fija en el laboratorio (dos desde 10).
+ * La energía rota igual que en los proyectos: el agotado sale a descansar.
+ */
+function manageResearchStaff(state: GameState): GameState {
+  let next = state;
+  // Sale del laboratorio quien está fundido (pasa a descansar)…
+  for (const id of [...next.research.rdStaff]) {
+    const employee = next.staff.find((e) => e.id === id);
+    if (!employee || employee.energy < ROTATE_OUT_ENERGY) {
+      next = toggleResearchAssignment(next, id);
+    }
+  }
+  // …y el fundador vuelve al tajo en cuanto hay juego en marcha.
+  if (next.projects.length > 0 && next.research.rdStaff.includes('fundador')) {
+    next = toggleResearchAssignment(next, 'fundador');
+  }
+
+  const assignedToProject = new Set(next.projects.flatMap((p) => p.assignedStaff));
+  // El laboratorio solo se lleva manos que SOBREN: dejar un proyecto grande
+  // por debajo de su plantilla esperada hunde el QA y el alcance (docs/02
+  // §6.1 crewRatio + docs/19 §9.1 encaje) — nadie investigaría a ese precio.
+  const neededByProjects = next.projects.reduce(
+    (sum, p) => sum + balance.development.sizeGate[p.size].minStaff,
+    0,
+  );
+  const spare = Math.max(0, next.staff.length - neededByProjects);
+  const rdTarget = Math.min(spare, next.staff.length >= 10 ? 2 : next.staff.length >= 4 ? 1 : 0);
+  while (next.research.rdStaff.filter((id) => id !== 'fundador').length < rdTarget) {
+    const candidate = next.staff
+      .filter(
+        (e) =>
+          !e.founder &&
+          !assignedToProject.has(e.id) &&
+          !next.research.rdStaff.includes(e.id) &&
+          e.energy >= ROTATE_IN_ENERGY,
+      )
+      .sort((a, b) => b.energy - a.energy || a.id.localeCompare(b.id))[0];
+    if (!candidate) break;
+    next = toggleResearchAssignment(next, candidate.id);
+  }
+
+  // En los respiros, el fundador investiga si viene descansado (garaje: es la
+  // única fuente de 💡 que no depende de lanzar).
+  if (
+    next.projects.length === 0 &&
+    !next.research.rdStaff.includes('fundador') &&
+    (next.staff.find((e) => e.id === 'fundador')?.energy ?? 0) >= ROTATE_IN_ENERGY
+  ) {
+    next = toggleResearchAssignment(next, 'fundador');
+  }
+  return next;
 }
 
 /** Un paso de decisiones del bot (sin tick): visible para diagnósticos. */
@@ -461,14 +525,23 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
   state = maybeHire(state, phil);
   state = maybeCare(state, phil);
   state = manageEnergy(state);
+  state = manageResearchStaff(state);
   // 3. Un juego en marcha casi siempre (docs/02 §2), pero entre juego y
   // juego el estudio respira (energía + semanas de respiro post-lanzamiento):
-  // sin descanso, el burnout hunde la calidad — y eso es diseño.
+  // sin descanso, el burnout hunde la calidad — y eso es diseño. Los del
+  // laboratorio quedan fuera del corte de energía: su rotación es aparte.
   if (
     state.projects.length === 0 &&
     !onBreather(state) &&
-    state.staff.every((e) => e.energy >= REST_TO_START)
+    state.staff.every(
+      (e) => e.energy >= REST_TO_START || state.research.rdStaff.includes(e.id),
+    )
   ) {
+    // El laboratorio no retiene al fundador cuando toca arrancar: vuelve al
+    // tajo y el siguiente juego lo ficha (startProject toma a los libres).
+    if (state.research.rdStaff.includes('fundador')) {
+      state = toggleResearchAssignment(state, 'fundador');
+    }
     const before = state.projects.length;
     state = startNextGame(state, phil, gamesStarted);
     if (state.projects.length > before) gamesStarted++;

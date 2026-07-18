@@ -103,8 +103,10 @@ export function salaryTierOf(employee: Employee): SalaryTier {
 // teamFactor: competencia × moral × sinergia (docs/03 factor E)
 // ---------------------------------------------------------------------------
 
-/** Skill 0..1 del empleado ponderada por las especialidades del género. */
-function genreWeightedSkill01(employee: Employee, genreId: string): number {
+/** Skill 0..1 del empleado ponderada por las especialidades del género.
+ * Exportada desde 9.1: el encaje de alcance (maturity.ts) suma el poder del
+ * equipo con la misma vara que el teamFactor. */
+export function genreWeightedSkill01(employee: Employee, genreId: string): number {
   const weights = getGenre(genreId).specialtyWeights;
   const total = (Object.entries(weights) as [Specialty, number][]).reduce(
     (sum, [spec, w]) => sum + w * employee.skills[spec],

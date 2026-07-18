@@ -185,15 +185,16 @@ describe('factorMonetización v1 (docs/12 §6, CA de Fase 4)', () => {
       },
     });
 
-  it('premium = 1.0 · premium+dlc ≈ 1.15 · premium+mtx ≈ 1 + 0.6·agg · f2p ≈ 0.3 + 0.8·agg', () => {
+  it('factorMonetización 9.1: la codicia rinde MÁS (dlc 1.25 · mtx 0.85·agg · f2p 1.1·agg)', () => {
     const units = 100;
     const price = 20;
+    const m = balance.monetization;
     expect(weeklyRevenue(mtx({ model: 'premium' }), units, false)).toEqual({
       sales: units * price,
       mtx: 0,
     });
     expect(weeklyRevenue(mtx({ model: 'premium+dlc' }), units, false).sales).toBe(
-      Math.round(units * price * 1.15),
+      Math.round(units * price * m.salesFactor['premium+dlc']),
     );
     const aggressive = weeklyRevenue(
       mtx({ model: 'premium+mtx', aggressiveness: 0.5 }),
@@ -201,10 +202,10 @@ describe('factorMonetización v1 (docs/12 §6, CA de Fase 4)', () => {
       false,
     );
     expect(aggressive.sales).toBe(units * price);
-    expect(aggressive.mtx).toBe(Math.round(units * price * 0.6 * 0.5));
+    expect(aggressive.mtx).toBe(Math.round(units * price * m.mtxCoef['premium+mtx'] * 0.5));
     const f2p = weeklyRevenue(mtx({ model: 'f2p', aggressiveness: 1 }), units, false);
-    expect(f2p.sales).toBe(Math.round(units * price * 0.3));
-    expect(f2p.mtx).toBe(Math.round(units * price * 0.8));
+    expect(f2p.sales).toBe(Math.round(units * price * m.salesFactor.f2p));
+    expect(f2p.mtx).toBe(Math.round(units * price * m.mtxCoef.f2p));
   });
 
   it('la codicia paga: el mismo juego con MTX agresivas ingresa más por unidad', () => {

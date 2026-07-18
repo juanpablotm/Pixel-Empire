@@ -36,7 +36,8 @@ export interface Project {
   price: number;
   /** Modelo de negocio y agresividad (docs/09 §9): la gran palanca de codicia. */
   monetization: MonetizationConfig;
-  /** Niveles de campaña de marketing ya comprados para este proyecto (docs/06 §4). */
+  /** Compras de campañas de marketing (una entrada por compra, docs/06 §4).
+   * Desde 9.1 admite repetidos: las campañas se relanzan sin tope (docs/19). */
   marketingUsed: number[];
   /** Creadores con clave de acceso para este lanzamiento (docs/07 §3). */
   creatorCampaign: string[];

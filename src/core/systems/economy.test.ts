@@ -180,11 +180,24 @@ describe('marketing como coste (docs/06 §4: 5k/20k/80k)', () => {
     expect(after.projects[0].marketingUsed).toEqual([0]);
   });
 
-  it('cada nivel solo puede comprarse una vez por proyecto', () => {
+  it('9.1: las campañas son re-comprables — cada compra paga y suma su hype (docs/19)', () => {
     const state = launchMarketingCampaign(inProduction(), 0);
-    expect(() => launchMarketingCampaign(state, 0)).toThrow(/ya se lanzó/);
-    // Pero otro nivel sí.
+    const campaign = balance.economy.marketing.levels[0];
+    // Repetir el mismo nivel vuelve a cobrar y vuelve a empujar el manómetro.
+    const again = launchMarketingCampaign(state, 0);
+    expect(again.studio.capital).toBe(state.studio.capital - campaign.cost);
+    expect(again.projects[0].hype).toBeCloseTo(state.projects[0].hype + campaign.hypeBoost, 6);
+    expect(again.projects[0].marketingUsed).toEqual([0, 0]);
+    // Y mezclar niveles también.
     expect(launchMarketingCampaign(state, 1).projects[0].marketingUsed).toEqual([0, 1]);
+  });
+
+  it('9.1: el hype comprado no tiene tope — más dinero, más expectación', () => {
+    let state = inProduction();
+    // Caja de sobra para la prueba.
+    state = { ...state, studio: { ...state.studio, capital: 10_000_000 } };
+    for (let i = 0; i < 4; i++) state = launchMarketingCampaign(state, 3);
+    expect(state.projects[0].hype).toBeGreaterThan(1);
   });
 
   it('no hay marketing antes del anuncio (fase de Concepto) ni sin proyecto', () => {

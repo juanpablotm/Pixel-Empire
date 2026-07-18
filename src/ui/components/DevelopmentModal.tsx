@@ -448,29 +448,34 @@ function DevelopmentBody({ project }: { project: Project }) {
               >
                 <HypeGauge hype={project.hype} />
                 <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+                  {/* 9.1: las campañas son RE-COMPRABLES (marketing sin tope,
+                      docs/19): cada compra vuelve a pagar y a sumar. El
+                      contador ×N enseña cuánto bombo lleva cada nivel. */}
                   {balance.economy.marketing.levels.map((campaign, level) => {
-                    const used = project.marketingUsed.includes(level);
+                    const timesUsed = project.marketingUsed.filter((l) => l === level).length;
                     const noCash = capital < campaign.cost;
                     return (
                       <button
                         key={level}
                         type="button"
-                        disabled={used || noCash}
+                        disabled={noCash}
                         title={
-                          used
-                            ? 'Campaña ya lanzada'
-                            : noCash
-                              ? 'No hay caja para esta campaña'
-                              : `+${Math.round(campaign.hypeBoost * 100)} % hype a cambio de ${formatMoney(campaign.cost)}`
+                          noCash
+                            ? 'No hay caja para esta campaña'
+                            : `+${Math.round(campaign.hypeBoost * 100)} de expectación a cambio de ${formatMoney(campaign.cost)}${timesUsed > 0 ? ' (repetible: cada compra suma)' : ''}`
                         }
                         onClick={() => launchMarketing(level, project.id)}
-                        className={`flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                          used ? 'bg-raised text-ink-faint' : 'bg-warn text-onbright hover:bg-warn-hi'
-                        } ${used || noCash ? 'cursor-not-allowed opacity-60' : ''}`}
+                        className={`flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors bg-warn text-onbright hover:bg-warn-hi ${
+                          noCash ? 'cursor-not-allowed opacity-60' : ''
+                        }`}
                       >
                         <span>
-                          {used ? '✔ ' : '📣 '}
-                          {marketingLevelNames[level] ?? `Nivel ${level + 1}`}
+                          📣 {marketingLevelNames[level] ?? `Nivel ${level + 1}`}
+                          {timesUsed > 0 && (
+                            <span className="ml-1.5 rounded-full bg-black/20 px-1.5 text-xs tabular-nums">
+                              ×{timesUsed}
+                            </span>
+                          )}
                         </span>
                         <span className="tabular-nums">{formatMoney(campaign.cost)}</span>
                       </button>
@@ -478,9 +483,9 @@ function DevelopmentBody({ project }: { project: Project }) {
                   })}
                 </div>
                 <p className="text-xs text-ink-faint">
-                  El hype vende de salida… pero en <span className="text-danger">zona de riesgo</span>{' '}
-                  el juego se compara con lo prometido: si no cumple, la cola de ventas y la
-                  reputación se hunden.
+                  Sin tope: cada campaña vuelve a sumar expectación… pero en{' '}
+                  <span className="text-danger">zona de riesgo</span> el juego se compara con lo
+                  prometido: si no cumple, la caída es tan grande como fue el bombo.
                 </p>
               </Panel>
             ) : (

@@ -87,12 +87,12 @@ Donde `competenciaMedia` pondera las skills relevantes al género (un RPG valora
 shooter valora Técnica), y `moralFactor`/`sinergiaFactor` vienen de `05`. Rango típico 0.5–1.3
 (un equipo excepcional y motivado puede superar 1.0; uno quemado hunde el resultado).
 
-## 3. Fórmula de composición `[DECIDIDO · baseline v1]`
+## 3. Fórmula de composición `[DECIDIDO · baseline v1 · techo dinámico desde 9.1]`
 
 ```
 base = ( wF·fit + wB·balanceScore + wC·featureScore + wD·polishScore ) / (wF+wB+wC+wD)
 
-Q = 100 × clamp( base × teamFactor × innovationMod , 0 , 1 )
+Q = 100 × clamp( base × teamFactor × innovationMod × alcanceFactor , 0 , 1 ), con techoQ
 ```
 
 Pesos **v1 (cerrados como baseline):** `wF=0.30, wB=0.25, wC=0.20, wD=0.25`. Ajustables solo en balance de playtest.
@@ -101,14 +101,39 @@ Pesos **v1 (cerrados como baseline):** `wF=0.30, wB=0.25, wC=0.20, wD=0.25`. Aju
   temas frescos) da un plus de calidad y reputación pero más riesgo de mercado (ver `04`); clonar lo
   seguro no penaliza la calidad pero satura mercado y no genera reputación.
 
-**Techo por era:** existe un `techoQ(era, tamañoProyecto)`. Un juego de garaje en E1 puede aspirar a
-~85; competir en la cima de E6 exige presupuesto y equipo de esa escala. Esto sostiene la progresión.
+### 3.1 El techo dinámico (Fase 9.1, docs/19 §9.1) `[DECIDIDO]`
+
+El techo ya **no es un tope fijo por era**: es el **mínimo de cuatro techos parciales**, y el desglose
+nombra SIEMPRE cuál manda (Pilar 2). Todos los números en `balance.quality.ceiling`:
+
+```
+techoQ = min( capEra, capMadurez, capTalento, capTech )
+
+capMadurez  = 45 + 55 · exp/(exp + 55)      // exp = Σ sizeExp(lanzamientos) + stageExp(etapa)
+capTalento  = 45 + 50 · mejorSkillClave/100 // la MEJOR skill del rol clave del género entre los asignados
+capTech     = 55 + 45 · techPoints/target(era)  // techValue de los nodos de I+D comprados
+capEra      = el capByEraSize de siempre (envolvente; en 9.2 pasa a ser el motor)
+```
+
+- **Madurez:** en el garaje el techo es **~45–52 juegues como juegues** y sube DESPACIO con los
+  lanzamientos (sizeExp 1.5/2.5/5/8/12 por tamaño) y la escala (stageExp 0/3/8/18/30 por etapa).
+- **Talento:** una **obra maestra (85+) exige una ESTRELLA (skill ≥ 80)** en la especialidad clave del
+  género (la de mayor `specialtyWeights`). El mejor individuo, no la media.
+- **Tecnología:** sin I+D el techo topa en 55 desde E2 (`targetByEra` 0/3/6/10/14/20/24): el primer
+  motor propio es la salida. En 9.2 este término pasa a ser el motor.
+- **Encaje de alcance (ambición vs capacidad):** no es un techo, es un **multiplicador de Q**:
+  `alcanceFactor = max(0.4, alcance01^1.25)` con `alcance01 = poderEquipo / poderObjetivo(tamaño)`
+  (poderEquipo = Σ skill ponderada por género de los asignados; objetivos 0.5/1.8/5/9.5/26). Un AAA
+  con estudio flojo NO llena el alcance y la calidad **se hunde**; un pequeño pulido con buen equipo
+  alcanza fácil su techo (más bajo).
 
 ## 4. De Calidad a Reseña (interfaz con Mercado)
 
-`Q` sale de este sistema. El Mercado (`04`) la transforma en **reseña pública por segmento** aplicando:
-expectativas/hype (un juego muy hypeado se juzga más duro), afinidad de la moda actual, y el estándar
-de calidad de la era. Aquí solo producimos `Q` y su descomposición.
+`Q` sale de este sistema. El Mercado (`04` §5) la transforma en **reseña pública por segmento**
+comparándola contra el **listón de la era** (en parte oculto) y aplicando: expectativas/hype (un juego
+muy hypeado se juzga más duro), afinidad de la moda actual, **fatiga de fórmula** (repetir combo
+reciente decae la nota) y la **banda de gusto** ±4 (desvío determinista del PRNG, siempre explicado).
+Aquí solo producimos `Q` y su descomposición.
 
 ## 5. La descomposición de la reseña (la parte "transparente") `[DECIDIDO]`
 
@@ -129,6 +154,15 @@ RESEÑA: 82 / 100   "Una joya honesta con algún defecto."
 Cada línea mapea a un factor. Verde/amarillo/rojo. Esto convierte el fracaso en **aprendizaje
 accionable** ("la próxima, más QA") en vez de frustración opaca.
 
+Desde la Fase 9.1 el desglose añade **cinco líneas más**, igual de legibles: el **techo** ("Hoy la
+juventud del estudio deja el listón de lo posible en 46" / "la falta de una estrella de Diseño" /
+"la falta de I+D"), el **alcance** ("La ambición queda grande"), el **listón de la época** ("Por
+detrás de su tiempo" — cualitativa: el número del listón no se muestra), la **fatiga de fórmula**
+("El público está cansado de esta fórmula (−8)", solo cuando pega) y la **banda de gusto** ("A la
+crítica no le entró este juego (−3)" — la nota tiene rango, pero se explica; Pilar 2 intacto). La
+gala además **reencuadra la trayectoria**: "🏆 Tu mejor juego hasta ahora" — un 45 al principio es
+un logro, no un fracaso (docs/19 §9.1).
+
 ### 5.1 Predecir vs explicar: el conocimiento se gana (docs/17 P2) `[DECIDIDO · baseline v1]`
 
 Hay que separar dos cosas y **el Pilar 2 protege la segunda**:
@@ -145,6 +179,10 @@ Hay que separar dos cosas y **el Pilar 2 protege la segunda**:
   el jugador siempre puede explicar el resultado en una frase.
 
 ## 6. Ejemplos trabajados (para test)
+
+> Nota 9.1: estos ejemplos miden la **fórmula de composición** (sin techo dinámico: contexto de
+> estudio maduro). En una partida real el techoQ de §3.1 los recorta — un "indie pulido" en el
+> garaje topa en ~45–52 y su gala lo celebra como récord, no como fracaso.
 
 **Ejemplo 1 — Indie pulido:** proyecto Pequeño, Fantasía×RPG (fit alto), balance casi ideal, pocas
 features pero cero bugs, equipo pequeño competente y feliz. `Q ≈ 80`. Reseña alta, ventas modestas.

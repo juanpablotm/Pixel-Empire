@@ -59,6 +59,10 @@ documentos de diseño numerados (`00`–`12`) están en la carpeta **`docs/`**. 
 | 13 | `docs/13-plan-visual-fase7.md` | Plan detallado de la Fase 7 (rework visual, 7A–7G) |
 | 14 | `docs/14-guia-arte-isometrico.md` | ⚠️ OPCIONAL/FUTURO: upgrade isométrico (no es la dirección actual; la vigente es flat) |
 | 15 | `docs/15-checklist-playtest.md` | Checklist de playtest y "definición de hecho" para pulir el juego |
+| 16 | `docs/16-compendio-del-juego.md` | Compendio: todos los sistemas, progresión y catálogos de contenido |
+| 17 | `docs/17-pulido-bloque-1.md` | Pulido dirigido por playtest · Bloque 1 (Fase 8) |
+| 18 | `docs/18-pulido-bloque-2.md` | Pulido dirigido por playtest · Bloque 2 (Fase 8) |
+| 19 | `docs/19-expansion-fase9.md` | Expansión (Fase 9): "El juego que no se resuelve" |
 
 ---
 

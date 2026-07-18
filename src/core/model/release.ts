@@ -11,8 +11,21 @@ import type { Audience, ProjectSize } from './project';
 /** Tono de una línea del desglose: ✔ (good) / ~ (ok) / ✘ (bad) — docs/03 §5. */
 export type FactorTone = 'good' | 'ok' | 'bad';
 
-/** Factor de calidad al que mapea cada línea del desglose (docs/03 §2–3). */
-export type QualityFactor = 'fit' | 'balance' | 'features' | 'polish' | 'team' | 'innovation';
+/** Factor de calidad al que mapea cada línea del desglose (docs/03 §2–3).
+ * Desde 9.1 el desglose también explica el techo dinámico, el encaje de
+ * alcance y los ajustes de mercado (listón de época, fatiga, banda). */
+export type QualityFactor =
+  | 'fit'
+  | 'balance'
+  | 'features'
+  | 'polish'
+  | 'team'
+  | 'innovation'
+  | 'ceiling'
+  | 'scope'
+  | 'eraBar'
+  | 'fatigue'
+  | 'band';
 
 /** Una línea legible del desglose de reseña (docs/03 §5). */
 export interface ReviewLine {
@@ -44,8 +57,21 @@ export interface QualityBreakdown {
   innovationMod: number;
   /** Media ponderada de A–D antes de multiplicadores. */
   base: number;
-  /** Techo de calidad de la era aplicado (docs/03 §3). */
+  /** Techo de calidad aplicado (docs/03 §3): desde 9.1, el mínimo de los parciales. */
   qualityCap: number;
+  /**
+   * Fase 9.1 — techo dinámico y alcance (docs/19 §9.1). Opcionales para que
+   * los juegos de saves previos (y los breakdowns construidos en tests/demos)
+   * sigan siendo válidos.
+   */
+  capParts?: { era: number; madurez: number; talento: number; tech: number };
+  /** El techo parcial que manda (el mínimo): siempre hay UNA razón nombrable. */
+  capBinding?: 'era' | 'madurez' | 'talento' | 'tech';
+  /** Rol clave del género (donde el techo pide una estrella). */
+  keySpecialty?: string;
+  /** Encaje de alcance: poderEquipo/poderObjetivo (0..1) y su factor sobre Q. */
+  alcance01?: number;
+  alcanceFactor?: number;
 }
 
 export interface ReleasedGame {
@@ -109,4 +135,12 @@ export interface ReleasedGame {
    * El pico day-one no se toca. Opcional: los juegos de saves previos son 0.
    */
   overHypeTailPenalty?: number;
+  /**
+   * Reencuadre de trayectoria (Fase 9.1, docs/19 §9.1): un 45 temprano es un
+   * logro. `personalBest` = superó (o igualó, siendo el primero) el récord del
+   * estudio; `previousBestReview` = el récord anterior, para la frase "supera
+   * tu mejor juego (52)". Opcionales: saves previos no los llevan.
+   */
+  personalBest?: boolean;
+  previousBestReview?: number;
 }

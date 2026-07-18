@@ -1,8 +1,14 @@
 import {
   advanceAwards,
+  buildReviewLines,
+  computeCeilingContext,
+  computeQuality,
+  computeSegmentReviews,
+  computeTeamFactor,
   createInitialState,
   generateCandidates,
   makeRng,
+  reviewVerdict,
   type ActiveCrisis,
   type CommunityPost,
   type Employee,
@@ -12,6 +18,7 @@ import {
   type ReleasedGame,
   type ReviewLine,
 } from '../core';
+import { researchNodes } from '../data/research';
 import { eraOrder, getEra } from '../data/eras';
 import { useGameStore, type ImportantNotice, type Screen } from '../state/store';
 
@@ -230,6 +237,148 @@ function galaDemo(): GameState {
 }
 
 /**
+ * Escaparates de la Fase 9.1 (docs/19 §9.1): dos galas calculadas con el
+ * NÚCLEO real (computeQuality + computeSegmentReviews + buildReviewLines),
+ * como premiosDemo hace con advanceAwards — aquí no se inventa nada.
+ *
+ * · temprana: primer estudio de garaje en E1 — el techo de madurez manda,
+ *   la nota es humilde y la gala la reencuadra como logro (récord personal).
+ * · madura:   estudio consolidado de E5 con estrella y toda la I+D — techo
+ *   alto, pero secuela con fatiga, hype alto y banda en contra: el desglose
+ *   luce TODAS las líneas nuevas (techo, alcance, listón, fatiga, banda).
+ */
+function escaladaDemo(mature: boolean): GameState {
+  const base = createInitialState(DEMO_SEED);
+
+  /** Historial mínimo válido: solo pesan tamaño y reseña (madurez + récord). */
+  const pastGame = (i: number, size: ReleasedGame['size'], review: number): ReleasedGame => ({
+    ...makeReleasedGame(review, 40 + i * 20),
+    id: `past-${i}`,
+    name: `Clásico ${i + 1}`,
+    size,
+    weeklySales: [],
+    totalUnits: 12_000,
+    totalRevenue: 240_000,
+    salesActive: false,
+    streams: undefined,
+    creatorSpikeBoost: undefined,
+  });
+
+  const state: GameState = mature
+    ? {
+        ...base,
+        week: getEra('E5').startWeek + 40,
+        era: 'E5',
+        studio: { ...base.studio, capital: 6_200_000, scaleStage: 5 },
+        staff: demoStaff(base, 8).map((e, i) => ({
+          ...e,
+          // Equipo veterano en forma: la madurez también se nota en la gente.
+          morale: 84 + ((i * 5) % 10),
+          energy: 88 + ((i * 7) % 12),
+          // Una ESTRELLA en el rol clave del RPG (docs/19: la obra maestra la exige).
+          skills: i === 1 ? { ...e.skills, diseno: 91 } : e.skills,
+        })),
+        releasedGames: [
+          ...Array.from({ length: 14 }, (_, i) => pastGame(i, 'mediano', 60 + (i % 12))),
+          ...Array.from({ length: 8 }, (_, i) => pastGame(14 + i, 'grande', 66 + (i % 10))),
+          ...Array.from({ length: 6 }, (_, i) => pastGame(22 + i, 'muyGrande', 70 + (i % 8))),
+        ],
+        research: { ...base.research, unlocked: researchNodes.map((n) => n.id) },
+      }
+    : {
+        ...base,
+        week: 41,
+        // Un primer intento humilde ya lanzado: el récord que vamos a batir.
+        releasedGames: [pastGame(0, 'pequeno', 41)],
+      };
+
+  const project: Project = {
+    ...demoProject(state.staff.map((e) => e.id)),
+    id: 'demo-91',
+    name: mature ? 'Mazmorras del Alba III' : 'Cueva de Cristal',
+    themeId: 'fantasia',
+    genreId: 'rpg',
+    audience: 'hardcore',
+    size: mature ? 'mediano' : 'pequeno',
+    monetization: {
+      model: 'premium',
+      aggressiveness: 0,
+      hasLootBoxes: false,
+      hasBattlePass: false,
+      dayOneDLC: false,
+    },
+    // Ejecución cuidada: balance ideal del RPG (0.65) y QA hecho.
+    designPoints: 6.5,
+    techPoints: 3.5,
+    chosenFeatureIds: mature
+      ? ['mundoAbierto', 'fisicasAvanzadas', 'sistemaCrafteo', 'finalRamificado']
+      : ['mundoAbierto', 'fisicasAvanzadas'],
+    qaInvested: 0.3,
+    bugDebt: mature ? 0.3 : 0.28,
+    hype: mature ? 0.35 : 0.12,
+  };
+
+  const teamResult = computeTeamFactor(state.staff, project.genreId);
+  const ceiling = computeCeilingContext(state, state.staff, project.genreId, project.size);
+  const { q, breakdown } = computeQuality(project, {
+    era: state.era,
+    teamFactor: teamResult.teamFactor,
+    comboRepeats: mature ? 1 : 0,
+    ceiling,
+  });
+  const reviews = computeSegmentReviews({
+    quality: q,
+    genreId: project.genreId,
+    themeId: project.themeId,
+    audience: project.audience,
+    hype: project.hype,
+    monetization: project.monetization,
+    era: state.era,
+    market: state.market,
+    // La secuela madura arrastra fatiga de fórmula; la banda sopla en contra
+    // (madura) o a favor (temprana) para lucir ambas caras de la línea.
+    recentRepeats: mature ? 1 : 0,
+    bandOffset: mature ? -2 : 2,
+  });
+  const review = reviews.average;
+  const previousBest = state.releasedGames.reduce((best, g) => Math.max(best, g.review), 0);
+
+  const game: ReleasedGame = {
+    ...makeReleasedGame(review, state.week),
+    id: 'demo-91',
+    name: project.name,
+    themeId: project.themeId,
+    genreId: project.genreId,
+    audience: project.audience,
+    size: project.size,
+    monetization: project.monetization,
+    quality: q,
+    reviewsBySegment: reviews.bySegment,
+    reviewMarket: reviews.info,
+    hypeAtRelease: project.hype,
+    verdict: reviewVerdict(review),
+    breakdown: {
+      ...breakdown,
+      teamParts: {
+        competenceFactor: teamResult.competenceFactor,
+        moraleFactor: teamResult.moraleFactor,
+        synergyFactor: teamResult.synergyFactor,
+      },
+    },
+    lines: buildReviewLines(breakdown, project, reviews.info),
+    weeklySales: [],
+    totalUnits: 0,
+    totalRevenue: 0,
+    streams: undefined,
+    creatorSpikeBoost: undefined,
+    personalBest: review > previousBest,
+    previousBestReview: previousBest,
+  };
+
+  return { ...state, releasedGames: [...state.releasedGames, game] };
+}
+
+/**
  * Estado de escaparate: la gala anual de premios (docs/18 V7). El ranking NO
  * se inventa aquí: se siembra un año con un lanzamiento y se deja que el
  * núcleo (`advanceAwards`) resuelva la ceremonia de verdad, igual que en el
@@ -387,6 +536,13 @@ export function applyDemoFromQuery(): boolean {
   }
   if (demo === 'gala') {
     seed(galaDemo(), 'resena', 'demo-game');
+    return true;
+  }
+  // La escalada de 9.1 (docs/19 §9.1): la gala de un primer juego humilde
+  // (reencuadrado como logro) o, con `&madura=1`, la de un estudio hecho y
+  // derecho con fatiga de fórmula y banda en contra. Núcleo real, no atrezzo.
+  if (demo === 'escalada') {
+    seed(escaladaDemo(params.get('madura') === '1'), 'resena', 'demo-91');
     return true;
   }
   if (demo === 'crisis') {
