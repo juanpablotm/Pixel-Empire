@@ -1024,25 +1024,69 @@ export const balance = {
   },
 
   market: {
-    /** Evolución de popularidades por tick (docs/04 §2): base guionizada + ruido suave. */
+    /**
+     * Popularidad de géneros y temas (docs/04 §2, reescrito en 9.4, docs/19
+     * §9.4). Se acabaron las curvas lentas de años que premiaban acampar en el
+     * género de moda: todo lo disponible en su era se sienta en la MISMA base
+     * plana, y el ruido la hace vagar dentro de una banda estrecha ~42–58 %.
+     * Ningún género/tema es permanentemente mejor que otro: "¿qué juego hago?"
+     * lo decide el fit/tu especialización, no "qué acampa arriba". La ÚNICA
+     * fuente de variación fuerte son las FIEBRES (ver `fevers`), que rompen la
+     * banda unos meses y luego decaen.
+     */
     popularity: {
+      /** Base plana e igual para todo género/tema disponible (antes de ruido/fiebre). */
+      base: 0.5,
       /**
-       * Amplitud del ruido semanal (± sobre la popularidad, antes del clamp 0..1).
-       * Con la persistencia forman un AR(1): la desviación estacionaria vale
-       * ~amplitud/√(3·(1−persistencia²)) ≈ 0,037 (antes 0,022; docs/18 V2 pedía
-       * modas "más vivas"). Las flechas ↑→↓ y la etapa del ciclo se leen de la
-       * CURVA BASE (ver trendStateAt), así que el ruido nunca las hace parpadear:
-       * solo matiza la popularidad efectiva de ventas/fit.
+       * Banda de la popularidad SIN fiebre: el ruido vaga aquí dentro y nada la
+       * cruza salvo una fiebre. Es la garantía visible de "hacer buenos juegos
+       * importa más que elegir la tendencia" (docs/19 §9.4).
+       */
+      bandMin: 0.42,
+      bandMax: 0.58,
+      /**
+       * Amplitud del ruido semanal (± sobre la base). Con la persistencia forman
+       * un AR(1): la desviación estacionaria vale ~amplitud/√(3·(1−persistencia²))
+       * ≈ 0,037, así que la popularidad vaga de forma legible dentro de la banda
+       * y el panel tiene vida sin que nada domine.
        */
       noiseAmplitude: 0.03,
-      /** Persistencia de la desviación: cada tick la popularidad revierte hacia la curva base. */
+      /** Persistencia de la desviación: cada tick la popularidad revierte hacia la base. */
       noisePersistence: 0.88,
-      /** Semanas hacia atrás para medir la dirección ↑→↓ sobre la curva base. */
-      directionLookbackWeeks: 6,
-      /** Cambio mínimo de la curva base en ese lapso para marcar ↑ o ↓. */
-      directionThreshold: 0.02,
-      /** Umbrales de etapa del ciclo de vida (docs/04 §2). */
-      stage: { deadLevel: 0.15, emergingLevel: 0.35, peakLevel: 0.65 },
+    },
+
+    /**
+     * Fiebres de mercado (Fase 9.4, docs/19 §9.4): la ÚNICA fuente de variación
+     * temporal fuerte. De vez en cuando un género o tema entra en fiebre —un
+     * pico de popularidad que dura unos meses y luego decae— y el jugador puede
+     * aprovecharla o no. Nacen de forma orgánica (PRNG con semilla, legible) o
+     * las enciende un HIT (tuyo; y de un rival en 9.5) → "fiebre del oro".
+     * Vigilar al calibrar (con bots): ni tan frecuentes que se vuelvan el nuevo
+     * óptimo, ni tan raras que no se noten. Todo aquí, nada en la lógica.
+     */
+    fevers: {
+      /** Probabilidad por semana de que nazca una fiebre orgánica (si hay hueco). */
+      spawnChancePerWeek: 0.02,
+      /** Fiebres orgánicas activas a la vez como mucho (una de sabor, otra de sorpresa). */
+      maxConcurrent: 2,
+      /** Duración de la ventana (semanas): unos meses. Se sortea en [min, max]. */
+      durationMinWeeks: 8,
+      durationMaxWeeks: 16,
+      /** Boost de popularidad en el pico (se suma a la base, clamp 0..1). Sorteado. */
+      intensityMin: 0.3,
+      intensityMax: 0.45,
+      /** Fracción de la ventana hasta el pico: sube rápido, decae más largo. */
+      peakFrac: 0.35,
+      /** Reseña mínima para que un lanzamiento pueda encender una "fiebre del oro". */
+      hitFeverBar: 85,
+      /** Probabilidad de que un hit (reseña ≥ bar) encienda una fiebre. */
+      hitFeverChance: 0.5,
+      /**
+       * Multiplicador de saturación al lanzar sobre un target en fiebre
+       * (docs/04 §3): inundar una fiebre la satura MÁS rápido, así que subirse
+       * tú con un buen juego la aprovecha, pero apilar secuelas la quema.
+       */
+      feverSaturationMult: 2.5,
     },
 
     /** Saturación por lanzamientos similares (docs/04 §3): sube al lanzar, decae al olvidar. */
@@ -1354,6 +1398,15 @@ export const balance = {
      * Bajado en 9.1: con el listón nuevo las notas tempranas rondan 45–55 y
      * el exponente 2 asfixiaba la economía de E1–E2. */
     reviewExponent: 1.55,
+    /**
+     * Nivel del mercado plano (Fase 9.4, docs/19 §9.4): con la base de
+     * popularidad ya plana (~0,5), la demanda usa la pop NORMALIZADA por esa
+     * base (mercado normal = 1) × este factor. Fija cuánto vende "lo normal"
+     * antes de fiebres; se calibró con los bots para conservar la tensión de la
+     * escala (la corporación sigue pudiendo quemar) sin que las tres filosofías
+     * quiebren. La FIEBRE multiplica por encima (pop/base > 1).
+     */
+    popDemandScale: 0.45,
     /**
      * La demanda escala con el tamaño del proyecto. Recalibrado al fijar el
      * calendario (la plantilla ya no acelera): un juego grande cuesta ahora

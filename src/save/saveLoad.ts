@@ -23,7 +23,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -309,6 +309,19 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       research: {
         ...file.state.research,
         featureInsights: file.state.research.featureInsights ?? [],
+      },
+    },
+  }),
+  // v14 (Fase 9.3) → v15 (Fase 9.4): fiebres de mercado. GRACIOSA: los saves
+  // previos arrancan sin fiebres activas (el modelo de popularidad plana +
+  // fiebre no reconstruye nada del pasado; el mercado sigue su curso desde ya).
+  14: (file) => ({
+    saveVersion: 15,
+    state: {
+      ...file.state,
+      market: {
+        ...file.state.market,
+        fevers: file.state.market.fevers ?? [],
       },
     },
   }),

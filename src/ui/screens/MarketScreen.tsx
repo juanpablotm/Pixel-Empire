@@ -1,8 +1,11 @@
 import {
+  activeFevers,
+  activeFeverFor,
   availableGenres,
   availablePlatforms,
   availableThemes,
   effectiveSaturation,
+  feverWeeksLeft,
   researchableThemes,
   saturationModifier,
   type MarketState,
@@ -17,28 +20,28 @@ import { StaggerGroup, StaggerItem } from '../components/Motion';
 import { TrendArrow } from '../components/TrendArrow';
 
 /**
- * Panel de mercado y tendencias (docs/10 §10.7): dirección ↑→↓ y etapa por
- * género/tema (solo contenido ya desbloqueado por era/investigación), ciclo
- * de vida de plataformas con su base instalada, y las zonas saturadas. La UI
- * solo muestra: todo se calcula en core/systems/market.ts.
+ * Panel de mercado y tendencias (docs/10 §10.7, reescrito en 9.4): la base de
+ * cada género/tema es plana y estable (banda estrecha ~42–58 %), así que ya no
+ * hay una tendencia de años que leer. La variación fuerte la dan las FIEBRES
+ * (docs/19 §9.4): el jugador ve las ACTIVAS —nunca las futuras— arriba del todo
+ * y marcadas en su fila. La UI solo muestra: todo se calcula en core/.
  */
 
 const STAGE_COLOR: Record<TrendStage, string> = {
-  naciendo: 'bg-info/15 text-info',
-  creciendo: 'bg-ok/15 text-ok',
-  pico: 'bg-peak/15 text-peak',
   estable: 'bg-control text-ink',
-  declive: 'bg-warn/15 text-capital',
-  muerto: 'bg-danger/15 text-danger-hi',
+  fiebre: 'bg-peak/20 text-peak',
 };
 
 function TrendRow({
   name,
   trend,
+  weeksLeft,
   locked = false,
 }: {
   name: string;
   trend: TrendState;
+  /** Semanas restantes si el género/tema está en fiebre; undefined si no. */
+  weeksLeft?: number;
   locked?: boolean;
 }) {
   return (
@@ -50,17 +53,56 @@ function TrendRow({
       </span>
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-control">
         <div
-          className="meter-fill h-full rounded-full bg-action-hi"
+          className={`meter-fill h-full rounded-full ${trend.stage === 'fiebre' ? 'bg-peak' : 'bg-action-hi'}`}
           style={{ transform: `scaleX(${trend.pop})` }}
         />
       </div>
       <span className="w-10 text-right text-xs tabular-nums text-ink-mute">
         {Math.round(trend.pop * 100)} %
       </span>
-      <span className={`w-24 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${STAGE_COLOR[trend.stage]}`}>
-        {trendStageLabels[trend.stage]}
+      <span className={`w-28 shrink-0 rounded-full px-2 py-0.5 text-center text-xs ${STAGE_COLOR[trend.stage]}`}>
+        {trend.stage === 'fiebre' && weeksLeft !== undefined
+          ? `🔥 Fiebre · ${weeksLeft} sem`
+          : trendStageLabels[trend.stage]}
       </span>
     </StaggerItem>
+  );
+}
+
+/**
+ * Fiebres ACTIVAS (docs/19 §9.4): el aviso legible de qué está de moda AHORA,
+ * con su cuenta atrás. Nunca se listan fiebres futuras — se acabó el panel
+ * predictivo de toda la línea temporal.
+ */
+function FeverCard({ market, week }: { market: MarketState; week: number }) {
+  const fevers = activeFevers(market.fevers, week);
+  if (fevers.length === 0) {
+    return (
+      <p className="text-ink-faint">
+        Mercado tranquilo: ningún género o tema en fiebre. Haz un buen juego de lo que quieras.
+      </p>
+    );
+  }
+  return (
+    <ul className="flex flex-col gap-2 text-sm">
+      {fevers.map((f) => {
+        const name = f.target === 'genre' ? getGenre(f.targetId).name : getTheme(f.targetId).name;
+        const kind = f.target === 'genre' ? 'Género' : 'Tema';
+        return (
+          <li
+            key={f.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-peak/10 px-3 py-2"
+          >
+            <span className="text-lg">🔥</span>
+            <span className="font-medium text-peak">{name}</span>
+            <span className="text-xs text-ink-mute">
+              {kind} en fiebre · quedan {feverWeeksLeft(f, week)} sem
+              {f.source === 'hit' ? ' · encendida por un exitazo' : ''}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -128,13 +170,26 @@ export function MarketScreen() {
       </div>
 
       <section className="card">
+        <h3 className="card-title">Fiebres activas</h3>
+        <FeverCard market={market} week={week} />
+      </section>
+
+      <section className="card">
         <h3 className="card-title">
           Géneros
         </h3>
         <StaggerGroup tag="ul" className="flex flex-col gap-2 text-sm">
           {genresShown.map((g) => {
             const trend = market.genres[g.id];
-            return trend ? <TrendRow key={g.id} name={g.name} trend={trend} /> : null;
+            const fever = activeFeverFor(market.fevers, 'genre', g.id, week);
+            return trend ? (
+              <TrendRow
+                key={g.id}
+                name={g.name}
+                trend={trend}
+                weeksLeft={fever ? feverWeeksLeft(fever, week) : undefined}
+              />
+            ) : null;
           })}
         </StaggerGroup>
       </section>
@@ -146,8 +201,15 @@ export function MarketScreen() {
         <StaggerGroup tag="ul" className="flex flex-col gap-2 text-sm">
           {themesShown.map((t) => {
             const trend = market.themes[t.id];
+            const fever = activeFeverFor(market.fevers, 'theme', t.id, week);
             return trend ? (
-              <TrendRow key={t.id} name={t.name} trend={trend} locked={lockedThemeIds.has(t.id)} />
+              <TrendRow
+                key={t.id}
+                name={t.name}
+                trend={trend}
+                weeksLeft={fever ? feverWeeksLeft(fever, week) : undefined}
+                locked={lockedThemeIds.has(t.id)}
+              />
             ) : null;
           })}
         </StaggerGroup>

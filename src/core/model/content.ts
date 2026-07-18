@@ -21,16 +21,17 @@ export interface Genre {
   appearsInEra: EraId;
   /** Nodo de investigación necesario para desbloquearlo (docs/02 §3). */
   requiresResearch?: string;
-  /** Curva guionizada de popularidad por semana (docs/04 §2); el ruido la matiza en runtime. */
-  basePopularityCurve: CurvePoint[];
+  // La popularidad de género/tema es plana e igual para todo lo disponible
+  // desde el modelo "fiebre" (Fase 9.4, docs/19 §9.4): se acabaron las curvas
+  // guionizadas de años que premiaban acampar. La variación temporal la dan
+  // solo las fiebres (core/systems/market.ts). Solo las PLATAFORMAS conservan
+  // curva (su ciclo de vida real de consola).
 }
 
 export interface Theme {
   id: string;
   name: string;
   appearsInEra: EraId;
-  /** Curva guionizada de popularidad por semana (docs/04 §2). */
-  basePopularityCurve: CurvePoint[];
 }
 
 export interface Platform {

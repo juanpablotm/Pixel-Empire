@@ -14,28 +14,42 @@ tanto como la calidad. Convierte la Calidad Real `Q` (`03`) en **reseñas y vent
 4. **Ciclos de vida de plataformas** (consolas que llegan, dominan y mueren).
 5. La transformación **Calidad → Reseña → Ventas**.
 
-## 2. Curvas de popularidad `[DECIDIDO]`
+## 2. Popularidad: base plana + fiebres `[DECIDIDO · reescrito en 9.4]`
 
-Cada **género** y cada **tema** tiene una popularidad `pop ∈ [0,1]` que evoluciona con el tiempo
-siguiendo una curva de vida: `Naciendo → Creciendo → Pico → Declive → Muerto` (y a veces
-`Renacimiento` nostálgico años después).
+**El modelo de curvas lentas se eliminó en la Fase 9.4** (docs/19 §9.4). Hacían que un género/tema
+fuera *permanentemente* mejor que otro durante una era entera, y la jugada óptima era **acampar** en lo
+que estaba de moda —monótono, y volvía inviables temas que tardaban años en subir—. En su lugar:
 
-- Las curvas están parametrizadas por era (ver `09`): p. ej. "Shooter arena" nace en E3, pico en E4,
-  declive en E6. "Battle Royale" no existe hasta E6.
-- La popularidad no es determinista al 100%: tiene una tendencia base (guionizada por era para dar
-  sabor histórico) + ruido suave. Coherente con "mayormente determinista": el jugador ve la tendencia
-  y puede leerla, el ruido solo matiza.
-- **Combinaciones** tienen su propia popularidad emergente: un tema fresco sobre un género en alza es oro.
+- **Base plana e igual para todo lo disponible.** Cada género y cada tema, una vez ha aparecido en su
+  era, se sienta en la **misma** popularidad base (`balance.market.popularity.base` = 0,5). El ruido
+  del PRNG la deja vagar dentro de una **banda estrecha ~42–58 %** (`bandMin`/`bandMax`): el panel
+  tiene vida, pero **ninguno domina**. "¿Qué juego hago?" lo decide el **fit / tu especialización**,
+  no "qué acampa arriba". **Lo que más importa es hacer buenos juegos.**
+- **Las FIEBRES son la única variación fuerte** (`balance.market.fevers`, ver §2.1). Rompen la banda
+  unos meses y luego decaen a la base.
+- Antes de aparecer en su era, un género/tema no existe (sigue gateado por desbloqueo; "Battle Royale"
+  no está hasta E6).
 
-### El dilema del momento (mecánica central)
-- **Subirse a una moda en su pico:** ventas altas casi garantizadas, pero mercado saturándose y
-  **cero reputación** (haces lo que todos).
-- **Apostar temprano por algo que nace:** si aciertas, defines el género → ventas crecientes + mucha
-  reputación ("fueron los primeros"). Si te adelantas demasiado, el público aún no está.
-- **Llegar tarde a una moda en declive:** el peor cuadrante. Saturado y decayendo.
+### 2.1 Fiebres de mercado `[DECIDIDO · 9.4]`
+De vez en cuando un género o tema entra en **fiebre corta**: un pico temporal de popularidad (intensidad
+`0,30–0,45` sumada a la base, clamp 0..1) que dura **8–16 semanas** —sube rápido a su pico (`peakFrac`)
+y decae más largo— y luego vuelve a la base. Los juegos de ese género/tema lanzados **durante la
+ventana** cobran el pico (más ventas y mejor recepción); si la fiebre muere después de lanzar, la cola
+se enfría sola (las ventas se recalculan por tick con la pop viva).
 
-El juego expone un **panel de tendencias** (UI en `10`) con flechas de dirección (↑ creciendo, → estable,
-↓ cayendo) por género/tema, para que la decisión sea informada pero no trivial.
+- **Disparadores:** **orgánico** (PRNG con semilla, `spawnChancePerWeek` ~2 %/sem con tope
+  `maxConcurrent` 2 ≈ una fiebre cada ~1 año, repartidas por era) o **por HIT** propio (un lanzamiento
+  con reseña ≥ `hitFeverBar` 85 puede encender una "fiebre del oro" sobre su género o tema; los rivales
+  la disparan en 9.5).
+- **Inundarla la satura más rápido** (§3): subirse tú con un buen juego la aprovecha; apilar secuelas
+  sobre ella la quema antes.
+- **Legibilidad (Pilar 2):** el jugador ve las fiebres **ACTIVAS**, nunca las futuras —**aviso tipo
+  noticia** al saltar (toast) + tarjeta "Fiebres activas" con cuenta atrás y **badge 🔥** en su fila
+  (docs/10)—. Se acabó el panel predictivo de toda la línea temporal.
+
+El **panel de tendencias** (UI en `10`) sigue mostrando la dirección (↑/→/↓) y la etapa por
+género/tema, pero desde 9.4 la etapa es solo **estable** (base plana) o **🔥 fiebre**, y la dirección
+sube/baja únicamente mientras una fiebre crece o se enfría.
 
 ## 3. Saturación `[DECIDIDO]`
 
@@ -50,6 +64,10 @@ modificadorVentas_saturación = 1 - k·saturación   // rendimientos decreciente
 
 Consecuencia estratégica: **exprimir** un mismo género con secuelas rápidas (palanca de codicia, `06`)
 lo satura y erosiona sus ventas — dinero rápido hoy, mercado quemado mañana.
+
+**Inundar una fiebre la satura más rápido (9.4, docs/19 §9.4):** lanzar sobre un género o tema en
+fiebre suma saturación multiplicada (`balance.market.fevers.feverSaturationMult`). Subirse tú con un
+buen juego aprovecha el pico; apilar secuelas sobre la fiebre la quema antes de que se enfríe sola.
 
 **Desde 9.1 la repetición también decae la NOTA** (docs/19 §9.1 `[DECIDIDO]`): la ejecución perfecta
 de un juego seguro PUEDE alcanzar el techo una vez, pero repetir la misma fórmula fatiga a público y
@@ -119,8 +137,12 @@ con la reputación segmentada (`06`) y la comunidad (`07`).
 
 ## 6. De Reseña a Ventas `[DECIDIDO · baseline v1]`
 
+Desde 9.4 la pop entra **normalizada por la base plana** (`sales.popDemandScale`): un mercado sin
+fiebre vale ~1 (es "lo normal", no un castigo por estar a 0,5), y una **fiebre lo multiplica** por
+encima (`pop/base > 1`). Así "hacer buenos juegos" vende siempre y pillar una fiebre es un extra real.
+
 ```
-demandaPotencial = tamañoMercado(plataforma, era, público) × pop(género) × pop(tema)
+demandaPotencial = tamañoMercado(plataforma, era, público) × popNorm(género) × popNorm(tema)  // 1 en base, >1 en fiebre
 
 ventas(semana t) = demandaPotencial
     × curvaLanzamiento(t, hype)          // pico inicial modulado por hype
@@ -149,6 +171,11 @@ Anunciada → Lanzamiento → Crecimiento (base instalada ↑) → Madurez (pico
   investigación (`02`).
 - **Guerra de consolas:** en cada generación, 2–3 plataformas compiten; su cuota cambia con el tiempo
   (guionizado + algo de ruido). Apostar por la plataforma "ganadora" temprano es una lectura de mercado.
+- **Más consolas escalonadas (9.4, docs/19 §9.4):** cada era estrena varias plataformas que **salen en
+  semanas distintas** dentro de la era (no todas de golpe), así que "en cuál y cuándo" es una decisión
+  real (dev-kit vs base instalada). El catálogo de `09` §4 crece con competidoras por generación
+  (p. ej. Vortex 32 en E3; Vertex y Gameling Advance en E4; N-Switch en E5; Playsystem 5 y Vertex X en
+  E6; Holo Deck en E7).
 - **Multiplataforma (Fase 9.2, docs/19 §9.2):** lanzar en varias plataformas a la vez es una
   **capacidad del MOTOR** que se investiga (kit biplataforma = 2, pipeline multiplataforma = hasta 4).
   Cada plataforma paga su licencia al iniciar; la **demanda semanal SUMA las bases instaladas** de

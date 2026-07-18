@@ -16,8 +16,8 @@ resume la propia guía de diseño del jugador: **"el jugador siempre debe sentir
 |----------|-------|-------|
 | **9.1** ✅ | Escalada + reseñas (+ dilema con dientes + marketing sin tope) | Que se resuelva; el 88 al arranque |
 | **9.2** ✅ | Motores / Tecnología | Escasez permanente; techo de los juegos grandes |
-| **9.3** | Features por género | Intuición y profundidad en la creación |
-| **9.4** | Tendencias tipo "fiebre" (+ más consolas / multiplataforma) | Repetición; mercado muerto |
+| **9.3** ✅ | Features por género | Intuición y profundidad en la creación |
+| **9.4** ✅ | Tendencias tipo "fiebre" (+ más consolas / multiplataforma) | Repetición; mercado muerto |
 | **9.5** | Estudios rivales con IA | "No estás solo"; adaptación forzada |
 | **9.6** | Publishers + Early Access | Escasez temprana; arco de negocio |
 | **9.7** | GaaS + adquisiciones | Piloto automático del late-game |
@@ -122,14 +122,53 @@ en E2 y que las 3 filosofías siguen viables.
 - Gateadas por investigación. Fin del "apila todos los features buenos": ahora hay que elegir con criterio.
 **Toca:** `03` (features), `09` (datos de features + afinidad por género), `02` (investigación), `16`.
 
-## 9.4 — Tendencias tipo "fiebre" (+ más consolas / multiplataforma) `[dirección]`
+## 9.4 — Tendencias tipo "fiebre" (+ más consolas / multiplataforma) `[IMPLEMENTADO · commit "Fase 9.4: fiebres y consolas"]`
+
+> Baseline actualizada en `04` §2/§3/§6/§7 y `09` §3/§4 y `16` §2/§13. El modelo de
+> popularidad vive en `data/balance.ts` (`market.popularity` base plana + banda, `market.fevers`,
+> `sales.popDemandScale`); la capa de fiebres en `core/systems/market.ts` (`buildFever`,
+> `activeFeverFor`, `feverBoost`, spawn orgánico en `advanceMarket`) y el disparo por HIT en
+> `core/systems/projects.ts`. Consolas nuevas en `data/platforms.ts`; save v15 (`market.fevers ??= []`).
+> CA verificados con tests (`fevers.test.ts`, `market.test.ts`, `fullGame.test.ts`) y bots. Capturas:
+> `capturas/9-4-fiebre-activa.png` y `capturas/9-4-plataformas.png` (script `scripts/verify94.mjs`,
+> escaparate `?demo=fiebre[&plataformas=1]`).
 
 **Meta:** mercado vivo que premia adaptarse, no repetir.
-- La mayoría de juegos son "normales"; **de vez en cuando** un género/tema entra en **fiebre corta**
-  (unos meses) y luego cae. **No se ve todo el panel** — más sorpresa/organicidad. Un *hit* (tuyo o de
-  un rival) puede **disparar** una fiebre.
-- Añadir **más consolas por era** (que vayan saliendo poco a poco) y la I+D de multiplataforma (con 9.2).
-**Toca:** `04` (tendencias/plataformas), `09` (consolas), `16`.
+
+### Base plana + fiebres `[DECIDIDO]`
+Se **eliminan las curvas lentas de años** que hacían que un género/tema fuera permanentemente mejor
+(el min-max de "acampa en lo que está de moda"). Ahora **todo lo disponible se sienta en la MISMA base
+plana** (`balance.market.popularity.base` 0,5); el ruido la deja vagar en una **banda estrecha ~42–58 %**
+(`bandMin`/`bandMax`), así que **ninguno domina** y "¿qué juego hago?" lo decide el fit/tu
+especialización, no la moda. **Lo que más importa es hacer buenos juegos.**
+
+La ÚNICA variación fuerte son las **FIEBRES** (`balance.market.fevers`): de vez en cuando un género o
+tema entra en fiebre —un pico temporal (intensidad 0,30–0,45 sobre la base) durante **8–16 semanas**,
+sube rápido y decae a la base— y el jugador **puede aprovecharla o no**. Nacen de forma **orgánica**
+(PRNG con semilla, ~2 %/semana con tope de 2 activas ≈ una cada ~1 año) o las enciende un **HIT**
+propio (reseña ≥ 85, "fiebre del oro"; los rivales llegan en 9.5).
+
+### Legibilidad (Pilar 2) `[DECIDIDO]`
+El jugador ve las fiebres **ACTIVAS**, nunca las futuras: **aviso tipo noticia** al saltar (toast) +
+tarjeta **"Fiebres activas"** con su cuenta atrás y **badge 🔥** en la fila del género/tema (docs/10).
+Se acabó el panel predictivo de toda la línea temporal.
+
+### Saturación de fiebre y ventas `[DECIDIDO]`
+**Inundar una fiebre la satura más rápido** (`feverSaturationMult`, sobre la saturación de §3): subirse
+tú con un buen juego la aprovecha, pero apilar secuelas la quema antes. La demanda usa la **pop
+normalizada por la base** (`sales.popDemandScale`): mercado normal = 1, la fiebre multiplica por encima
+(no es un mundo a media máquina, es la base + un extra real).
+
+### Más consolas + multiplataforma `[DECIDIDO]`
+Se añaden **consolas por era que salen escalonadas** dentro de la era (`data/platforms.ts`): decisión de
+en cuál y cuándo (dev-kit vs base instalada). La **I+D de multiplataforma ya existe** (capacidades
+`biplataforma`/`multiplataforma` del motor, 9.2): más consolas la vuelven una decisión real; lanzar en
+varias a la vez exige la capacidad del motor (test en `fevers.test.ts`).
+
+**CA:** existe una fiebre que sube las ventas de su género en su ventana y luego decae; inundarla la
+satura; un juego multiplataforma requiere la I+D/motor; repetir el mismo género ya no es óptimo (base
+plana + fatiga de 9.1) y las 3 filosofías siguen viables.
+**Tocó:** `04` (tendencias/saturación/plataformas), `09` (consolas + tipo `Fever`), `16`.
 
 ## 9.5 — Estudios rivales con IA `[dirección]` (activa el stretch de Fase 8)
 

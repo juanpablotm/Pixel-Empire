@@ -6,7 +6,7 @@ import { defaultMonetization, getMonetizationModel } from '../../data/monetizati
 import { getPlatform } from '../../data/platforms';
 import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
-import { makeRng } from '../engine/rng';
+import { makeRng, type Rng } from '../engine/rng';
 import type { Feature } from '../model/content';
 import type { GameState } from '../model/gameState';
 import type { MonetizationConfig } from '../model/moral';
@@ -20,6 +20,8 @@ import type {
 import type { ReleasedGame } from '../model/release';
 import { applyReleaseCommunityEffects } from './community';
 import {
+  activeFeverFor,
+  buildFever,
   clampHype,
   computeSegmentReviews,
   effectiveSaturation,
@@ -520,6 +522,38 @@ function assignedTeam(state: GameState, project: Project): Employee[] {
   return state.staff.filter((e) => project.assignedStaff.includes(e.id));
 }
 
+/**
+ * Fiebre del oro (docs/19 §9.4): un lanzamiento con reseña ≥ hitFeverBar puede
+ * encender una fiebre sobre su género o su tema (a suertes del PRNG), salvo que
+ * ese target ya esté en fiebre. Determinista: usa el stream de la banda, ya
+ * consumido para el desvío de reseña, así que estas tiradas van después.
+ */
+function maybeIgniteHitFever(
+  state: GameState,
+  project: Project,
+  review: number,
+  rng: Rng,
+): GameState {
+  const f = balance.market.fevers;
+  if (review < f.hitFeverBar) return state;
+  if (rng.next() >= f.hitFeverChance) return state;
+  const target: 'genre' | 'theme' = rng.next() < 0.5 ? 'genre' : 'theme';
+  const targetId = target === 'genre' ? project.genreId : project.themeId;
+  if (activeFeverFor(state.market.fevers, target, targetId, state.week)) return state;
+  const fever = buildFever(target, targetId, state.week, 'hit', rng);
+  const name = target === 'genre' ? getGenre(targetId).name : getTheme(targetId).name;
+  const kind = target === 'genre' ? 'del género' : 'del tema';
+  const next: GameState = {
+    ...state,
+    market: { ...state.market, fevers: [...(state.market.fevers ?? []), fever] },
+  };
+  return appendLog(
+    next,
+    'mercado',
+    `🔥 El éxito de «${project.name}» enciende una fiebre ${kind} ${name}: todo el mundo quiere más.`,
+  );
+}
+
 /** Convierte el proyecto terminado en un juego lanzado con reseña y desglose. */
 function releaseProject(state: GameState, project: Project): GameState {
   const team = assignedTeam(state, project);
@@ -625,9 +659,14 @@ function releaseProject(state: GameState, project: Project): GameState {
     // Solo sale del tablero el proyecto lanzado; el resto sigue (docs/02 §4).
     projects: state.projects.filter((p) => p.id !== project.id),
     releasedGames: [...state.releasedGames, released],
-    // El lanzamiento inunda un poco su combo género+tema (docs/04 §3).
-    market: registerReleaseSaturation(state.market, project.genreId, project.themeId),
+    // El lanzamiento inunda un poco su combo género+tema (docs/04 §3); si cae
+    // sobre una fiebre, la satura más rápido (9.4: inundarla la quema antes).
+    market: registerReleaseSaturation(state.market, project.genreId, project.themeId, state.week),
   };
+  // Fiebre del oro (docs/19 §9.4): un HIT (reseña ≥ bar) puede encender una
+  // fiebre sobre su género o su tema — determinista, con el stream de la banda.
+  // La disfrutan los juegos de ese género/tema lanzados durante la ventana.
+  next = maybeIgniteHitFever(next, project, review, bandRng);
   next = appendLog(
     next,
     'lanzamiento',

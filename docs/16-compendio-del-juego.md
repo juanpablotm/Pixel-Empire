@@ -30,7 +30,7 @@ Recursos que gestionas: **Capital 💰**, **Reputación ⭐** (vector por públi
 |---------|----------|-----|
 | **Bucle y eras** | Crear un juego (3 fases), avance por ticks (1 tick = 1 semana), progresión por eras y escala | `02` |
 | **Calidad transparente** | Calcula la calidad real `Q` (0–100) y **descompone la reseña** para que aprendas por qué | `03` |
-| **Mercado y modas** | Popularidad de géneros/temas que sube y baja, hype, saturación, ciclos de plataformas → ventas y reseñas | `04` |
+| **Mercado y fiebres** | Popularidad base plana (nadie domina) + **fiebres** cortas que la rompen, hype, saturación, ciclos de plataformas → ventas y reseñas | `04` |
 | **Personal y equipo** | Empleados con rasgos, moral, energía, química; contratar, formar, crunch, despedir | `05` |
 | **Dilema moral y economía** | Palancas codicia/integridad, reputación segmentada, escándalos, economía completa | `06` |
 | **Comunidad y streamers** | Sentimiento de comunidad, creadores de contenido, hype/leaks, review bombing, gestión de crisis | `07` |
@@ -181,9 +181,12 @@ Se pueden **mezclar dos géneros** (desbloqueable) con pesos. La afinidad tema×
 
 ## 5. Catálogo: Temas `[baseline v1]` (doc `09` §3)
 
-Cada tema tiene su curva de popularidad (modas, `04`). Algunos aparecen en eras posteriores. **Solo
-fantasía, ciencia ficción y espacio son libres al empezar**; el resto se **desbloquea con 💡** una vez
-su era ha llegado (docs `17` P1). La era habilita la opción; el tema cuesta 💡 igualmente.
+Desde 9.4 los temas **no tienen curva de popularidad**: su base es **plana** como la de los géneros
+(banda ~42–58 %), y la variación fuerte la dan las **fiebres** (doc `04` §2). La "afinidad típica" de
+la tabla es el **fit tema×género** (calidad, doc `03`), no una moda permanente. Algunos aparecen en eras
+posteriores. **Solo fantasía, ciencia ficción y espacio son libres al empezar**; el resto se
+**desbloquea con 💡** una vez su era ha llegado (docs `17` P1). La era habilita la opción; el tema
+cuesta 💡 igualmente.
 
 Son **29** desde la 8.10: los 15 del baseline + **2 por era** (docs `18` V6). Las eras de esta tabla
 son las de `data/themes.ts` (la fuente de verdad).
@@ -228,23 +231,33 @@ Nombres **ficticios reconocibles**. Cada una tiene un ciclo de vida (nace → cr
 descatalogada) que fija su base instalada y su tamaño de mercado (`04`). Algunas exigen **licencia/dev-kit**
 (10k–100k 💰) e investigación.
 
+Desde 9.4 cada era tiene **2–3 consolas en competencia que salen escalonadas** dentro de la era
+(`releaseWeek` distinto): decidir en cuál y cuándo lanzar es una lectura de mercado (dev-kit vs base
+instalada). Lista según `data/platforms.ts` (la fuente de verdad):
+
 | Plataforma | Era | Tipo | Fabricante (ficticio) | Nota |
 |------------|:---:|------|-----------------------|------|
-| PC Casero | E1 | Ordenador | (abierto) | Sin licencia; público amplio |
-| Commo 64 | E1 | Micro-ordenador | Commodere | Base instalada enorme en E1 |
-| Gameling | E2 | Portátil | Ninteno | Favorece Casual/Puzzle; monocromo |
-| Master V | E2 | Consola sobremesa | Sega-like "Vega" | Cartuchos; guerra de consolas E2 |
-| Playsystem | E3 | Consola 32-bit (CD) | Suny | El gran salto 3D |
-| N-Cube | E3 | Consola 64-bit | Ninteno | Cartucho; familiar |
-| PC (online) | E4 | Ordenador | (abierto) | Dominante; habilita online |
-| Playsystem 2 | E4 | Consola | Suny | Base instalada récord |
-| Portátil Advance | E4 | Portátil | Ninteno | Relevo del Gameling |
-| Smartphone | E5 | Móvil | (varios) | Habilita F2P y microtransacciones |
-| Tienda digital (PC) | E5 | Distribución | "Vapor" | Impulsa el boom indie |
-| Cloud / Streaming | E6 | Servicio | (varios) | Games-as-a-service |
-| Realidad mixta | E7 | RV/AR | (varios) | Nicho de alto valor |
+| PC Casero | E1 | Ordenador | (abierto) | Sin licencia; crece toda la partida |
+| Commo 64 | E1 | Micro-ordenador | Commo Ltd. | Base instalada enorme en E1; muere pronto |
+| Master V | E2 | Consola sobremesa | Vexa Corp. | Cartuchos; guerra de consolas E2 |
+| Gameling | E2 | Portátil | Ninten-Go | Favorece Casual/Puzzle; monocromo |
+| Playsystem | E3 | Consola 32-bit (CD) | Sonora | El gran salto 3D |
+| N-Cube | E3 | Consola 64-bit | Ninten-Go | Cartucho; familiar |
+| **Vortex 32** | E3 | Consola 32-bit | Vexa Corp. | Tercera en discordia; sale a mitad de E3 |
+| Playsystem 2 | E4 | Consola | Sonora | Base instalada récord |
+| **Vertex** | E4 | Consola | Microhard | Rival hardcore; entra a mitad de E4 |
+| **Gameling Advance** | E4 | Portátil | Ninten-Go | Relevo del Gameling; familiar |
+| Móvil | E5 | Móvil | Tiendas de apps | Habilita F2P y microtransacciones |
+| Playsystem 4 | E5 | Consola | Sonora | Sobremesa hardcore de E5 |
+| **N-Switch** | E5 | Híbrida | Ninten-Go | Sobremesa/portátil; sale más tarde en E5 |
+| CloudPlay | E6 | Servicio/streaming | Streamium | Games-as-a-service |
+| **Playsystem 5** | E6 | Consola | Sonora | Puntera de E6 |
+| **Vertex X** | E6 | Consola | Microhard | Tercera de E6; escalonada |
+| Visor RV Mixta | E7 | RV/AR | Aureal Labs | Nicho de alto valor |
+| **Holo Deck** | E7 | Portátil streaming | Streamium | Entra tras el visor RV |
 
-(Se pueden añadir más por era como datos; la lógica es agnóstica.)
+**Multiplataforma (9.2):** el motor decide cuántas consolas caben a la vez (kits bi/multi que se
+investigan); cada una paga su licencia y la demanda suma sus bases instaladas.
 
 ### 6.1 Catálogo: Motores licenciables `[baseline v1 · Fase 9.2]` (doc `09` §4.1)
 

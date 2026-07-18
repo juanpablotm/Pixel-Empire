@@ -45,6 +45,7 @@ export type {
 } from './model/content';
 export type {
   CurvePoint,
+  Fever,
   MarketState,
   PlatformMarketState,
   PlatformStage,
@@ -220,7 +221,10 @@ export {
 export { buildReviewLines, reviewVerdict } from './systems/review';
 export { advanceSales, weeklyRevenue } from './systems/sales';
 export {
+  activeFeverFor,
+  activeFevers,
   advanceMarket,
+  buildFever,
   clampHype,
   comboKey,
   comboPopularity,
@@ -229,6 +233,9 @@ export {
   curveValueAt,
   effectiveSaturation,
   expectedWeeklyUnits,
+  feverBoost,
+  feverShape,
+  feverWeeksLeft,
   marketSize,
   overHypeGap,
   platformAvailable,
@@ -236,8 +243,6 @@ export {
   priceModifier,
   registerReleaseSaturation,
   saturationModifier,
-  trendDirection,
-  trendStage,
 } from './systems/market';
 export type { SalesContext, SegmentReviewsInput, SegmentReviewsResult } from './systems/market';
 export {

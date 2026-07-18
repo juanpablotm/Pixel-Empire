@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
 import { genres } from '../../data/genres';
 import { getPlatform } from '../../data/platforms';
-import { getTheme, themes } from '../../data/themes';
+import { themes } from '../../data/themes';
 import { createInitialState } from '../engine/initialState';
 import { makeRng } from '../engine/rng';
 import { tick } from '../engine/tick';
@@ -11,6 +11,7 @@ import type { GameState } from '../model/gameState';
 import type { ProjectSize } from '../model/project';
 import type { ReleasedGame } from '../model/release';
 import type { Employee } from '../model/staff';
+import type { Fever, MarketState, TrendState } from '../model/market';
 import {
   advanceMarket,
   clampHype,
@@ -20,14 +21,13 @@ import {
   curveValueAt,
   effectiveSaturation,
   expectedWeeklyUnits,
+  feverBoost,
   marketSize,
   overHypeGap,
   platformAvailable,
   platformStage,
   registerReleaseSaturation,
   saturationModifier,
-  trendDirection,
-  trendStage,
 } from './market';
 import { startProject, type ProjectConcept } from './projects';
 
@@ -134,33 +134,48 @@ describe('popularidades vivas — evolución por tick (docs/04 §2, CA)', () => 
     expect(a.market.genres.rpg.pop).not.toBe(initial.genres.rpg.pop);
   });
 
-  it('el ruido solo matiza: cada popularidad se queda cerca de su curva base', () => {
+  it('sin fiebre, la base es plana y el ruido la deja en la banda estrecha (9.4)', () => {
+    // Se acabaron las curvas de años: fuera de fiebre, todo género/tema vaga en
+    // [bandMin, bandMax] ~42–58 %, así que ninguno domina (docs/19 §9.4). Una
+    // fiebre activa SÍ puede romper la banda (esa es su gracia): se excluye.
+    const p = balance.market.popularity;
     const s = runTicks(createInitialState(SEED), 80);
-    const week = s.week - 1; // semana procesada por el último tick
     for (const genre of genres) {
-      const pop = s.market.genres[genre.id].pop;
-      expect(pop).toBeGreaterThanOrEqual(0);
-      expect(pop).toBeLessThanOrEqual(1);
-      expect(Math.abs(pop - curveValueAt(genre.basePopularityCurve, week))).toBeLessThan(0.15);
+      const trend = s.market.genres[genre.id];
+      if (trend.stage !== 'estable') continue;
+      expect(trend.pop).toBeGreaterThanOrEqual(p.bandMin);
+      expect(trend.pop).toBeLessThanOrEqual(p.bandMax);
     }
     for (const theme of themes) {
-      const pop = s.market.themes[theme.id].pop;
-      expect(Math.abs(pop - curveValueAt(theme.basePopularityCurve, week))).toBeLessThan(0.15);
+      const trend = s.market.themes[theme.id];
+      if (trend.stage !== 'estable') continue;
+      expect(trend.pop).toBeGreaterThanOrEqual(p.bandMin);
+      expect(trend.pop).toBeLessThanOrEqual(p.bandMax);
     }
   });
 
-  it('dirección ↑→↓ y etapas del ciclo de vida según la curva base (Espacio: la moda temprana)', () => {
-    const espacio = getTheme('espacio').basePopularityCurve;
-    expect(trendDirection(espacio, 20)).toBe('sube');
-    expect(trendStage(espacio, 20)).toBe('creciendo');
-    expect(trendStage(espacio, 40)).toBe('pico');
-    expect(trendDirection(espacio, 110)).toBe('baja');
-    expect(trendStage(espacio, 110)).toBe('declive');
+  it('la etapa y la dirección las marca la FIEBRE, no una curva (9.4)', () => {
+    // Sin fiebre: estable y sin dirección (no hay tendencia que leer).
+    const calm = createMarketState(1);
+    expect(calm.genres.rpg.stage).toBe('estable');
+    expect(calm.genres.rpg.direction).toBe('estable');
 
-    const piratas = getTheme('piratas').basePopularityCurve;
-    expect(trendStage(piratas, 140)).toBe('muerto');
-    // Renacimiento nostálgico años después (docs/04 §2).
-    expect(trendStage(piratas, 200)).toBe('naciendo');
+    // Con una fiebre activa: 'fiebre', y la dirección sube antes del pico y baja
+    // después. Se inyecta una fiebre determinista sobre el RPG.
+    const fever: Fever = {
+      id: 'f-test', target: 'genre', targetId: 'rpg',
+      startWeek: 10, peakWeek: 15, endWeek: 25, intensity: 0.4, source: 'organica',
+    };
+    let s: GameState = { ...createInitialState(SEED), week: 12, market: { ...calm, fevers: [fever] } };
+    s = advanceMarket(s, makeRng(SEED, 12));
+    expect(s.market.genres.rpg.stage).toBe('fiebre');
+    expect(s.market.genres.rpg.direction).toBe('sube'); // semana 12 < pico 15
+    expect(s.market.genres.rpg.pop).toBeGreaterThan(balance.market.popularity.bandMax);
+
+    // Pasado el pico, la dirección baja.
+    let t: GameState = { ...createInitialState(SEED), week: 20, market: { ...calm, fevers: [fever] } };
+    t = advanceMarket(t, makeRng(SEED, 20));
+    expect(t.market.genres.rpg.direction).toBe('baja'); // semana 20 ≥ pico 15
   });
 
   it('el estado inicial del mercado cubre todos los géneros, temas y plataformas', () => {
@@ -268,8 +283,9 @@ describe('reseñas por segmento (docs/04 §5, CA)', () => {
     // Sin repetición ni mercado inundado, la fatiga no pega; banda 0 sin stream.
     expect(result.info.fatiga).toBe(0);
     expect(result.info.banda).toBe(0);
-    // Fantasía + RPG están por encima del neutro en la semana 1 → bonus positivo.
-    expect(result.info.modaBonus).toBeGreaterThan(0);
+    // Sin fiebre, la base es plana en el neutro (9.4): la moda no suma ni resta.
+    // El bonus de moda solo aparece cuando una fiebre rompe la banda.
+    expect(result.info.modaBonus).toBe(0);
   });
 
   it('CA: el hype endurece la reseña (doble filo, parte 1)', () => {
@@ -361,32 +377,27 @@ describe('hype pasivo — la meseta lo desacopla de la duración (docs/18 V3)', 
   });
 });
 
-describe('ruido de popularidad — más vivo pero legible (docs/18 V2)', () => {
-  it('CA: la flecha y la etapa se leen de la curva base, el ruido no las mueve', () => {
-    // Es la garantía de "mayormente determinista": suba lo que suba el ruido,
-    // el panel de tendencias no parpadea.
+describe('popularidad de banda — viva pero sin dominar (9.4, docs/19 §9.4)', () => {
+  it('la base plana vaga dentro de la banda: se mueve, pero nada acampa arriba', () => {
+    // Fuera de fiebre, la popularidad se queda SIEMPRE en [bandMin, bandMax] y
+    // aun así se mueve de verdad (el panel tiene vida). Es la garantía visible
+    // de "hacer buenos juegos importa más que elegir la tendencia".
+    const p = balance.market.popularity;
     const genre = genres[0];
     let s = createInitialState(SEED);
-    for (let i = 0; i < 40; i++) s = advanceMarket(s, makeRng(SEED, i));
-    const state = s.market.genres[genre.id];
-    expect(state.direction).toBe(trendDirection(genre.basePopularityCurve, s.week));
-    expect(state.stage).toBe(trendStage(genre.basePopularityCurve, s.week));
-  });
-
-  it('la desviación sobre la curva base se queda en un margen legible', () => {
-    // ~0,037 de desviación típica: se nota, pero la tendencia manda.
-    const genre = genres[0];
-    let s = createInitialState(SEED);
-    let worst = 0;
+    let moved = 0;
     for (let i = 0; i < 300; i++) {
-      s = advanceMarket(s, makeRng(SEED, i));
-      const base = curveValueAt(genre.basePopularityCurve, s.week);
-      const pop = s.market.genres[genre.id].pop;
-      // El clamp 0..1 recorta la desviación cuando la base roza los extremos.
-      if (base > 0.05 && base < 0.95) worst = Math.max(worst, Math.abs(pop - base));
+      // Avanza SOLO el mercado (sin economía: no queremos bancarrota a 300 sem).
+      s = { ...advanceMarket(s, makeRng(SEED, s.week)), week: s.week + 1 };
+      const trend = s.market.genres[genre.id];
+      if (trend.stage === 'estable') {
+        expect(trend.pop).toBeGreaterThanOrEqual(p.bandMin);
+        expect(trend.pop).toBeLessThanOrEqual(p.bandMax);
+        moved = Math.max(moved, Math.abs(trend.pop - p.base));
+      }
     }
-    expect(worst).toBeGreaterThan(0.02); // se mueve de verdad
-    expect(worst).toBeLessThan(0.15); // pero no tapa la tendencia
+    expect(moved).toBeGreaterThan(0.02); // se mueve de verdad
+    expect(moved).toBeLessThanOrEqual(p.bandMax - p.base + 1e-9); // pero nunca sale de la banda
   });
 });
 
@@ -552,25 +563,45 @@ describe('castigo por sobre-hype (docs/17 E2)', () => {
   });
 });
 
-describe('el momento de lanzar (docs/04 §2, CA de cierre)', () => {
-  it('CA: el mismo juego vende mucho más en el pico de la moda que cuando muere', () => {
-    // Espacio está en pico en la semana 40 y muerto hacia la 180 (curvas de data/).
-    const peakMarket = createMarketState(40);
-    const deadMarket = createMarketState(180);
+describe('el momento de lanzar: pillar una fiebre (docs/19 §9.4, CA de cierre)', () => {
+  /** Mercado con una fiebre inyectada, con su boost ya reflejado en la pop. */
+  function withFever(week: number, fever: Fever): MarketState {
+    const m = createMarketState(week);
+    const boost = feverBoost([fever], fever.target, fever.targetId, week);
+    const cell = (prev: TrendState): TrendState => ({
+      ...prev,
+      pop: Math.min(1, prev.pop + boost),
+      stage: 'fiebre',
+      direction: 'sube',
+    });
+    if (fever.target === 'genre') {
+      return { ...m, genres: { ...m.genres, [fever.targetId]: cell(m.genres[fever.targetId]) }, fevers: [fever] };
+    }
+    return { ...m, themes: { ...m.themes, [fever.targetId]: cell(m.themes[fever.targetId]) }, fevers: [fever] };
+  }
+
+  const fever: Fever = {
+    id: 'f-espacio', target: 'theme', targetId: 'espacio',
+    startWeek: 30, peakWeek: 40, endWeek: 55, intensity: 0.45, source: 'organica',
+  };
+
+  it('CA: el mismo juego vende mucho más durante la fiebre de su tema que sin ella', () => {
+    const feveredMarket = withFever(40, fever); // en el pico
+    const calmMarket = createMarketState(40); // base plana, sin fiebre
     const game = makeGame({ genreId: 'puzzle', themeId: 'espacio' });
 
-    const atPeak = expectedWeeklyUnits(game, 0, peakMarket);
-    const whenDead = expectedWeeklyUnits(game, 0, deadMarket);
-    expect(atPeak).toBeGreaterThan(whenDead * 1.5);
+    const inFever = expectedWeeklyUnits(game, 0, feveredMarket);
+    const calm = expectedWeeklyUnits(game, 0, calmMarket);
+    expect(inFever).toBeGreaterThan(calm * 1.5);
   });
 
-  it('las ventas se recalculan por tick: si la moda cae después de lanzar, la cola se hunde', () => {
+  it('las ventas siguen la fiebre: la cola se hunde cuando se enfría', () => {
     const game = makeGame({ genreId: 'puzzle', themeId: 'espacio', review: 90 });
-    // Mismo juego y misma semana relativa (t=4), con el mercado de dos momentos.
-    const risingMarket = createMarketState(40);
-    const dyingMarket = createMarketState(180);
-    expect(expectedWeeklyUnits(game, 4, dyingMarket)).toBeLessThan(
-      expectedWeeklyUnits(game, 4, risingMarket),
+    // Misma semana relativa (t=4): durante la fiebre vs ya expirada (base plana).
+    const duringFever = withFever(40, fever);
+    const afterFever = createMarketState(60); // endWeek 55: ya se enfrió
+    expect(expectedWeeklyUnits(game, 4, afterFever)).toBeLessThan(
+      expectedWeeklyUnits(game, 4, duringFever),
     );
   });
 });

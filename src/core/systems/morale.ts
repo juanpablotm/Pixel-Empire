@@ -7,6 +7,7 @@ import type { GameState, Studio } from '../model/gameState';
 import type { Segment } from '../model/market';
 import type { ActiveScandal, DebtSource } from '../model/moral';
 import type { ReleasedGame } from '../model/release';
+import { activeFeverFor } from './market';
 import {
   aggregateReputation,
   mergeDeltas,
@@ -188,15 +189,20 @@ export function applyReleaseMoralEffects(state: GameState, game: ReleasedGame): 
   studio = withReputationDeltas(studio, deltas);
   studio = nudgeMoralDrift(studio, drift);
 
-  // Contadores de legado: apostar temprano por una moda naciente (docs/06 §6).
-  const genreStage = state.market.genres[game.genreId]?.stage;
-  const themeStage = state.market.themes[game.themeId]?.stage;
-  const early = genreStage === 'naciendo' || themeStage === 'naciendo';
+  // Contadores de legado (docs/06 §6): desde el modelo "fiebre" (docs/19 §9.4),
+  // "apostar temprano por una moda" es pillar una FIEBRE en su arranque —
+  // lanzar mientras su género o tema está en fiebre y antes de su pico, cuando
+  // llegar el primero es mérito y no seguir a la manada.
+  const genreFever = activeFeverFor(state.market.fevers, 'genre', game.genreId, state.week);
+  const themeFever = activeFeverFor(state.market.fevers, 'theme', game.themeId, state.week);
+  const early =
+    (genreFever !== undefined && state.week < genreFever.peakWeek) ||
+    (themeFever !== undefined && state.week < themeFever.peakWeek);
   const stats = early
     ? { ...state.stats, earlyTrendReleases: state.stats.earlyTrendReleases + 1 }
     : state.stats;
   if (early) {
-    logs.push(`«${game.name}» llega antes que nadie a una moda que nace. Eso se recuerda.`);
+    logs.push(`«${game.name}» pilla una fiebre en su arranque, antes que nadie. Eso se recuerda.`);
   }
 
   let next: GameState = { ...state, studio, stats };

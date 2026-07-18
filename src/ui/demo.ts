@@ -6,7 +6,9 @@ import {
   computeSegmentReviews,
   computeTeamFactor,
   createInitialState,
+  createMarketState,
   engineTechLevel,
+  feverBoost,
   generateCandidates,
   makeRng,
   reviewVerdict,
@@ -14,6 +16,7 @@ import {
   type CommunityPost,
   type Employee,
   type EraId,
+  type Fever,
   type GameState,
   type Project,
   type ReleasedGame,
@@ -648,6 +651,49 @@ function featuresDemo(desglose: boolean): GameState {
   return { ...state, releasedGames: [...state.releasedGames, game] };
 }
 
+/**
+ * Escaparate de la Fase 9.4 (docs/19 §9.4): las fiebres de mercado y las
+ * consolas. Un estudio de E5 con DOS fiebres activas —una de género (RPG,
+ * orgánica) y una de tema (Zombis, encendida por un hit)— con su boost ya
+ * reflejado en la popularidad, como haría advanceMarket. El mercado se
+ * recalcula a la semana de E5 para que salgan sus consolas. Con `&plataformas=1`
+ * abre además el modal de concepción con un motor multiplataforma, para
+ * capturar la SELECCIÓN de plataformas (varias a la vez, la I+D de 9.2).
+ */
+function fiebreDemo(): GameState {
+  const base = studioDemo();
+  const week = base.week;
+  const fevers: Fever[] = [
+    { id: 'f-rpg', target: 'genre', targetId: 'rpg', startWeek: week - 5, peakWeek: week - 1, endWeek: week + 7, intensity: 0.42, source: 'organica' },
+    { id: 'f-zombis', target: 'theme', targetId: 'zombis', startWeek: week - 2, peakWeek: week + 3, endWeek: week + 12, intensity: 0.38, source: 'hit' },
+  ];
+  // Mercado a la semana real de E5 (sus consolas) + el boost de cada fiebre
+  // reflejado en la pop de su target, exactamente como lo dejaría advanceMarket.
+  const market = createMarketState(week);
+  const withBoost = (
+    bucket: typeof market.genres,
+    id: string,
+    target: 'genre' | 'theme',
+    direction: 'sube' | 'baja',
+  ): typeof market.genres => ({
+    ...bucket,
+    [id]: {
+      pop: Math.min(1, (bucket[id]?.pop ?? 0.5) + feverBoost(fevers, target, id, week)),
+      stage: 'fiebre',
+      direction,
+    },
+  });
+  return {
+    ...base,
+    market: {
+      ...market,
+      fevers,
+      genres: withBoost(market.genres, 'rpg', 'genre', 'baja'),
+      themes: withBoost(market.themes, 'zombis', 'theme', 'sube'),
+    },
+  };
+}
+
 /** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
 function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
@@ -739,6 +785,36 @@ export function applyDemoFromQuery(): boolean {
     const desglose = params.get('desglose') === '1';
     seed(featuresDemo(desglose), desglose ? 'resena' : 'estudio', desglose ? 'demo-93' : null);
     if (!desglose) useGameStore.setState({ devProjectId: 'demo-proj' });
+    return true;
+  }
+  // Las fiebres de mercado y consolas (Fase 9.4, docs/19 §9.4): el panel de
+  // mercado con las fiebres ACTIVAS marcadas. Con `&plataformas=1`, el modal de
+  // concepción con un motor multiplataforma para lucir la selección de varias
+  // consolas a la vez.
+  if (demo === 'fiebre') {
+    const plataformas = params.get('plataformas') === '1';
+    const state = fiebreDemo();
+    if (plataformas) {
+      // Motor propio con pipeline multiplataforma (la capacidad se investiga en
+      // 9.2): habilita elegir hasta 4 consolas a la vez en el Concepto.
+      const withEngine: GameState = {
+        ...state,
+        engines: [
+          {
+            id: 'demo-motor-multi',
+            name: 'Motor Cometa',
+            generation: 5,
+            techLevel: engineTechLevel(5, ['graficos3d', 'online', 'biplataforma', 'multiplataforma']),
+            capabilities: ['graficos3d', 'online', 'biplataforma', 'multiplataforma'],
+            builtWeek: state.week - 60,
+          },
+        ],
+      };
+      seed(withEngine, 'estudio', null);
+      useGameStore.setState({ conceptionOpen: true });
+    } else {
+      seed(state, 'mercado', null);
+    }
     return true;
   }
   // El arranque A CIEGAS (docs/17 P2): partida recién fundada con el modal de

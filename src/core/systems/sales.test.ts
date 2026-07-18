@@ -77,12 +77,18 @@ describe('ventas de Fase 3 — pico + cola larga recalculada por tick (docs/04 �
     const s = balance.sales;
     const platform = getPlatform('pcCasero');
 
+    // Demanda con la pop NORMALIZADA por la base plana (9.4): mercado normal = 1
+    // × popDemandScale, y la fiebre multiplicaría por encima (aquí no hay).
+    const base = balance.market.popularity.base;
+    const popFactor =
+      s.popDemandScale *
+      (market.genres.rpg.pop / base) *
+      (market.themes.fantasia.pop / base);
     const demand =
       market.platforms.pcCasero.installedBase *
       platform.audienceBias.hardcore *
       s.sizeDemandFactor.pequeno *
-      market.genres.rpg.pop *
-      market.themes.fantasia.pop;
+      popFactor;
     const reviewFactor = 0.8 ** s.reviewExponent;
     const satMod = saturationModifier(effectiveSaturation(market, 'rpg', 'fantasia'));
     const tailDecay = s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * 0.8;

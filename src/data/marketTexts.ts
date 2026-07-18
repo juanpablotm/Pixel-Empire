@@ -3,12 +3,8 @@ import type { PlatformStage, TrendDirection, TrendStage } from '../core/model/ma
 /** Etiquetas legibles del panel de tendencias y las plataformas (docs/10 §10.7). */
 
 export const trendStageLabels: Record<TrendStage, string> = {
-  naciendo: 'Naciendo',
-  creciendo: 'Creciendo',
-  pico: 'En su pico',
   estable: 'Estable',
-  declive: 'En declive',
-  muerto: 'Muerto',
+  fiebre: '🔥 En fiebre',
 };
 
 export const trendDirectionArrows: Record<TrendDirection, string> = {

@@ -23,19 +23,47 @@ export interface CurvePoint {
 export type TrendDirection = 'sube' | 'estable' | 'baja';
 
 /**
- * Etapa del ciclo de vida de una moda (docs/04 §2):
- * Naciendo → Creciendo → Pico → Declive → Muerto (a veces renace = vuelve a
- * Creciendo). 'estable' cubre las mesetas intermedias sin dirección clara.
+ * Estado de un género o tema en el mercado (docs/04 §2, reescrito en 9.4).
+ * Desde el modelo "fiebre" (docs/19 §9.4) se acabaron las curvas lentas de
+ * años que premiaban acampar: casi siempre 'estable' (base plana e igual para
+ * todo lo disponible), y 'fiebre' solo mientras hay una fiebre activa sobre él.
  */
-export type TrendStage = 'naciendo' | 'creciendo' | 'pico' | 'estable' | 'declive' | 'muerto';
+export type TrendStage = 'estable' | 'fiebre';
 
-/** Estado vivo de la popularidad de un género o tema (docs/04 §2). */
+/** Estado vivo de la popularidad de un género o tema (docs/04 §2, §9.4). */
 export interface TrendState {
-  /** Popularidad actual 0..1 (curva base + ruido suave del PRNG). */
+  /** Popularidad actual 0..1: base plana + boost de fiebre activa + ruido suave. */
   pop: number;
-  /** Dirección legible derivada de la curva base (el ruido no la altera). */
+  /** Dirección legible: sube/baja mientras una fiebre crece o se enfría; si no, estable. */
   direction: TrendDirection;
   stage: TrendStage;
+}
+
+/**
+ * Fiebre de mercado (Fase 9.4, docs/19 §9.4): un pico temporal y fuerte de
+ * popularidad sobre un género o tema concreto, que dura unos meses y luego
+ * decae a la base. Es la ÚNICA fuente de variación temporal del mercado: se
+ * acabaron las tendencias lentas que premiaban repetir. Puede nacer de forma
+ * orgánica (PRNG con semilla) o dispararla un HIT (tuyo; y de un rival en 9.5)
+ * → "fiebre del oro". Serializable: vive en MarketState.fevers.
+ */
+export interface Fever {
+  /** Id único y determinista (`f-<semana>-<target>-<targetId>`). */
+  id: string;
+  /** Si la fiebre recae sobre un género o sobre un tema. */
+  target: 'genre' | 'theme';
+  /** Id del género o tema afectado. */
+  targetId: string;
+  /** Semana en la que nace (empieza a subir). */
+  startWeek: number;
+  /** Semana del pico (boost máximo); rampa de subida start→peak, decae peak→end. */
+  peakWeek: number;
+  /** Semana en la que se apaga (vuelve a la base). */
+  endWeek: number;
+  /** Boost máximo de popularidad en el pico (se suma a la base, clamp 0..1). */
+  intensity: number;
+  /** Origen para el sabor de la noticia: orgánica o encendida por un hit. */
+  source: 'organica' | 'hit';
 }
 
 /** Etapa del ciclo de vida de una plataforma (docs/04 §7). */
@@ -67,6 +95,12 @@ export interface MarketState {
   /** Contador de saturación por combo género|tema; decae con el tiempo. */
   saturation: Record<string, number>;
   platforms: Record<string, PlatformMarketState>;
+  /**
+   * Fiebres activas (Fase 9.4, docs/19 §9.4): picos temporales sobre géneros o
+   * temas. Solo las ACTIVAS (el tick poda las que expiran); el jugador ve las
+   * de aquí, nunca las futuras. Opcional: los saves previos arrancan con `?? []`.
+   */
+  fevers?: Fever[];
 }
 
 /** Ajustes de mercado aplicados a la reseña, guardados para explicarla (docs/04 §5). */

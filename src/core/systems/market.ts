@@ -1,4 +1,5 @@
 import { balance } from '../../data/balance';
+import { eraIndex } from '../../data/eras';
 import { genres, getGenre } from '../../data/genres';
 import { getPlatform, platforms } from '../../data/platforms';
 import { getTheme, themes } from '../../data/themes';
@@ -11,13 +12,13 @@ import type { Platform } from '../model/content';
 import type { GameState } from '../model/gameState';
 import type {
   CurvePoint,
+  Fever,
   MarketState,
   PlatformMarketState,
   PlatformStage,
   ReviewMarketInfo,
   Segment,
   TrendDirection,
-  TrendStage,
   TrendState,
 } from '../model/market';
 import type { MonetizationConfig } from '../model/moral';
@@ -75,24 +76,72 @@ export function curveValueAt(curve: readonly CurvePoint[], week: number): number
   return last.value;
 }
 
-/** Dirección ↑→↓ de la curva base en las últimas semanas (el ruido no cuenta). */
-export function trendDirection(curve: readonly CurvePoint[], week: number): TrendDirection {
-  const p = balance.market.popularity;
-  const delta = curveValueAt(curve, week) - curveValueAt(curve, week - p.directionLookbackWeeks);
-  if (delta > p.directionThreshold) return 'sube';
-  if (delta < -p.directionThreshold) return 'baja';
-  return 'estable';
+// ---------------------------------------------------------------------------
+// Fiebres de mercado (docs/04 §2, Fase 9.4, docs/19 §9.4)
+// ---------------------------------------------------------------------------
+
+/** Las fiebres actualmente activas en una semana (startWeek ≤ week < endWeek). */
+export function activeFevers(
+  fevers: readonly Fever[] | undefined,
+  week: number,
+): readonly Fever[] {
+  return (fevers ?? []).filter((f) => week >= f.startWeek && week < f.endWeek);
 }
 
-/** Etapa del ciclo de vida de una moda (docs/04 §2), derivada de la curva base. */
-export function trendStage(curve: readonly CurvePoint[], week: number): TrendStage {
-  const p = balance.market.popularity;
-  const level = curveValueAt(curve, week);
-  const direction = trendDirection(curve, week);
-  if (level <= p.stage.deadLevel) return direction === 'sube' ? 'naciendo' : 'muerto';
-  if (direction === 'sube') return level < p.stage.emergingLevel ? 'naciendo' : 'creciendo';
-  if (direction === 'baja') return 'declive';
-  return level >= p.stage.peakLevel ? 'pico' : 'estable';
+/** La fiebre activa sobre un género/tema concreto en una semana, o undefined. */
+export function activeFeverFor(
+  fevers: readonly Fever[] | undefined,
+  target: 'genre' | 'theme',
+  targetId: string,
+  week: number,
+): Fever | undefined {
+  return (fevers ?? []).find(
+    (f) =>
+      f.target === target &&
+      f.targetId === targetId &&
+      week >= f.startWeek &&
+      week < f.endWeek,
+  );
+}
+
+/**
+ * Forma de la fiebre 0..1 en una semana: rampa de subida start→peak y decaída
+ * más larga peak→end (docs/19 §9.4: sube fuerte, luego decae a la base).
+ */
+export function feverShape(fever: Fever, week: number): number {
+  if (week < fever.startWeek || week >= fever.endWeek) return 0;
+  if (week <= fever.peakWeek) {
+    const rise = Math.max(1, fever.peakWeek - fever.startWeek);
+    return (week - fever.startWeek) / rise;
+  }
+  const fall = Math.max(1, fever.endWeek - fever.peakWeek);
+  return Math.max(0, (fever.endWeek - week) / fall);
+}
+
+/** Boost de popularidad que aporta la fiebre activa sobre un target (0 si no hay). */
+export function feverBoost(
+  fevers: readonly Fever[] | undefined,
+  target: 'genre' | 'theme',
+  targetId: string,
+  week: number,
+): number {
+  const fever = activeFeverFor(fevers, target, targetId, week);
+  return fever ? fever.intensity * feverShape(fever, week) : 0;
+}
+
+/** Semanas que le quedan a una fiebre (para el panel; nunca negativo). */
+export function feverWeeksLeft(fever: Fever, week: number): number {
+  return Math.max(0, fever.endWeek - week);
+}
+
+/**
+ * Dirección del panel para un género/tema: sube mientras su fiebre crece
+ * (antes del pico), baja mientras se enfría; sin fiebre, estable (la base es
+ * plana, no hay tendencia que leer — se acabó el min-max de la línea temporal).
+ */
+function feverDirection(fever: Fever | undefined, week: number): TrendDirection {
+  if (!fever) return 'estable';
+  return week < fever.peakWeek ? 'sube' : 'baja';
 }
 
 // ---------------------------------------------------------------------------
@@ -164,18 +213,31 @@ export function saturationModifier(effSaturation: number): number {
   return Math.max(s.minModifier, 1 - s.k * excess);
 }
 
-/** Registra un lanzamiento en el contador de saturación de su combo. */
+/**
+ * Registra un lanzamiento en el contador de saturación de su combo. Inundar una
+ * fiebre la satura MÁS rápido (docs/04 §3, §9.4): si se pasa la `week` y el
+ * género o el tema están en fiebre, el incremento se multiplica — subirse tú la
+ * aprovecha, pero apilar secuelas sobre ella la quema antes.
+ */
 export function registerReleaseSaturation(
   market: MarketState,
   genreId: string,
   themeId: string,
+  week?: number,
 ): MarketState {
   const key = comboKey(genreId, themeId);
+  const inFever =
+    week !== undefined &&
+    (activeFeverFor(market.fevers, 'genre', genreId, week) !== undefined ||
+      activeFeverFor(market.fevers, 'theme', themeId, week) !== undefined);
+  const increment =
+    balance.market.saturation.releaseIncrement *
+    (inFever ? balance.market.fevers.feverSaturationMult : 1);
   return {
     ...market,
     saturation: {
       ...market.saturation,
-      [key]: (market.saturation[key] ?? 0) + balance.market.saturation.releaseIncrement,
+      [key]: (market.saturation[key] ?? 0) + increment,
     },
   };
 }
@@ -349,11 +411,16 @@ export function expectedWeeklyUnits(
     (sum, id) => sum + marketSize(getPlatform(id), game.audience, market),
     0,
   );
-  const demand =
-    installedDemand *
-    s.sizeDemandFactor[game.size] *
-    (market.genres[game.genreId]?.pop ?? 0.5) *
-    (market.themes[game.themeId]?.pop ?? 0.5);
+  // Popularidad normalizada por la base plana (9.4, docs/19 §9.4): un mercado
+  // sin fiebre vale 1.0 (es "lo normal", no un castigo), y una FIEBRE lo
+  // multiplica por encima. Así "hacer buenos juegos" vende siempre y pillar una
+  // fiebre es un extra de verdad — no un mundo donde todo vende a media máquina.
+  const base = balance.market.popularity.base;
+  const popFactor =
+    s.popDemandScale *
+    ((market.genres[game.genreId]?.pop ?? base) / base) *
+    ((market.themes[game.themeId]?.pop ?? base) / base);
+  const demand = installedDemand * s.sizeDemandFactor[game.size] * popFactor;
 
   const reviewFactor = (game.review / 100) ** s.reviewExponent;
   const satMod = saturationModifier(effectiveSaturation(market, game.genreId, game.themeId));
@@ -387,8 +454,8 @@ export function expectedWeeklyUnits(
 // Estado del mercado: creación y avance por tick
 // ---------------------------------------------------------------------------
 
-function trendStateAt(curve: readonly CurvePoint[], week: number, pop: number): TrendState {
-  return { pop, direction: trendDirection(curve, week), stage: trendStage(curve, week) };
+function trendStateAt(pop: number, fever: Fever | undefined, week: number): TrendState {
+  return { pop, direction: feverDirection(fever, week), stage: fever ? 'fiebre' : 'estable' };
 }
 
 function platformStateAt(platform: Platform, week: number, installedBase: number): PlatformMarketState {
@@ -400,67 +467,146 @@ function platformBaseAt(platform: Platform, week: number): number {
   return week < platform.releaseWeek ? 0 : curveValueAt(platform.lifecycleCurve, week);
 }
 
-/** Estado inicial del mercado en una semana: las curvas base, sin ruido aún. */
+/** Nombre legible del género o tema de una fiebre (para las noticias). */
+function feverTargetName(target: 'genre' | 'theme', id: string): string {
+  return target === 'genre' ? getGenre(id).name : getTheme(id).name;
+}
+
+/**
+ * Paseo de la banda plana (docs/04 §2, §9.4): base + ruido AR(1), recortado a
+ * [bandMin, bandMax]. Es lo único que se mueve fuera de fiebre, y se queda en
+ * la banda estrecha que hace que "hacer buenos juegos" pese más que la moda.
+ */
+function bandPop(deviation: number, rng: Rng): number {
+  const p = balance.market.popularity;
+  return clamp(
+    p.base + deviation * p.noisePersistence + p.noiseAmplitude * (rng.next() * 2 - 1),
+    p.bandMin,
+    p.bandMax,
+  );
+}
+
+/** Estado inicial del mercado: base plana, sin ruido ni fiebres aún. */
 export function createMarketState(week: number): MarketState {
+  const base = balance.market.popularity.base;
   const genreStates: Record<string, TrendState> = {};
-  for (const genre of genres) {
-    genreStates[genre.id] = trendStateAt(
-      genre.basePopularityCurve,
-      week,
-      curveValueAt(genre.basePopularityCurve, week),
-    );
-  }
+  for (const genre of genres) genreStates[genre.id] = trendStateAt(base, undefined, week);
   const themeStates: Record<string, TrendState> = {};
-  for (const theme of themes) {
-    themeStates[theme.id] = trendStateAt(
-      theme.basePopularityCurve,
-      week,
-      curveValueAt(theme.basePopularityCurve, week),
-    );
-  }
+  for (const theme of themes) themeStates[theme.id] = trendStateAt(base, undefined, week);
   const platformStates: Record<string, PlatformMarketState> = {};
   for (const platform of platforms) {
     platformStates[platform.id] = platformStateAt(platform, week, platformBaseAt(platform, week));
   }
-  return { genres: genreStates, themes: themeStates, saturation: {}, platforms: platformStates };
+  return { genres: genreStates, themes: themeStates, saturation: {}, platforms: platformStates, fevers: [] };
+}
+
+/** Géneros y temas ya aparecidos en la era: candidatos a fiebre (docs/19 §9.4). */
+function feverCandidates(era: EraId): { target: 'genre' | 'theme'; id: string }[] {
+  const idx = eraIndex(era);
+  const list: { target: 'genre' | 'theme'; id: string }[] = [];
+  for (const g of genres) if (eraIndex(g.appearsInEra) <= idx) list.push({ target: 'genre', id: g.id });
+  for (const t of themes) if (eraIndex(t.appearsInEra) <= idx) list.push({ target: 'theme', id: t.id });
+  return list;
 }
 
 /**
- * Evolución de una popularidad: reversión suave hacia la curva base + ruido
- * del PRNG (docs/04 §2: la tendencia es legible, el azar solo matiza).
+ * Ensambla una fiebre con duración/intensidad/pico sorteados del PRNG con
+ * semilla (docs/19 §9.4). El pico cae a `peakFrac` de la ventana: sube rápido
+ * y decae más largo hacia la base.
+ */
+export function buildFever(
+  target: 'genre' | 'theme',
+  targetId: string,
+  week: number,
+  source: 'organica' | 'hit',
+  rng: Rng,
+): Fever {
+  const f = balance.market.fevers;
+  const duration = rng.int(f.durationMinWeeks, f.durationMaxWeeks);
+  const intensity = f.intensityMin + rng.next() * (f.intensityMax - f.intensityMin);
+  return {
+    id: `f-${week}-${target}-${targetId}`,
+    target,
+    targetId,
+    startWeek: week,
+    peakWeek: week + Math.round(duration * f.peakFrac),
+    endWeek: week + duration,
+    intensity,
+    source,
+  };
+}
+
+/**
+ * Enciende una fiebre orgánica sobre un género/tema disponible que no esté ya
+ * en fiebre (docs/19 §9.4). Determinista; null si no hay candidato libre.
+ */
+function makeOrganicFever(era: EraId, week: number, active: readonly Fever[], rng: Rng): Fever | null {
+  const taken = new Set(active.map((f) => `${f.target}|${f.targetId}`));
+  const pool = feverCandidates(era).filter((c) => !taken.has(`${c.target}|${c.id}`));
+  if (pool.length === 0) return null;
+  const pick = pool[rng.int(0, pool.length - 1)];
+  return buildFever(pick.target, pick.id, week, 'organica', rng);
+}
+
+/**
+ * Evolución de una popularidad (docs/04 §2, §9.4): la base es plana, así que el
+ * ruido AR(1) la hace vagar dentro de la banda y encima se suma el boost de la
+ * fiebre activa (la única variación fuerte). Para el paseo de la banda se
+ * descuenta de prev.pop el boost que tenía la semana anterior (prevFevers), de
+ * modo que la fiebre no contamina la desviación del ruido. Consume una tirada
+ * del PRNG por género/tema (determinismo estable).
  */
 function evolveTrend(
   prev: TrendState | undefined,
-  curve: readonly CurvePoint[],
+  target: 'genre' | 'theme',
+  targetId: string,
   week: number,
+  prevFevers: readonly Fever[] | undefined,
+  nextFevers: readonly Fever[],
   rng: Rng,
 ): TrendState {
   const p = balance.market.popularity;
-  const base = curveValueAt(curve, week);
-  const deviation = prev ? prev.pop - curveValueAt(curve, week - 1) : 0;
-  const pop = clamp(
-    base + deviation * p.noisePersistence + p.noiseAmplitude * (rng.next() * 2 - 1),
-    0,
-    1,
-  );
-  return trendStateAt(curve, week, pop);
+  const prevBoost = feverBoost(prevFevers, target, targetId, week - 1);
+  const prevBand = prev ? prev.pop - prevBoost : p.base;
+  const band = bandPop(prevBand - p.base, rng);
+  const fever = activeFeverFor(nextFevers, target, targetId, week);
+  const boost = feverBoost(nextFevers, target, targetId, week);
+  return trendStateAt(clamp(band + boost, 0, 1), fever, week);
 }
 
 /**
- * Avanza el mercado 1 semana (docs/08 §4, primer paso del tick): popularidades,
- * base instalada de plataformas, decaimiento de la saturación y acumulación de
- * hype de los proyectos en desarrollo. Función pura.
+ * Avanza el mercado 1 semana (docs/08 §4, primer paso del tick): fiebres,
+ * popularidades (base plana + ruido + fiebre), base instalada de plataformas,
+ * decaimiento de la saturación y acumulación de hype. Función pura.
  */
 export function advanceMarket(state: GameState, rng: Rng): GameState {
   const week = state.week;
   const cfg = balance.market;
+  const prevFevers = state.market.fevers;
 
+  // 1) Fiebres (docs/19 §9.4): sobreviven las que aún no expiran (endWeek >
+  //    week) y, si queda hueco, el PRNG del mercado puede encender una orgánica
+  //    (antes que las popularidades, para que ya entren con su boost).
+  let fevers: Fever[] = (prevFevers ?? []).filter((f) => f.endWeek > week);
+  const born: Fever[] = [];
+  if (fevers.length < cfg.fevers.maxConcurrent && rng.next() < cfg.fevers.spawnChancePerWeek) {
+    const fever = makeOrganicFever(state.era, week, fevers, rng);
+    if (fever) {
+      fevers = [...fevers, fever];
+      born.push(fever);
+    }
+  }
+
+  // 2) Popularidades: base plana + ruido en banda + boost de la fiebre activa.
   const genreStates: Record<string, TrendState> = {};
   for (const genre of genres) {
     genreStates[genre.id] = evolveTrend(
       state.market.genres[genre.id],
-      genre.basePopularityCurve,
+      'genre',
+      genre.id,
       week,
+      prevFevers,
+      fevers,
       rng,
     );
   }
@@ -468,8 +614,11 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
   for (const theme of themes) {
     themeStates[theme.id] = evolveTrend(
       state.market.themes[theme.id],
-      theme.basePopularityCurve,
+      'theme',
+      theme.id,
       week,
+      prevFevers,
+      fevers,
       rng,
     );
   }
@@ -494,6 +643,7 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
     themes: themeStates,
     saturation,
     platforms: platformStates,
+    fevers,
   };
 
   // Hype base (docs/04 §4): crece desde la fase de Producción, más si hay moda.
@@ -526,27 +676,26 @@ export function advanceMarket(state: GameState, rng: Rng): GameState {
 
   let next: GameState = { ...state, market, projects };
 
-  // Hitos legibles del panel de tendencias: una moda toca techo o muere.
-  for (const genre of genres) {
-    const before = state.market.genres[genre.id]?.stage;
-    const after = genreStates[genre.id].stage;
-    if (before !== undefined && before !== after) {
-      if (after === 'pico') {
-        next = appendLog(next, 'mercado', `El género ${getGenre(genre.id).name} toca techo: está de moda.`);
-      } else if (after === 'muerto') {
-        next = appendLog(next, 'mercado', `El género ${getGenre(genre.id).name} ya no interesa a nadie.`);
-      }
-    }
+  // Aviso tipo noticia (docs/19 §9.4): al nacer una fiebre, el jugador la ve
+  // claramente (toast, no pausa: 'mercado' no está oculto para los toasts). NO
+  // se anuncian fiebres futuras — solo lo que está pasando ahora.
+  for (const f of born) {
+    const kind = f.target === 'genre' ? 'del género' : 'del tema';
+    next = appendLog(
+      next,
+      'mercado',
+      `🔥 ¡Fiebre ${kind} ${feverTargetName(f.target, f.targetId)}! Sus juegos arrasan estas semanas: aprovéchala mientras dure.`,
+    );
   }
-  for (const theme of themes) {
-    const before = state.market.themes[theme.id]?.stage;
-    const after = themeStates[theme.id].stage;
-    if (before !== undefined && before !== after) {
-      if (after === 'pico') {
-        next = appendLog(next, 'mercado', `El tema ${getTheme(theme.id).name} toca techo: está de moda.`);
-      } else if (after === 'muerto') {
-        next = appendLog(next, 'mercado', `El tema ${getTheme(theme.id).name} ya no interesa a nadie.`);
-      }
+  // Y cuando una se apaga, un aviso discreto de que el mercado vuelve a la base.
+  for (const f of prevFevers ?? []) {
+    if (f.endWeek === week) {
+      const kind = f.target === 'genre' ? 'del género' : 'del tema';
+      next = appendLog(
+        next,
+        'mercado',
+        `La fiebre ${kind} ${feverTargetName(f.target, f.targetId)} se enfría: el mercado vuelve a la normalidad.`,
+      );
     }
   }
 

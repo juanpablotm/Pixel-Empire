@@ -105,7 +105,9 @@ interface Genre {
   idealTech: number;
   specialtyWeights: Record<Specialty, number>;
   appearsInEra: EraId;
-  basePopularityCurve: PopularityCurve;   // doc 04
+  requiresResearch?: string;
+  // Desde 9.4 NO hay curva de popularidad por género (doc 04 §2): la base es
+  // plana e igual para todo lo disponible; la variación la dan las fiebres.
 }
 ```
 
@@ -126,7 +128,8 @@ Puzzle/Casual, Terror, Sandbox, Battle Royale (E6+), Gestión, Ritmo.
 ## 3. Temas `[DECIDIDO]`
 
 ```ts
-interface Theme { id: string; name: string; appearsInEra: EraId; basePopularityCurve: PopularityCurve; }
+interface Theme { id: string; name: string; appearsInEra: EraId; }
+// Desde 9.4, sin curva de popularidad (doc 04 §2): base plana + fiebres.
 ```
 
 Semilla: Fantasía, Ciencia ficción, Espacio, Militar, Zombis, Medieval, Deportes, Vida/Cotidiano,
@@ -183,9 +186,36 @@ interface Platform {
 }
 ```
 
-Semilla de plataformas por era (nombres ficticios reconocibles): PC casero (E1), "Commo 64" (E1),
-"Gameling" portátil (E2), "Master V" (E2), "Playsystem" (E3), "N-Cube" (E3), PC online (E4),
-"Playsystem 2" (E4), móvil/smartphone (E5), tiendas digitales (E5), "cloud/streaming" (E6), RV/mixta (E7).
+Semilla de plataformas por era (nombres ficticios reconocibles): PC Casero (E1), "Commo 64" (E1),
+"Master V" (E2), "Gameling" portátil (E2), "Playsystem" (E3), "N-Cube" (E3), "Vortex 32" (E3),
+"Playsystem 2" (E4), "Vertex" (E4), "Gameling Advance" (E4), móvil/smartphone (E5), "Playsystem 4" (E5),
+"N-Switch" (E5), "CloudPlay" (E6), "Playsystem 5" (E6), "Vertex X" (E6), "Visor RV Mixta" (E7),
+"Holo Deck" (E7).
+
+**Más consolas escalonadas (9.4, docs/19 §9.4):** cada generación tiene 2–3 plataformas en competencia
+que salen **en semanas distintas dentro de su era** (`releaseWeek` escalonado), no todas de golpe —
+decisión de en cuál y cuándo lanzar. El **número de plataformas simultáneas** por lanzamiento lo limita
+el motor (capacidades `biplataforma`/`multiplataforma` de 9.2, §4.1); la demanda suma sus bases
+instaladas (doc 04 §6–7).
+
+### 4.2 Fiebres de mercado (Fase 9.4, docs/19 §9.4) `[DECIDIDO · baseline v1]`
+
+La popularidad de género/tema es **plana** (doc 04 §2); la variación temporal la dan las fiebres, que
+viven en `GameState.market.fevers` (serializable). Definición y disparadores en `data/balance.ts`
+(`market.popularity` base/banda, `market.fevers` probabilidad/duración/intensidad/hitFever/saturación);
+lógica pura en `core/systems/market.ts`:
+
+```ts
+interface Fever {
+  id: string;                       // `f-<semana>-<target>-<targetId>`
+  target: 'genre' | 'theme';
+  targetId: string;
+  startWeek: number; peakWeek: number; endWeek: number;   // sube start→peak, decae peak→end
+  intensity: number;                // boost de pop en el pico (se suma a la base, clamp 0..1)
+  source: 'organica' | 'hit';       // orgánica (PRNG) o encendida por un HIT (reseña ≥ 85)
+}
+// MarketState gana `fevers?: Fever[]` (solo las activas; el tick poda las que expiran). Save v15.
+```
 
 ### 4.1 Motores (Fase 9.2, docs/19 §9.2) `[DECIDIDO · baseline v1]`
 
