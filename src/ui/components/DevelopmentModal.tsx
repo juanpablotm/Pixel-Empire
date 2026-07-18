@@ -4,6 +4,7 @@ import {
   computeBugLevel,
   computeTeamFactor,
   computeTeamOutput,
+  engineHasCapability,
   policiesUnlocked,
   projectProgress,
   projectTotalWeeks,
@@ -279,21 +280,31 @@ function DevelopmentBody({ project }: { project: Project }) {
                 <div className="grid gap-2 sm:grid-cols-2">
                   {featuresShown.map((feature) => {
                     const chosen = project.chosenFeatureIds.includes(feature.id);
+                    // El motor gatea features (9.2): sin la capacidad, la
+                    // tarjeta sale atenuada con su motivo. El núcleo decide
+                    // (engineHasCapability); la UI solo muestra.
+                    const engineBlocked =
+                      !chosen &&
+                      feature.requiresEngineCapability !== undefined &&
+                      !engineHasCapability(game, project.engineId, feature.requiresEngineCapability);
                     return (
                       <button
                         key={feature.id}
                         type="button"
                         aria-pressed={chosen}
+                        disabled={engineBlocked}
+                        title={engineBlocked ? 'El motor de este proyecto no tiene esa capacidad' : undefined}
                         onClick={() => toggleFeature(feature.id, project.id)}
                         className={`rounded-lg border p-2.5 text-left transition-colors ${
                           chosen
                             ? 'border-action-hi bg-ok/10'
                             : 'border-line-hi bg-raised/60 hover:border-line-hi'
-                        }`}
+                        } ${engineBlocked ? 'cursor-not-allowed opacity-50' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium">{feature.name}</span>
                           {chosen && <span aria-hidden>✔</span>}
+                          {engineBlocked && <span aria-hidden>🔒</span>}
                         </div>
                         <p className="mt-1 text-xs text-ink-mute">{feature.description}</p>
                         <p className="mt-1.5 text-xs text-ink-faint">
@@ -303,6 +314,7 @@ function DevelopmentBody({ project }: { project: Project }) {
                             : feature.bugRisk >= 0.08
                               ? 'riesgo de bugs medio'
                               : 'riesgo de bugs bajo'}
+                          {engineBlocked && ' · 🔒 exige capacidad del motor'}
                         </p>
                       </button>
                     );

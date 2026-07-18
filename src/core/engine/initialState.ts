@@ -81,6 +81,8 @@ export function createInitialState(seed: number): GameState {
     community: initialCommunityState(),
     regulation: { pressure: {}, enacted: [] },
     research: initialResearchState(),
+    engines: [],
+    engineBuild: null,
     policies: defaultPolicies(),
     stats: initialLegacyStats(),
     cashflow: [],

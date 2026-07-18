@@ -80,7 +80,26 @@ export interface ReleasedGame {
   name: string;
   themeId: string;
   genreId: string;
+  /** Plataforma principal (platformIds[0]). */
   platformId: string;
+  /**
+   * Todas las plataformas del lanzamiento (Fase 9.2): la demanda semanal suma
+   * sus bases instaladas. Opcional: saves previos → `?? [platformId]`.
+   */
+  platformIds?: string[];
+  /**
+   * Motor con el que se lanzó (Fase 9.2), congelado al lanzar: id + nombre
+   * legible para la ficha. null/undefined = código artesanal.
+   */
+  engineId?: string | null;
+  engineName?: string;
+  /**
+   * Royalty del motor licenciado, congelada al lanzar (0 si el motor es
+   * propio o artesanal): fracción de los ingresos brutos que se lleva el
+   * vendor cada semana. `royaltyPaid` acumula lo pagado (para el P&L).
+   */
+  royaltyPct?: number;
+  royaltyPaid?: number;
   audience: Audience;
   size: ProjectSize;
   price: number;

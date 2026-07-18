@@ -10,8 +10,23 @@ import type { ProjectSize } from '../core/model/project';
 import type { Employee } from '../core/model/staff';
 import { resolveDilemma, respondToCrisis, type DilemmaChoice } from '../core/systems/community';
 import { availableCredit, repayLoan, takeLoan, weeklyFixedCosts } from '../core/systems/economy';
+import {
+  availableLicensedEngines,
+  buildableCapabilities,
+  engineAdequacy01,
+  engineBuildCost,
+  engineHasCapability,
+  maxBuildableGeneration,
+  startEngineBuild,
+} from '../core/systems/engines';
 import { lootBoxesBanned } from '../core/systems/morale';
-import { estimateProject, sizeBlockReason, startProject, toggleFeature } from '../core/systems/projects';
+import {
+  estimateProject,
+  projectTotalWeeks,
+  sizeBlockReason,
+  startProject,
+  toggleFeature,
+} from '../core/systems/projects';
 import { comboPopularity } from '../core/systems/market';
 import { computeFit } from '../core/systems/quality';
 import {
@@ -222,6 +237,102 @@ function pickMonetization(state: GameState, phil: Philosophy): MonetizationConfi
   };
 }
 
+/**
+ * El motor propio gana si se queda a menos de esto de adecuación del mejor
+ * licenciado: la royalty es para siempre y el activo se amortiza (docs/19
+ * §9.2). Solo se licencia cuando el propio va claramente desfasado.
+ */
+const ENGINE_OWN_MARGIN = 0.1;
+
+/** El mejor motor propio (por nivel), o null si aún no hay taller. */
+function bestOwnedEngine(state: GameState) {
+  const engines = state.engines ?? [];
+  return engines.reduce<(typeof engines)[number] | null>(
+    (best, e) => (best === null || e.techLevel > best.techLevel ? e : best),
+    null,
+  );
+}
+
+/**
+ * 💡 que hay que RESERVAR para la próxima obra de motor (si la arquitectura ya
+ * permite una generación mejor que la del taller): con el motor como término
+ * tecnológico del techo (9.2), quedarse sin puntos para la obra es condenarse
+ * a topar bajo — el jugador previsor no se los gasta en otra cosa.
+ */
+function engineReservePoints(state: GameState): number {
+  if (state.engineBuild) return 0;
+  const best = bestOwnedEngine(state);
+  const targetGen = maxBuildableGeneration(state);
+  if (targetGen <= (best?.generation ?? 0)) return 0;
+  const capabilities = [
+    ...new Set([...(best?.capabilities ?? []), ...buildableCapabilities(state)]),
+  ];
+  return engineBuildCost(state, targetGen, capabilities, best?.id ?? null).points;
+}
+
+/**
+ * El taller de motores (docs/19 §9.2): mantiene el motor propio al día.
+ * Construye la primera obra en cuanto la arquitectura lo permite y MEJORA el
+ * motor cuando la I+D desbloquea una generación superior — el sumidero
+ * recurrente de la fase. Con prudencia de jugador: tras pagar la obra deben
+ * quedar ~26 semanas de costes fijos (la obra no puede fundir la producción).
+ */
+function manageEngines(state: GameState, phil: Philosophy): GameState {
+  if (state.engineBuild) return state;
+  const best = bestOwnedEngine(state);
+  const targetGen = maxBuildableGeneration(state);
+  if (targetGen <= (best?.generation ?? 0)) return state;
+  const capabilities = [
+    ...new Set([...(best?.capabilities ?? []), ...buildableCapabilities(state)]),
+  ];
+  const cost = engineBuildCost(state, targetGen, capabilities, best?.id ?? null);
+  if (state.research.points < cost.points) return state;
+  if (state.studio.capital - cost.money < 26 * weeklyFixedCosts(state)) return state;
+  return startEngineBuild(state, {
+    upgradeOf: best?.id ?? null,
+    name: best ? undefined : `Motor ${phil.name}`,
+    generation: targetGen,
+    capabilities,
+  });
+}
+
+/**
+ * Motor con el que concebir (docs/19 §9.2): el de mejor adecuación al
+ * proyecto, prefiriendo el PROPIO (sin royalty, amortiza) salvo que un
+ * licenciado le saque ventaja real — el puente clásico cuando tu motor se ha
+ * quedado viejo y la obra nueva aún no llega.
+ */
+function pickEngine(state: GameState, size: ProjectSize, genreId: string): string | null {
+  let ownId: string | null = null;
+  let ownAdequacy = engineAdequacy01(state, null, size, genreId);
+  for (const engine of state.engines ?? []) {
+    const adequacy = engineAdequacy01(state, engine.id, size, genreId);
+    if (adequacy > ownAdequacy) {
+      ownAdequacy = adequacy;
+      ownId = engine.id;
+    }
+  }
+  let licensed: { id: string; adequacy: number; fee: number } | null = null;
+  for (const def of availableLicensedEngines(state)) {
+    const adequacy = engineAdequacy01(state, def.id, size, genreId);
+    if (
+      licensed === null ||
+      adequacy > licensed.adequacy ||
+      (adequacy === licensed.adequacy && def.upfrontFee < licensed.fee)
+    ) {
+      licensed = { id: def.id, adequacy, fee: def.upfrontFee };
+    }
+  }
+  if (
+    licensed !== null &&
+    licensed.adequacy > ownAdequacy + ENGINE_OWN_MARGIN &&
+    state.studio.capital > licensed.fee + 26 * weeklyFixedCosts(state)
+  ) {
+    return licensed.id;
+  }
+  return ownId;
+}
+
 /** ¿El combo tema×género se lanzó dentro de la ventana de refrito? */
 function isRehash(state: GameState, themeId: string, genreId: string): boolean {
   const windowStart = state.week - balance.moral.rehashWindowWeeks;
@@ -268,17 +379,26 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
     platformId: 'pcCasero',
     audience: 'amplio',
     size,
+    // El motor se elige por adecuación (9.2): propio si aguanta, licenciado
+    // de puente cuando el propio va desfasado y la caja soporta la cuota.
+    engineId: pickEngine(state, size, combo.genreId),
     price: Math.round(recommended * phil.priceMult),
     monetization: pickMonetization(state, phil),
   });
 
   // Features hasta el objetivo de alcance del tamaño (docs/03 factor C),
-  // mejores primero: misma regla para los tres bots (comparación justa).
+  // mejores primero: misma regla para los tres bots (comparación justa). Las
+  // gateadas por capacidad de motor (9.2) se saltan si el motor elegido no la
+  // tiene — como el jugador, que las ve bloqueadas.
   const project = next.projects[next.projects.length - 1];
   const target = balance.quality.featureScopeTarget[size];
-  const pool = [...availableFeatures(next)].sort(
-    (a, b) => b.qualityValue - a.qualityValue || a.id.localeCompare(b.id),
-  );
+  const pool = [...availableFeatures(next)]
+    .filter(
+      (f) =>
+        f.requiresEngineCapability === undefined ||
+        engineHasCapability(next, project.engineId, f.requiresEngineCapability),
+    )
+    .sort((a, b) => b.qualityValue - a.qualityValue || a.id.localeCompare(b.id));
   let scope = 0;
   for (const feature of pool) {
     if (scope >= target) break;
@@ -382,27 +502,57 @@ const REST_TO_START = 60;
 /** Umbrales de rotación durante un proyecto: sale agotado, entra descansado. */
 const ROTATE_OUT_ENERGY = 25;
 const ROTATE_IN_ENERGY = 65;
+/** Descanso PREVENTIVO (9.2): con holgura, el cansado descansa antes de agotarse. */
+const PREVENTIVE_REST_ENERGY = 50;
+/** Recta final: todo el mundo remata el lanzamiento (nadie descansa). */
+const FINALE_WEEKS = 6;
+const FINALE_MIN_ENERGY = 40;
 
 /**
  * Gestión de energía como la haría un jugador (docs/05 §4): el que se agota
  * sale a descansar y el descansado vuelve al tajo. Sin esto, encadenar juegos
  * lleva a toda la plantilla al burnout — y eso es diseño, no un bug.
+ *
+ * Lección de la 9.2: rotar SOLO por agotamiento sincroniza a la plantilla —
+ * todos se agotan la misma semana, el proyecto pasa semanas en cuadro (3/48)
+ * y si el lanzamiento cae ahí, el alcance se hunde (Q ~30). Un jugador
+ * escalona: mientras el proyecto vaya sobrado sobre la plantilla esperada de
+ * su tamaño, el más cansado descansa ANTES de agotarse; y en la recta final
+ * todo el mundo vuelve al tajo a rematar el lanzamiento.
  */
 function manageEnergy(state: GameState): GameState {
   const project = state.projects[0];
   if (!project) return state;
   let next = state;
+  const finale = projectTotalWeeks(project) - project.weeksSpent <= FINALE_WEEKS;
   for (const employee of next.staff) {
     const assigned = next.projects[0].assignedStaff.includes(employee.id);
-    if (assigned && employee.energy < ROTATE_OUT_ENERGY) {
+    const inRd = next.research.rdStaff.includes(employee.id);
+    if (assigned && !finale && employee.energy < ROTATE_OUT_ENERGY) {
       next = toggleAssignment(next, employee.id, project.id);
     } else if (
       !assigned &&
-      employee.energy >= ROTATE_IN_ENERGY &&
-      !next.research.rdStaff.includes(employee.id)
+      !inRd &&
+      (employee.energy >= ROTATE_IN_ENERGY ||
+        (finale && employee.energy >= FINALE_MIN_ENERGY))
     ) {
       next = toggleAssignment(next, employee.id, project.id);
     }
+  }
+  if (finale) return next;
+  // Rotación escalonada: los huecos de descanso son los que sobran sobre la
+  // plantilla esperada del tamaño (sizeGate.minStaff); se los llevan los más
+  // cansados. Así la cohorte se desincroniza y el equipo nunca cae en bloque.
+  const current = next.projects[0];
+  const gate = balance.development.sizeGate[current.size].minStaff;
+  const assignedEmployees = next.staff.filter((e) => current.assignedStaff.includes(e.id));
+  const slots = assignedEmployees.length - gate;
+  if (slots > 0) {
+    const tired = assignedEmployees
+      .filter((e) => e.energy < PREVENTIVE_REST_ENERGY)
+      .sort((a, b) => a.energy - b.energy || a.id.localeCompare(b.id))
+      .slice(0, slots);
+    for (const e of tired) next = toggleAssignment(next, e.id, project.id);
   }
   return next;
 }
@@ -414,28 +564,50 @@ function manageEnergy(state: GameState): GameState {
  * árbol. El bot NO paga el atajo predictivo (nodos `reveals`, docs/17 P2): ya
  * "ve" el mercado con computeFit, así que esas pistas no le aportan nada.
  */
+/**
+ * Nodos al servicio del MOTOR (9.2): arquitectura, capacidades y su cadena.
+ * Están exentos de la reserva de obra — comprarlos ES trabajar para el motor.
+ */
+const MOTOR_NODE_IDS = new Set([
+  'motorPropio1',
+  'motorPropio2',
+  'motorPropio3',
+  'tecnologia3d',
+  'kitBiplataforma',
+  'pipelineMultiplataforma',
+  'tecnologiaOnline',
+]);
+
 function maybeResearch(state: GameState): GameState {
   // Capacidades primero: motores/QA/marketing componen ingreso y calidad, así
   // que rinden más que la variedad (un jugador listo invierte ahí antes). El
   // bot NO paga el atajo predictivo (nodos `reveals`, docs/17 P2): ya "ve" el
   // mercado con computeFit. Con los 💡 que sobren, desbloquea temas para no
   // repetirse (el refrito castiga, docs/17 P1).
+  //
+  // Desde 9.2 la obra del motor también cuesta 💡: los nodos que no sirven al
+  // motor respetan su reserva (engineReservePoints) — comprarse el QA
+  // automatizado justo cuando tocaba pagar la obra era condenarse a topar.
+  const buildReserve = engineReservePoints(state);
   for (const node of researchNodes) {
     if (node.reveals) continue;
-    if (researchNodeStatus(state, node.id) === 'disponible') {
-      return buyResearch(state, node.id);
+    if (researchNodeStatus(state, node.id) !== 'disponible') continue;
+    if (!MOTOR_NODE_IDS.has(node.id) && state.research.points < node.cost + buildReserve) {
+      continue;
     }
+    return buyResearch(state, node.id);
   }
   // Reserva para el nodo de capacidad más barato aún sin comprar, AUNQUE su
-  // era no haya llegado (9.1): con el techo tecnológico, entrar en E2 sin los
-  // 25 💡 del primer motor es condenarse a un techo de 55 durante años — el
-  // jugador previsor ahorra ANTES del cambio de era. Sin la reserva el bot se
-  // funde los puntos en temas —siempre más baratos— y no desbloquea NINGUNA
-  // capacidad (la fábrica quebraba en E2 por esto en la 8.10).
-  const reserve =
+  // era no haya llegado (9.1): entrar en E2 sin la arquitectura del primer
+  // motor es condenarse a un techo de 55 durante años — el jugador previsor
+  // ahorra ANTES del cambio de era. Sin la reserva el bot se funde los puntos
+  // en temas —siempre más baratos— y no desbloquea NINGUNA capacidad (la
+  // fábrica quebraba en E2 por esto en la 8.10).
+  const nodeReserve =
     researchNodes
       .filter((n) => !n.reveals && researchNodeStatus(state, n.id) !== 'comprado')
       .sort((a, b) => a.cost - b.cost)[0]?.cost ?? 0;
+  const reserve = Math.max(nodeReserve, buildReserve);
 
   const theme = researchableThemes(state)
     .filter((t) => themeResearchStatus(state, t.id) === 'disponible')
@@ -517,10 +689,11 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
   for (const crisis of state.community.crises.filter((c) => c.status === 'abierta')) {
     state = respondToCrisis(state, crisis.id, phil.crisisResponse);
   }
-  // 2. Estudio: ampliación (se compra, docs/18 V4-c), crédito, investigación,
-  // plantilla, cuidado y rotación de energía.
+  // 2. Estudio: ampliación (se compra, docs/18 V4-c), crédito, taller de
+  // motores (9.2), investigación, plantilla, cuidado y rotación de energía.
   state = maybeExpand(state, phil);
   state = manageLoans(state);
+  state = manageEngines(state, phil);
   state = maybeResearch(state);
   state = maybeHire(state, phil);
   state = maybeCare(state, phil);

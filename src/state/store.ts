@@ -26,6 +26,7 @@ import {
   setSquadMembers,
   scaleUpgradeCost,
   setPolicies,
+  startEngineBuild,
   startProject,
   takeLoan,
   tick,
@@ -38,6 +39,7 @@ import {
   type DevPhaseNumber,
   type DilemmaChoice,
   type DilemmaKind,
+  type EngineBuildSpec,
   type EraId,
   type FocusAllocation,
   type GameState,
@@ -289,6 +291,8 @@ export interface GameStore {
   /** Acciones de investigación (docs/02 §3; delegan en core/systems/research.ts). */
   toggleResearch: (employeeId: string) => void;
   buyResearch: (nodeId: string) => void;
+  /** Encarga la obra de un motor propio, nuevo o mejora (Fase 9.2). */
+  startEngineBuild: (spec: EngineBuildSpec) => void;
   /** Desbloquea un tema con 💡 (docs/17 P1). */
   researchTheme: (themeId: string) => void;
   /** "Investigar resultados" de un juego lanzado: aprende su combo (docs/17 P2). */
@@ -817,6 +821,10 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   buyResearch: (nodeId) => {
     set((s) => ({ game: buyResearch(s.game, nodeId) }));
+  },
+
+  startEngineBuild: (spec) => {
+    set((s) => ({ game: startEngineBuild(s.game, spec) }));
   },
 
   researchTheme: (themeId) => {

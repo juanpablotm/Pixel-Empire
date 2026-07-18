@@ -15,7 +15,8 @@ interface Project {
   themeId: string;
   genreId: string;
   subGenreId?: string;          // mezcla opcional
-  platformIds: string[];
+  platformIds: string[];        // la primera es la PRINCIPAL; el nº lo limita el motor (9.2)
+  engineId?: string | null;     // motor propio, licenciado o null = artesanal (Fase 9.2)
   audience: 'hardcore' | 'amplio' | 'casual' | 'infantil';
   size: 'pequeno' | 'mediano' | 'grande' | 'aaa';
   phase: 0 | 1 | 2 | 3;         // 0 = concepción
@@ -185,6 +186,50 @@ interface Platform {
 Semilla de plataformas por era (nombres ficticios reconocibles): PC casero (E1), "Commo 64" (E1),
 "Gameling" portátil (E2), "Master V" (E2), "Playsystem" (E3), "N-Cube" (E3), PC online (E4),
 "Playsystem 2" (E4), móvil/smartphone (E5), tiendas digitales (E5), "cloud/streaming" (E6), RV/mixta (E7).
+
+### 4.1 Motores (Fase 9.2, docs/19 §9.2) `[DECIDIDO · baseline v1]`
+
+El motor es el término tecnológico del techo (`03` §3.1). Vive en `data/engines.ts` (capacidades y
+catálogo licenciable) + `balance.engines` (niveles/costes por generación) y, los propios, en el estado:
+
+```ts
+type EngineCapabilityId = 'graficos3d' | 'online' | 'fisicas' | 'biplataforma' | 'multiplataforma';
+
+interface EngineCapabilityDef {
+  id: EngineCapabilityId; name: string; description: string;
+  techBonus: number;            // puntos de nivel que suma al motor
+  era: EraId; requiresNode?: string;   // gateo: era + nodo de I+D
+  buildCostMoney: number; buildCostPoints: number;  // sobrecoste en la obra
+  maxPlatforms?: number;        // bi = 2, multi = 4 (sin kit, 1)
+}
+
+interface LicensedEngineDef {    // catálogo de terceros (desde E3; se renueva por eras)
+  id: string; name: string; vendor: string;
+  appearsInEra: EraId; retiresInEra?: EraId;
+  generation: number; techLevel: number;    // FIJO: también envejece
+  capabilities: EngineCapabilityId[];
+  upfrontFee: number;           // cuota POR JUEGO al concebir
+  royaltyPct: number;           // fracción de ingresos brutos, para siempre
+}
+
+interface OwnedEngine {          // en GameState.engines (serializable)
+  id: string; name: string;
+  generation: number;           // 1..7 (≈ era en la que es puntero)
+  techLevel: number;            // base de la generación + capacidades
+  capabilities: EngineCapabilityId[];
+  builtWeek: number;
+}
+
+interface EngineBuild {          // GameState.engineBuild: la obra en curso (una a la vez)
+  upgradeOf: string | null;     // mejora de un motor existente, o obra nueva
+  name: string; generation: number; capabilities: EngineCapabilityId[];
+  weeksLeft: number; totalWeeks: number;
+}
+```
+
+Las features pueden exigir capacidad de motor (`Feature.requiresEngineCapability`: el multijugador
+online y el cross-play piden `online`). Los juegos lanzados congelan `engineId`/`engineName`,
+`royaltyPct` y acumulan `royaltyPaid` (para el P&L).
 
 ## 5. Features `[DECIDIDO]`
 

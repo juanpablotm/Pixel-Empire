@@ -340,10 +340,17 @@ export function expectedWeeklyUnits(
   context: SalesContext = {},
 ): number {
   const s = balance.sales;
-  const platform = getPlatform(game.platformId);
 
+  // Multiplataforma (9.2): la demanda SUMA las bases instaladas de todas las
+  // plataformas del lanzamiento (cada una con su sesgo de público). Si una
+  // muere a mitad de la cola, su curva la apaga sola.
+  const platformIds = game.platformIds ?? [game.platformId];
+  const installedDemand = platformIds.reduce(
+    (sum, id) => sum + marketSize(getPlatform(id), game.audience, market),
+    0,
+  );
   const demand =
-    marketSize(platform, game.audience, market) *
+    installedDemand *
     s.sizeDemandFactor[game.size] *
     (market.genres[game.genreId]?.pop ?? 0.5) *
     (market.themes[game.themeId]?.pop ?? 0.5);

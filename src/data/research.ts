@@ -4,10 +4,15 @@ import { genres } from './genres';
 
 /**
  * Árbol de investigación (docs/02 §3): los puntos 💡 se gastan aquí. Cada
- * nodo está gateado por era y a veces por otros nodos. Hay dos tipos de
+ * nodo está gateado por era y a veces por otros nodos. Hay tres tipos de
  * recompensa: capacidades de estudio (bonus en `effects`, aplicados por
- * core/systems/research.ts) y desbloqueos de contenido (los géneros/features
- * con `requiresResearch` apuntando al nodo; ver researchNodeUnlocks()).
+ * core/systems/research.ts), desbloqueos de contenido (los géneros/features
+ * con `requiresResearch` apuntando al nodo; ver researchNodeUnlocks()) y —
+ * desde la Fase 9.2 — TECNOLOGÍA DE MOTORES: los nodos de arquitectura
+ * gatean qué generación de motor propio puedes construir
+ * (balance.engines.generationGate) y otros habilitan capacidades del motor
+ * (`requiresNode` en data/engines.ts). El motor en sí se CONSTRUYE aparte
+ * (💰 + 💡 + semanas; core/systems/engines.ts).
  */
 export const researchNodes: readonly ResearchNodeDef[] = [
   // --- Inteligencia de mercado (docs/17 P2): revela el ATAJO PREDICTIVO -----
@@ -40,41 +45,65 @@ export const researchNodes: readonly ResearchNodeDef[] = [
       'Cruzas datos de miles de lanzamientos: el medidor de Fit deja de ser difuso para cualquier combinación tema×género.',
     cost: 16,
     era: 'E2',
-    techValue: 1,
     reveals: 'fit',
   },
 
-  // --- Motores propios (docs/02 §3): el equipo cunde más --------------------
-  // No acortan el calendario (lo fija el tamaño): suben la capacidad del equipo,
-  // así se ejecuta mejor en el mismo plazo (más QA, menos juego a medio cocer).
+  // --- Arquitectura de motores (Fase 9.2, docs/19 §9.2) ---------------------
+  // Estos nodos NO construyen nada: desbloquean la CAPACIDAD de construir
+  // motores propios de más generación (balance.engines.generationGate). La
+  // obra en sí cuesta 💰 + 💡 + semanas en el taller de motores.
   {
     id: 'motorPropio1',
-    name: 'Motor propio I',
-    description: 'Deja de reinventar la rueda: tu primer motor reutilizable. El equipo cunde un 10 % más.',
-    cost: 25,
+    name: 'Arquitectura de motores I',
+    description:
+      'Deja de reinventar la rueda: aprende a construir motores reutilizables (hasta la 3.ª generación).',
+    cost: 12,
     era: 'E2',
-    techValue: 3,
-    effects: { devOutput: 0.1 },
   },
   {
     id: 'motorPropio2',
-    name: 'Motor propio II',
-    description: 'Motor 3D con herramientas de equipo. El equipo cunde un 15 % más.',
-    cost: 70,
+    name: 'Arquitectura de motores II',
+    description:
+      'Herramientas de equipo y pipelines serios: motores propios hasta la 5.ª generación.',
+    cost: 40,
     era: 'E4',
-    techValue: 4,
     requiresNodes: ['motorPropio1'],
-    effects: { devOutput: 0.15 },
   },
   {
     id: 'motorPropio3',
-    name: 'Motor propio III',
-    description: 'Pipeline de nueva generación. El equipo cunde un 20 % más.',
-    cost: 140,
+    name: 'Arquitectura de motores III',
+    description:
+      'Pipeline de nueva generación: motores propios hasta la 7.ª generación.',
+    cost: 80,
     era: 'E6',
-    techValue: 5,
     requiresNodes: ['motorPropio2'],
-    effects: { devOutput: 0.2 },
+  },
+  {
+    id: 'tecnologia3d',
+    name: 'Tecnología 3D',
+    description:
+      'Renderizado 3D en tiempo real: habilita la capacidad Gráficos 3D en tus motores.',
+    cost: 30,
+    era: 'E3',
+    requiresNodes: ['motorPropio1'],
+  },
+  {
+    id: 'kitBiplataforma',
+    name: 'Kit biplataforma',
+    description:
+      'Exporta a una segunda plataforma: habilita la capacidad Biplataforma en tus motores.',
+    cost: 25,
+    era: 'E3',
+    requiresNodes: ['motorPropio1'],
+  },
+  {
+    id: 'pipelineMultiplataforma',
+    name: 'Pipeline multiplataforma',
+    description:
+      'Compilar para todo a la vez: habilita la capacidad Multiplataforma (hasta 4) en tus motores.',
+    cost: 60,
+    era: 'E5',
+    requiresNodes: ['kitBiplataforma'],
   },
 
   // --- QA y calidad ---------------------------------------------------------
@@ -84,7 +113,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Un equipo de testers de verdad: el pulido rinde un 30 % más.',
     cost: 35,
     era: 'E3',
-    techValue: 2,
     effects: { qaEfficiency: 0.3 },
   },
   {
@@ -93,7 +121,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Tests que corren solos por la noche. +40 % extra al pulido.',
     cost: 90,
     era: 'E5',
-    techValue: 3,
     requiresNodes: ['qaProfesional'],
     effects: { qaEfficiency: 0.4 },
   },
@@ -105,7 +132,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Estudios de mercado y anuncios con puntería: el hype crece un 20 % más rápido.',
     cost: 30,
     era: 'E3',
-    techValue: 1,
     effects: { hypeGain: 0.2 },
   },
   {
@@ -114,7 +140,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Campañas hechas para compartirse. +30 % extra de hype.',
     cost: 80,
     era: 'E5',
-    techValue: 1,
     requiresNodes: ['marketingDirigido'],
     effects: { hypeGain: 0.3 },
   },
@@ -126,7 +151,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Tiempo protegido para experimentar: la investigación rinde un 50 % más.',
     cost: 40,
     era: 'E2',
-    techValue: 1,
     effects: { researchSpeed: 0.5 },
   },
 
@@ -134,10 +158,10 @@ export const researchNodes: readonly ResearchNodeDef[] = [
   {
     id: 'tecnologiaOnline',
     name: 'Tecnología online',
-    description: 'Netcode propio: desbloquea el multijugador online.',
+    description:
+      'Netcode propio: desbloquea el multijugador online y la capacidad Online de tus motores.',
     cost: 60,
     era: 'E4',
-    techValue: 2,
   },
   {
     id: 'generacionProcedural',
@@ -145,7 +169,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Mundos que se construyen solos: desbloquea el género Sandbox y los mundos procedurales.',
     cost: 70,
     era: 'E5',
-    techValue: 2,
   },
   {
     id: 'serviciosOnline',
@@ -153,7 +176,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Infraestructura para cientos de jugadores a la vez: desbloquea el Battle Royale.',
     cost: 100,
     era: 'E6',
-    techValue: 2,
     requiresNodes: ['tecnologiaOnline'],
   },
   {
@@ -162,7 +184,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Servidores elásticos en la nube: desbloquea el cross-play.',
     cost: 110,
     era: 'E6',
-    techValue: 2,
     requiresNodes: ['serviciosOnline'],
   },
   {
@@ -171,7 +192,6 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     description: 'Modelos que improvisan diálogo y mundo: desbloquea el compañero con IA.',
     cost: 150,
     era: 'E7',
-    techValue: 3,
   },
 ];
 

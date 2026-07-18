@@ -101,26 +101,34 @@ Pesos **v1 (cerrados como baseline):** `wF=0.30, wB=0.25, wC=0.20, wD=0.25`. Aju
   temas frescos) da un plus de calidad y reputación pero más riesgo de mercado (ver `04`); clonar lo
   seguro no penaliza la calidad pero satura mercado y no genera reputación.
 
-### 3.1 El techo dinámico (Fase 9.1, docs/19 §9.1) `[DECIDIDO]`
+### 3.1 El techo dinámico (Fase 9.1, docs/19 §9.1; motor desde 9.2) `[DECIDIDO]`
 
 El techo ya **no es un tope fijo por era**: es el **mínimo de cuatro techos parciales**, y el desglose
 nombra SIEMPRE cuál manda (Pilar 2). Todos los números en `balance.quality.ceiling`:
 
 ```
-techoQ = min( capEra, capMadurez, capTalento, capTech )
+techoQ = min( capEra, capMadurez, capTalento, capMotor )
 
 capMadurez  = 45 + 55 · exp/(exp + 55)      // exp = Σ sizeExp(lanzamientos) + stageExp(etapa)
 capTalento  = 45 + 50 · mejorSkillClave/100 // la MEJOR skill del rol clave del género entre los asignados
-capTech     = 55 + 45 · techPoints/target(era)  // techValue de los nodos de I+D comprados
-capEra      = el capByEraSize de siempre (envolvente; en 9.2 pasa a ser el motor)
+capMotor    = 55 + 45 · adecuación          // el MOTOR del proyecto (9.2); clave 'tech' en el breakdown
+capEra      = el capByEraSize de siempre (envolvente)
+
+adecuación  = clamp01( nivelMotor / demanda )
+demanda     = demandByEra(era) × sizeFactor(tamaño) × (0.7 + 0.6·idealTech(género))
 ```
 
 - **Madurez:** en el garaje el techo es **~45–52 juegues como juegues** y sube DESPACIO con los
   lanzamientos (sizeExp 1.5/2.5/5/8/12 por tamaño) y la escala (stageExp 0/3/8/18/30 por etapa).
 - **Talento:** una **obra maestra (85+) exige una ESTRELLA (skill ≥ 80)** en la especialidad clave del
   género (la de mayor `specialtyWeights`). El mejor individuo, no la media.
-- **Tecnología:** sin I+D el techo topa en 55 desde E2 (`targetByEra` 0/3/6/10/14/20/24): el primer
-  motor propio es la salida. En 9.2 este término pasa a ser el motor.
+- **Motor (Fase 9.2, docs/19 §9.2):** el término tecnológico es la **adecuación del motor elegido al
+  concebir** (propio, licenciado o "código artesanal", nivel 0). La demanda escala con la era
+  (`demandByEra` 0/3/6/10/14/20/24), con el **tamaño** (pequeño ×0.55 … AAA ×1.3) y con la
+  dependencia técnica del género (`idealTech`): un AAA/shooter 3D sobre motor obsoleto **topa bajo**;
+  un juego pequeño y narrativo apenas depende del motor. El **envejecimiento es emergente**: el nivel
+  del motor es fijo y la demanda sube era a era — hay que mejorar el motor (60 % del coste de
+  construir) o licenciar uno moderno (royalty). En E1 la demanda es 0: en 1980 el artesanal basta.
 - **Encaje de alcance (ambición vs capacidad):** no es un techo, es un **multiplicador de Q**:
   `alcanceFactor = max(0.4, alcance01^1.25)` con `alcance01 = poderEquipo / poderObjetivo(tamaño)`
   (poderEquipo = Σ skill ponderada por género de los asignados; objetivos 0.5/1.8/5/9.5/26). Un AAA
@@ -156,7 +164,7 @@ accionable** ("la próxima, más QA") en vez de frustración opaca.
 
 Desde la Fase 9.1 el desglose añade **cinco líneas más**, igual de legibles: el **techo** ("Hoy la
 juventud del estudio deja el listón de lo posible en 46" / "la falta de una estrella de Diseño" /
-"la falta de I+D"), el **alcance** ("La ambición queda grande"), el **listón de la época** ("Por
+"un motor que se queda corto para esta ambición", 9.2), el **alcance** ("La ambición queda grande"), el **listón de la época** ("Por
 detrás de su tiempo" — cualitativa: el número del listón no se muestra), la **fatiga de fórmula**
 ("El público está cansado de esta fórmula (−8)", solo cuando pega) y la **banda de gusto** ("A la
 crítica no le entró este juego (−3)" — la nota tiene rango, pero se explica; Pilar 2 intacto). La

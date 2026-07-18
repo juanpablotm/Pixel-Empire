@@ -30,6 +30,13 @@ import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeCeilingContext } from './maturity';
 import { computeQuality } from './quality';
 import { addReleaseResearchPoints, capabilityBonus, themeResearchStatus } from './research';
+import { engineHasCapability, engineMaxPlatforms, resolveEngine } from './engines';
+import { getLicensedEngine, isLicensedEngineId } from '../../data/engines';
+
+/** Cuota por juego de un motor licenciado; 0 para propios/artesanal. */
+function getLicensedEngineFeeOrZero(engineId: string): number {
+  return isLicensedEngineId(engineId) ? getLicensedEngine(engineId).upfrontFee : 0;
+}
 import { withReputationDeltas } from './reputation';
 import { buildReviewLines, reviewVerdict } from './review';
 import {
@@ -63,7 +70,20 @@ export interface ProjectConcept {
   name: string;
   themeId: string;
   genreId: string;
+  /** Plataforma principal (o la única). */
   platformId: string;
+  /**
+   * Plataformas del lanzamiento (Fase 9.2): si se pasa, la primera debe ser
+   * platformId y el número lo limita el motor (bi/multiplataforma). Si se
+   * omite, [platformId].
+   */
+  platformIds?: string[];
+  /**
+   * Motor del proyecto (Fase 9.2): propio, licenciado o null/omitido =
+   * código artesanal. Los licenciados cobran su cuota al concebir y su
+   * royalty sobre cada venta.
+   */
+  engineId?: string | null;
   audience: Audience;
   size: ProjectSize;
   /**
@@ -182,18 +202,29 @@ export function projectProgress(project: Project): number {
   return Math.min(1, project.weeksSpent / projectTotalWeeks(project));
 }
 
-/** Estimación de duración y coste para la pantalla de concepción. */
-export function estimateProject(size: ProjectSize, platformId: string): {
+/**
+ * Estimación de duración y coste para la pantalla de concepción. Acepta una o
+ * varias plataformas (9.2: cada una paga su licencia) y la cuota del motor
+ * licenciado si lo hay.
+ */
+export function estimateProject(
+  size: ProjectSize,
+  platformIds: string | readonly string[],
+  engineUpfrontFee = 0,
+): {
   weeks: number;
   cost: number;
 } {
+  const ids = typeof platformIds === 'string' ? [platformIds] : platformIds;
   const weeks = balance.development.phaseWeeksBySize[size] * 3;
-  // Coste estimado: desarrollo (persona·semana) + licencia + coste base fijo del
-  // tamaño (docs/17 E1). No incluye marketing ni features (aún por decidir).
+  // Coste estimado: desarrollo (persona·semana) + licencias + coste base fijo
+  // del tamaño (docs/17 E1) + cuota del motor. Sin marketing ni features (aún
+  // por decidir).
   const cost =
     weeks * balance.economy.devCostPerPersonWeek +
-    getPlatform(platformId).licenseCost +
-    balance.economy.sizeBaseCost[size];
+    ids.reduce((sum, id) => sum + getPlatform(id).licenseCost, 0) +
+    balance.economy.sizeBaseCost[size] +
+    engineUpfrontFee;
   return { weeks, cost };
 }
 
@@ -205,8 +236,15 @@ export function estimateProject(size: ProjectSize, platformId: string): {
  * proyectos), a propósito y de forma legible (Pilar 2).
  */
 export function releasedGameCost(project: Project, releaseWeek: number): number {
-  const licenseCost = getPlatform(project.platformId).licenseCost;
-  const baseCost = balance.economy.sizeBaseCost[project.size];
+  // Todas las plataformas pagan licencia (9.2) y el motor licenciado, su cuota.
+  const licenseCost = (project.platformIds ?? [project.platformId]).reduce(
+    (sum, id) => sum + getPlatform(id).licenseCost,
+    0,
+  );
+  // resolveEngine exige estado; aquí basta el catálogo licenciable (los
+  // propios y el artesanal no cobran cuota por juego).
+  const engineFee = project.engineId ? getLicensedEngineFeeOrZero(project.engineId) : 0;
+  const baseCost = balance.economy.sizeBaseCost[project.size] + engineFee;
   // Las semanas en pausa no cuentan: nadie trabajó, no hay desarrollo que
   // cobrar (docs/18 V5). La nómina del estudio va aparte y ya se pagó semana a
   // semana; esta cifra es el coste atribuible AL JUEGO.
@@ -263,9 +301,40 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
   if (!genreAvailable(state, genre)) {
     throw new Error(`El género ${genre.name} aún no está desbloqueado (era o investigación)`);
   }
-  const platform = getPlatform(concept.platformId);
-  if (!platformAvailable(platform, state.week)) {
-    throw new Error(`${platform.name} no está a la venta (docs/04 §7)`);
+  // Plataformas (9.2: puede haber varias; la primera es la principal).
+  const platformIds = concept.platformIds ?? [concept.platformId];
+  if (platformIds.length === 0 || platformIds[0] !== concept.platformId) {
+    throw new Error('La primera plataforma debe ser la principal');
+  }
+  if (new Set(platformIds).size !== platformIds.length) {
+    throw new Error('Plataformas repetidas en el lanzamiento');
+  }
+  for (const id of platformIds) {
+    const p = getPlatform(id);
+    if (!platformAvailable(p, state.week)) {
+      throw new Error(`${p.name} no está a la venta (docs/04 §7)`);
+    }
+  }
+  // Motor (9.2): debe existir (propio o licenciado disponible) y permitir
+  // tantas plataformas como se pidan. resolveEngine lanza si el id no existe.
+  const engineId = concept.engineId ?? null;
+  const engine = resolveEngine(state, engineId);
+  if (engine.kind === 'licenciado' && engineId !== null) {
+    const def = getLicensedEngine(engineId);
+    if (!eraAtLeast(state.era, def.appearsInEra)) {
+      throw new Error(`${def.name} aún no existe en esta era`);
+    }
+    if (def.retiresInEra !== undefined && eraAtLeast(state.era, def.retiresInEra)) {
+      throw new Error(`${def.name} ya está retirado del catálogo`);
+    }
+  }
+  const maxPlatforms = engineMaxPlatforms(state, engineId);
+  if (platformIds.length > maxPlatforms) {
+    throw new Error(
+      maxPlatforms === 1
+        ? `${engine.name} solo compila para una plataforma (investiga los kits multiplataforma)`
+        : `${engine.name} admite como mucho ${maxPlatforms} plataformas a la vez`,
+    );
   }
   // El tamaño exige etapa de escala y plantilla mínimas (docs/17 E1): el AAA,
   // hasta ser Corporación. Mismo motivo que ve la UI (sizeBlockReason).
@@ -291,6 +360,8 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     themeId: concept.themeId,
     genreId: concept.genreId,
     platformId: concept.platformId,
+    platformIds,
+    engineId,
     audience: concept.audience,
     size: concept.size,
     price,
@@ -316,9 +387,13 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     bugDebt: 0,
   };
 
-  // Al arrancar se paga la licencia de la plataforma y el coste base del tamaño
-  // (docs/17 E1): comprometerse con un proyecto grande cuesta de entrada.
-  const upfrontCost = platform.licenseCost + balance.economy.sizeBaseCost[concept.size];
+  // Al arrancar se pagan las licencias de TODAS las plataformas, el coste base
+  // del tamaño (docs/17 E1) y la cuota del motor licenciado (9.2):
+  // comprometerse con un proyecto grande cuesta de entrada.
+  const upfrontCost =
+    platformIds.reduce((sum, id) => sum + getPlatform(id).licenseCost, 0) +
+    balance.economy.sizeBaseCost[concept.size] +
+    engine.upfrontFee;
   const next: GameState = {
     ...state,
     studio: {
@@ -329,7 +404,12 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     projects: [...state.projects, project],
     projectCounter: state.projectCounter + 1,
   };
-  return appendLog(next, 'proyecto', `Empieza el desarrollo de «${name}» (${platform.name}).`);
+  const platformNames = platformIds.map((id) => getPlatform(id).name).join(' + ');
+  return appendLog(
+    next,
+    'proyecto',
+    `Empieza el desarrollo de «${name}» (${platformNames}, motor: ${engine.name}).`,
+  );
 }
 
 /** Acción: fijar el reparto de esfuerzo de una fase (se normaliza a suma 1). */
@@ -359,6 +439,17 @@ export function toggleFeature(state: GameState, featureId: string, projectId?: s
   const chosen = project.chosenFeatureIds.includes(featureId);
   if (!chosen && !featureAvailable(state, feature)) {
     throw new Error(`${feature.name} aún no está desbloqueada (era o investigación)`);
+  }
+  // El motor gatea features (9.2): sin la capacidad, esa tecnología no cabe
+  // en este juego — se eligió motor al concebir y las features lo respetan.
+  if (
+    !chosen &&
+    feature.requiresEngineCapability &&
+    !engineHasCapability(state, project.engineId, feature.requiresEngineCapability)
+  ) {
+    throw new Error(
+      `${feature.name} exige un motor con la capacidad adecuada (el de este proyecto no la tiene)`,
+    );
   }
   const next: Project = {
     ...project,
@@ -404,8 +495,15 @@ function releaseProject(state: GameState, project: Project): GameState {
   const team = assignedTeam(state, project);
   const teamResult = computeTeamFactor(team, project.genreId);
   // Techo dinámico (9.1): madurez del estudio, mejor talento en el rol clave,
-  // adecuación tecnológica y encaje de alcance (core/systems/maturity.ts).
-  const ceiling = computeCeilingContext(state, team, project.genreId, project.size);
+  // adecuación del MOTOR (9.2) y encaje de alcance (core/systems/maturity.ts).
+  const ceiling = computeCeilingContext(
+    state,
+    team,
+    project.genreId,
+    project.size,
+    project.engineId,
+  );
+  const engine = resolveEngine(state, project.engineId);
   const { q, breakdown } = computeQuality(project, {
     era: state.era,
     teamFactor: teamResult.teamFactor,
@@ -460,6 +558,13 @@ function releaseProject(state: GameState, project: Project): GameState {
     themeId: project.themeId,
     genreId: project.genreId,
     platformId: project.platformId,
+    platformIds: project.platformIds ?? [project.platformId],
+    // El motor queda congelado al lanzar (9.2): el nombre para la ficha y la
+    // royalty del licenciado, que se cobrará semana a semana sobre las ventas.
+    engineId: project.engineId ?? null,
+    engineName: engine.name,
+    royaltyPct: engine.royaltyPct,
+    royaltyPaid: 0,
     audience: project.audience,
     size: project.size,
     price: project.price,
@@ -533,9 +638,14 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
   if (!project) return state;
 
   const team = assignedTeam(state, project);
-  // Capacidad del equipo esta semana: ~1 por persona, con motores propios
-  // (docs/02 §3), crunch y burnout encima (core/systems/staff.ts).
-  const output = computeTeamOutput(team, project.crunch) * capabilityBonus(state, 'devOutput');
+  // Capacidad del equipo esta semana: ~1 por persona, con las herramientas del
+  // MOTOR del proyecto (9.2: el devOutput lo pone el motor, no un nodo),
+  // crunch y burnout encima (core/systems/staff.ts). capabilityBonus queda
+  // para nodos que aún den devOutput (hoy ninguno).
+  const output =
+    computeTeamOutput(team, project.crunch) *
+    capabilityBonus(state, 'devOutput') *
+    (1 + resolveEngine(state, project.engineId).devOutputBonus);
   // Sin nadie trabajando el proyecto NO avanza: se pausa, no se cancela
   // (docs/18 V5). No sube weeksSpent, no acumula bugs, no cambia de fase y no
   // se lanza; al reasignar continúa donde estaba. Solo cuenta la semana en

@@ -68,7 +68,12 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
     }
 
     const revenue = weeklyRevenue(game, units, banned);
-    const total = revenue.sales + revenue.mtx;
+    const gross = revenue.sales + revenue.mtx;
+    // Royalty del motor licenciado (9.2): el vendor se lleva su fracción de
+    // los ingresos BRUTOS, para siempre. Lo que entra en caja (y lo que el
+    // P&L cuenta como "generó") es el neto; lo pagado se acumula aparte.
+    const royalty = Math.round(gross * (game.royaltyPct ?? 0));
+    const total = gross - royalty;
     capital += total;
     income += total;
     return {
@@ -77,6 +82,7 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
       totalUnits: game.totalUnits + units,
       totalRevenue: game.totalRevenue + total,
       mtxRevenue: game.mtxRevenue + revenue.mtx,
+      royaltyPaid: (game.royaltyPaid ?? 0) + royalty,
     };
   });
 

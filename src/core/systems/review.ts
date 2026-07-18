@@ -46,8 +46,10 @@ function ceilingLimitLabel(binding: NonNullable<QualityBreakdown['capBinding']>,
       return 'la juventud del estudio';
     case 'talento':
       return `la falta de una estrella de ${rol}`;
+    // Desde 9.2 el término tecnológico es el MOTOR del proyecto (la clave
+    // 'tech' se conserva por los desgloses guardados).
     case 'tech':
-      return 'la falta de I+D';
+      return 'un motor que se queda corto para esta ambición';
     case 'era':
       return 'la tecnología de la época';
   }

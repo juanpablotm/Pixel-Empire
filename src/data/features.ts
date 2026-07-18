@@ -78,6 +78,9 @@ export const features: readonly Feature[] = [
     bugRisk: 0.2,
     appearsInEra: 'E4',
     requiresResearch: 'tecnologiaOnline',
+    // El netcode vive en el motor (Fase 9.2): sin capacidad Online, no hay
+    // multijugador — investigar la tecnología no basta si tu motor es de ayer.
+    requiresEngineCapability: 'online',
   },
   {
     id: 'logros',
@@ -125,6 +128,7 @@ export const features: readonly Feature[] = [
     bugRisk: 0.18,
     appearsInEra: 'E6',
     requiresResearch: 'infraestructuraCloud',
+    requiresEngineCapability: 'online',
   },
   {
     id: 'companeroIA',

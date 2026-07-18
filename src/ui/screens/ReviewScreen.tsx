@@ -86,6 +86,14 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
               </span>
             )}
             <p className="text-sm text-ink-faint">{game.name}</p>
+            {/* El motor del lanzamiento (9.2), con su royalty si es licencia. */}
+            {game.engineName !== undefined && (
+              <p className="text-xs text-ink-faint">
+                🔧 {game.engineName}
+                {(game.royaltyPct ?? 0) > 0 &&
+                  ` · royalty ${Math.round((game.royaltyPct ?? 0) * 100)} %`}
+              </p>
+            )}
           </div>
         </div>
 

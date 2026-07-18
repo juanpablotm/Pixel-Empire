@@ -36,9 +36,13 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 - `innovationMod` en rango `0.9–1.15`.
 - `teamFactor` en rango típico `0.5–1.3`.
 - **Techo DINÁMICO desde 9.1** (docs/19 §9.1, doc 03 §3.1): `techoQ = min(capEra, capMadurez,
-  capTalento, capTech)` — madurez `45 + 55·exp/(exp+55)` (garaje ~45–52, sube despacio), talento
-  `45 + 50·mejorSkillClave` (obra maestra 85+ exige estrella ≥80 en el rol clave), tecnología
-  `55 + 45·techPoints/target(era)` (targets 0/3/6/10/14/20/24). El `capByEraSize` queda de envolvente.
+  capTalento, capMotor)` — madurez `45 + 55·exp/(exp+55)` (garaje ~45–52, sube despacio), talento
+  `45 + 50·mejorSkillClave` (obra maestra 85+ exige estrella ≥80 en el rol clave). El `capByEraSize`
+  queda de envolvente.
+- **El término tecnológico es el MOTOR desde 9.2** (docs/19 §9.2): `capMotor = 55 + 45·adecuación`,
+  con `adecuación = clamp01(nivelMotor / demanda)` y `demanda = demandByEra(0/3/6/10/14/20/24) ×
+  sizeFactor(0.55/0.75/1/1.15/1.3) × (0.7 + 0.6·idealTech(género))`. El envejecimiento es emergente
+  (nivel fijo, demanda creciente); en E1 la demanda es 0 (el artesanal basta).
 - **Encaje de alcance** (9.1): `Q ×= max(0.4, (poderEquipo/poderObjetivo)^1.25)`, objetivos
   0.5/1.8/5/9.5/26 por tamaño — el AAA con estudio flojo se hunde.
 
@@ -81,8 +85,12 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
 | Marketing escalonado (docs/17 E2; **re-comprable y sin tope** desde 9.1) | Nota de prensa 2k (+0,08) / Anuncios 10k (+0,18) / Feria-Expo 40k (+0,32) / Campaña masiva 120k (+0,50 de expectación); cada compra repite coste y empuje |
-| Licencia de plataforma | 10k–100k 💰 según generación |
+| Licencia de plataforma | 10k–100k 💰 según generación (multiplataforma: cada una paga la suya) |
 | Punto de I+D | ~1 por persona·semana en investigación |
+| Construir motor propio (9.2, por generación 1→7) | 6k / 15k / 50k / 150k / 400k / 1,2M / 2,5M 💰 + 8/14/25/40/60/90/120 💡 + 6/8/12/16/20/26/32 semanas (capacidades aparte); **mejorar = 60 %** del coste |
+| Nivel de motor por generación (9.2) | 2 / 4 / 7 / 11 / 15 / 21 / 26 (+ techBonus de capacidades: 3D +3, online +2, físicas +2, kits +1/+2) |
+| Licenciar motor (9.2) | cuota por juego 15k–150k 💰 + **royalty 7–12 %** de los ingresos brutos, para siempre; catálogo desde E3, se renueva por eras |
+| Herramientas del motor (9.2) | devOutput +5 %…+20 % por generación al proyecto que lo usa (no acorta el calendario) |
 
 **Sobre-hype (docs/17 E2):** si el hype entra en zona roja (≥ 0,65) pero la reseña no cumple (< 68), la
 brecha `clamp01((hype−0,65)/0,35) × clamp01((68−reseña)/68)` castiga la **cola de ventas** (hasta −45 %)

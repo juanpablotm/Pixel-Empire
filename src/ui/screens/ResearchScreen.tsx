@@ -1,18 +1,29 @@
 import { useState } from 'react';
 import {
+  availableLicensedEngines,
+  buildableCapabilities,
+  engineBuildBlockReason,
+  engineBuildCost,
+  engineReferenceAdequacy01,
+  maxBuildableGeneration,
   researchableThemes,
   researchNodeStatus,
   themeResearchCost,
   themeResearchStatus,
+  type EngineCapabilityId,
+  type GameState,
   type MarketKnowledge,
+  type OwnedEngine,
 } from '../../core';
 import { eraOrder, getEra } from '../../data/eras';
+import { engineCapabilities, getEngineCapability } from '../../data/engines';
 import { researchNodes, researchNodeUnlocks } from '../../data/research';
 import { features } from '../../data/features';
 import { genres } from '../../data/genres';
 import { useGameStore } from '../../state/store';
 import { EmptyState } from '../components/EmptyState';
 import { RollingNumber } from '../components/Motion';
+import { formatMoney } from '../format';
 
 /**
  * Pantalla de investigación (docs/02 §3): puntos 💡, asignación de personal a
@@ -30,6 +41,198 @@ const revealsLabel: Record<MarketKnowledge, string> = {
   balance: 'el balance Diseño/Técnica ideal del género',
   fit: 'el medidor de Fit de cualquier combinación',
 };
+
+/** Estado cualitativo de un motor frente a la época (adecuación de referencia). */
+function freshnessLabel(adequacy: number): { text: string; color: string } {
+  if (adequacy >= 0.85) return { text: 'al día', color: 'text-ok' };
+  if (adequacy >= 0.55) return { text: 'se queda justo', color: 'text-warn' };
+  return { text: 'desfasado', color: 'text-danger' };
+}
+
+/**
+ * El taller de motores (Fase 9.2, docs/19 §9.2): motores propios con su
+ * estado frente a la época, la obra en curso, el formulario de construir /
+ * mejorar (💰 + 💡 + semanas) y el catálogo licenciable (informativo: el motor
+ * licenciado se elige al concebir, con royalty). El núcleo decide qué se
+ * puede (engineBuildBlockReason); la UI solo muestra.
+ */
+function EnginesWorkshop({ game }: { game: GameState }) {
+  const build = useGameStore((s) => s.startEngineBuild);
+  const engines = game.engines ?? [];
+  const inProgress = game.engineBuild ?? null;
+  const maxGen = maxBuildableGeneration(game);
+  const buildable = buildableCapabilities(game);
+  const [name, setName] = useState('');
+  const [chosenCaps, setChosenCaps] = useState<EngineCapabilityId[]>([]);
+
+  // La obra sensata que ofrece el taller: mejorar el mejor motor (conserva
+  // capacidades) o construir el primero. La generación es la máxima que la
+  // arquitectura permite hoy (los nodos del árbol la suben).
+  const best = engines.reduce<OwnedEngine | null>(
+    (acc, e) => (acc === null || e.techLevel > acc.techLevel ? e : acc),
+    null,
+  );
+  const upgrading = best !== null;
+  const keptCaps = best?.capabilities ?? [];
+  const capsForSpec = [...new Set([...keptCaps, ...chosenCaps])];
+  const spec = {
+    upgradeOf: best?.id ?? null,
+    name: upgrading ? undefined : name,
+    generation: maxGen,
+    capabilities: capsForSpec,
+  };
+  const cost = engineBuildCost(game, maxGen, capsForSpec, best?.id ?? null);
+  const blocked = engineBuildBlockReason(game, spec);
+  const pointless = upgrading && best !== null && maxGen <= best.generation && chosenCaps.length === 0;
+
+  const toggleCap = (id: EngineCapabilityId) => {
+    setChosenCaps((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  };
+
+  return (
+    <section className="card" data-tour="motores">
+      <h3 className="card-title">🔧 Motores</h3>
+
+      {/* Los motores propios: el activo que envejece y se amortiza. */}
+      {engines.length === 0 ? (
+        <p className="text-sm text-ink-mute">
+          Sin motor propio: programas cada juego de forma artesanal. Desde la era de las consolas,
+          eso deja el techo tecnológico por los suelos — construye o licencia un motor.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {engines.map((engine) => {
+            const adequacy = engineReferenceAdequacy01(game, engine.id);
+            const fresh = freshnessLabel(adequacy);
+            return (
+              <li key={engine.id} className="rounded-md bg-raised/60 px-4 py-3">
+                <p className="font-medium">
+                  {engine.name}{' '}
+                  <span className="text-xs text-ink-faint">
+                    (gen {engine.generation} · nivel {engine.techLevel})
+                  </span>{' '}
+                  <span className={`text-sm ${fresh.color}`}>· {fresh.text}</span>
+                </p>
+                <p className="text-xs text-ink-mute">
+                  {engine.capabilities.length > 0
+                    ? `Capacidades: ${engine.capabilities.map((id) => getEngineCapability(id).name).join(', ')}`
+                    : 'Sin capacidades extra'}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* La obra en curso o el formulario de encargo. */}
+      {inProgress ? (
+        <div className="mt-3 rounded-md border border-warn/30 bg-warn/10 px-4 py-3">
+          <p className="text-sm font-medium">
+            🏗️ {inProgress.upgradeOf ? 'Mejorando' : 'Construyendo'} «{inProgress.name}» (gen{' '}
+            {inProgress.generation})
+          </p>
+          <p className="text-xs text-ink-mute">
+            Quedan {inProgress.weeksLeft} de {inProgress.totalWeeks} semanas. La obra ya está pagada.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-col gap-2 rounded-md border border-line-hi bg-raised/40 px-4 py-3">
+          <p className="text-sm font-medium">
+            {upgrading
+              ? `Mejorar «${best.name}» a la generación ${maxGen}`
+              : `Construir motor propio (gen ${maxGen})`}
+          </p>
+          {!upgrading && (
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nombre del motor…"
+              aria-label="Nombre del motor"
+              className="w-full max-w-xs rounded-md border border-line-hi bg-raised px-3 py-1.5 text-sm text-ink-hi placeholder:text-ink-faint focus:border-action-hi focus:outline-none"
+            />
+          )}
+          {buildable.length > 0 && (
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+              {engineCapabilities
+                .filter((c) => buildable.includes(c.id))
+                .map((cap) => {
+                  const kept = keptCaps.includes(cap.id);
+                  return (
+                    <label key={cap.id} className="flex items-center gap-1.5" title={cap.description}>
+                      <input
+                        type="checkbox"
+                        checked={kept || chosenCaps.includes(cap.id)}
+                        disabled={kept}
+                        onChange={() => toggleCap(cap.id)}
+                        className="accent-warn"
+                      />
+                      {cap.name}
+                      {!kept && (
+                        <span className="text-xs text-ink-faint">
+                          (+{formatMoney(cap.buildCostMoney)} · {cap.buildCostPoints} 💡)
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={blocked !== null || pointless}
+              title={blocked ?? (pointless ? 'El motor ya está en la generación máxima que sabes construir' : undefined)}
+              onClick={() => {
+                build(spec);
+                setName('');
+                setChosenCaps([]);
+              }}
+              className="rounded-md bg-warn px-3 py-1.5 text-sm font-semibold text-onbright hover:bg-warn-hi disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Encargar obra
+            </button>
+            <span className="text-sm text-ink-mute">
+              {formatMoney(cost.money)} + {cost.points} 💡 · {cost.weeks} semanas
+            </span>
+            {blocked !== null && <span className="text-xs text-danger">{blocked}</span>}
+          </div>
+          <p className="text-xs text-ink-faint">
+            Los motores envejecen: la exigencia de cada era sube y el nivel del motor no. Mejorar el
+            tuyo cuesta menos que construir de cero — amortiza la inversión entre juegos.
+          </p>
+        </div>
+      )}
+
+      {/* Catálogo licenciable: moderno YA, pero con royalty y sin activo. */}
+      {availableLicensedEngines(game).length > 0 && (
+        <div className="mt-3">
+          <p className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
+            Motores de terceros (se eligen al concebir)
+          </p>
+          <ul className="mt-1.5 flex flex-col gap-1.5">
+            {availableLicensedEngines(game).map((def) => {
+              const fresh = freshnessLabel(engineReferenceAdequacy01(game, def.id));
+              return (
+                <li key={def.id} className="rounded-md bg-raised/40 px-4 py-2 text-sm">
+                  <span className="font-medium">{def.name}</span>{' '}
+                  <span className="text-xs text-ink-faint">
+                    ({def.vendor} · gen {def.generation} · nivel {def.techLevel})
+                  </span>{' '}
+                  <span className={`text-xs ${fresh.color}`}>· {fresh.text}</span>
+                  <span className="ml-2 text-xs text-capital">
+                    {formatMoney(def.upfrontFee)} por juego + {Math.round(def.royaltyPct * 100)} % de
+                    royalty sobre ventas
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
 
 export function ResearchScreen() {
   const game = useGameStore((s) => s.game);
@@ -103,6 +306,10 @@ export function ResearchScreen() {
           Lanzar juegos también da puntos (los grandes, más). Quien investiga no desarrolla.
         </p>
       </section>
+
+      {/* El taller de motores (Fase 9.2): construir/mejorar el propio o ver el
+          catálogo licenciable. El motor es el techo tecnológico de cada juego. */}
+      <EnginesWorkshop game={game} />
 
       {/* Temas por investigar (docs/17 P1): la era habilita la opción; el tema
           cuesta 💡. Empiezas con unos pocos libres y decides en qué te

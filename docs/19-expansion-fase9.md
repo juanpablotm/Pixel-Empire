@@ -14,8 +14,8 @@ resume la propia guía de diseño del jugador: **"el jugador siempre debe sentir
 
 | Sub-fase | Pilar | Ataca |
 |----------|-------|-------|
-| **9.1** | Escalada + reseñas (+ dilema con dientes + marketing sin tope) | Que se resuelva; el 88 al arranque |
-| **9.2** | Motores / Tecnología | Escasez permanente; techo de los juegos grandes |
+| **9.1** ✅ | Escalada + reseñas (+ dilema con dientes + marketing sin tope) | Que se resuelva; el 88 al arranque |
+| **9.2** ✅ | Motores / Tecnología | Escasez permanente; techo de los juegos grandes |
 | **9.3** | Features por género | Intuición y profundidad en la creación |
 | **9.4** | Tendencias tipo "fiebre" (+ más consolas / multiplataforma) | Repetición; mercado muerto |
 | **9.5** | Estudios rivales con IA | "No estás solo"; adaptación forzada |
@@ -80,18 +80,27 @@ en E2 y que las 3 filosofías siguen viables.
 
 ---
 
-## 9.2 — Motores / Tecnología `[dirección]`
+## 9.2 — Motores / Tecnología `[IMPLEMENTADO · commit "Fase 9.2: motores y tecnología"]`
+
+> Baseline actualizada en `02` §2/§3.3, `03` §3.1, `04` §7, `09` §4.1, `12` §3/§6 y `16` §2/§6.1/§12.
+> Datos en `data/engines.ts` (capacidades + catálogo licenciable) y `balance.engines` +
+> `balance.quality.ceiling.engine`; lógica en `core/systems/engines.ts`; CA verificados con tests
+> (`engines.test.ts`, `fullGame.test.ts`) y bots. Capturas: `capturas/9-2-motores.png` y
+> `capturas/9-2-concebir-motor.png` (script `scripts/verify92.mjs`, escaparate `?demo=motores[&concebir=1]`).
 
 **Meta:** escasez permanente y el gran gate de calidad de los juegos grandes.
 - **Construir motor propio** (I+D + dinero + tiempo) **o licenciar** uno de terceros (moderno ya, pero
   **royalty** sobre ventas y sin activo propio). Trade-off constante.
-- El motor tiene **nivel tech y generación** (2D/3D/online/físicas…), atados a era e investigación, y es
-  un **input mayor del techoQ** (9.1): un AAA/shooter 3D sobre motor obsoleto **topa bajo**.
-- **Los motores envejecen** → hay que reconstruir/mejorar cada cierto tiempo (**sumidero recurrente** de
-  dinero e I+D). Reutilizar el motor amortiza la inversión.
-- Enlaza con **multiplataforma**: el motor decide a qué plataformas portas; bi/tri/multi-plataforma es
-  capacidad del motor que investigas.
-**Toca:** `02`/`03` (techo), `04` (plataformas), `12`/`16`; nuevo módulo de datos de motores.
+- El motor tiene **nivel tech y generación** (3D/online/físicas/kits de plataforma), atados a era e
+  investigación, y es el **término tecnológico del techoQ** (9.1): un AAA/shooter 3D sobre motor
+  obsoleto **topa bajo**; un juego pequeño/narrativo depende mucho menos (la demanda escala con
+  tamaño y `idealTech` del género).
+- **Los motores envejecen** de forma EMERGENTE: su nivel es fijo y la exigencia de la era sube
+  (la escalera `demandByEra`) → hay que mejorar/reconstruir cada era (**sumidero recurrente** de
+  dinero e I+D; mejorar cuesta el 60 % de construir). Reutilizar el motor amortiza la inversión.
+- **Multiplataforma**: el motor decide a cuántas plataformas lanzas; bi/multi-plataforma son
+  capacidades del motor que se investigan. La demanda de ventas SUMA las bases instaladas.
+**Tocó:** `02`/`03` (techo), `04` (plataformas), `09` (esquemas), `12`/`16`; nuevo módulo de datos de motores.
 
 ## 9.3 — Features por género `[dirección]`
 

@@ -1,5 +1,6 @@
 import type { Award, AwardCeremony } from './awards';
 import type { CommunityState } from './community';
+import type { EngineBuild, OwnedEngine } from './engine';
 import type { EraId } from './era';
 import type { MarketState } from './market';
 import type {
@@ -129,6 +130,19 @@ export interface GameState {
   regulation: RegulationState;
   /** Puntos 💡, árbol desbloqueado y personal en I+D (docs/02 §3). */
   research: ResearchState;
+  /**
+   * Motores propios del estudio (Fase 9.2, docs/19 §9.2): el activo
+   * tecnológico que se construye, se mejora y se amortiza entre juegos.
+   * Opcional: los saves previos arrancan con `?? []` (la migración v13 además
+   * convierte los nodos motorPropio* ya comprados en un motor equivalente).
+   */
+  engines?: OwnedEngine[];
+  /**
+   * Obra de motor en curso, o null (Fase 9.2): pagada por adelantado
+   * (💰 + 💡), el tick le descuenta semanas y al terminar el motor aparece en
+   * `engines`. Una sola obra a la vez. Opcional: saves previos → `?? null`.
+   */
+  engineBuild?: EngineBuild | null;
   /** Gestión por políticas en la escala grande (docs/02 §4 y docs/10 §14). */
   policies: StudioPolicies;
   /** Contadores históricos para el Legado (docs/06 §6). */

@@ -3,6 +3,7 @@ import {
   createFounder,
   createMarketState,
   defaultPolicies,
+  engineTechLevel,
   estimateProject,
   initialCommunityState,
   initialLegacyStats,
@@ -10,6 +11,7 @@ import {
   initialResearchState,
   insightKey,
   isStarterTheme,
+  type EngineCapabilityId,
   type GameState,
 } from '../core';
 import { eraForWeek } from '../data/eras';
@@ -21,7 +23,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -246,7 +248,72 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
   // reviewMarket; personalBest en el juego) y los juegos ya lanzados conservan
   // su reseña histórica tal cual — las reglas nuevas solo aplican al lanzar.
   11: (file) => ({ saveVersion: 12, state: file.state }),
+  // v12 (Fase 9.1) → v13 (Fase 9.2): motores. GRACIOSA: los nodos motorPropio*
+  // ya comprados (que antes ERAN "el motor" vía devOutput/techValue) se
+  // convierten en un motor propio equivalente — se respeta la inversión del
+  // jugador. Los proyectos en curso lo adoptan (venían usándolo) y estrenan
+  // platformIds; los juegos lanzados solo ganan campos opcionales (royalty 0).
+  12: (file) => {
+    const s = file.state;
+    const unlocked = s.research.unlocked;
+    // La generación equivale al alcance del nodo más alto comprado (docs/19
+    // §9.2): I → gen 2 (E2), II → gen 4 (E4), III → gen 6 (E6).
+    const generation = unlocked.includes('motorPropio3')
+      ? 6
+      : unlocked.includes('motorPropio2')
+        ? 4
+        : unlocked.includes('motorPropio1')
+          ? 2
+          : 0;
+    const engines = [...(s.engines ?? [])];
+    let engineId: string | null = null;
+    if (generation > 0 && engines.length === 0) {
+      const capabilities = migratedEngineCapabilities(generation, unlocked);
+      engineId = 'motor-migrado';
+      engines.push({
+        id: engineId,
+        name: 'Motor del estudio',
+        generation,
+        techLevel: engineTechLevel(generation, capabilities),
+        capabilities,
+        builtWeek: s.week,
+      });
+    }
+    return {
+      saveVersion: 13,
+      state: {
+        ...s,
+        engines,
+        engineBuild: s.engineBuild ?? null,
+        projects: s.projects.map((p) => ({
+          ...p,
+          platformIds: p.platformIds ?? [p.platformId],
+          engineId: p.engineId ?? engineId,
+        })),
+        releasedGames: s.releasedGames.map((g) => ({
+          ...g,
+          platformIds: g.platformIds ?? [g.platformId],
+        })),
+      },
+    };
+  },
 };
+
+/**
+ * Capacidades del motor migrado (v13): el "Motor propio II" de antes se
+ * describía como motor 3D, y el online solo si su tecnología estaba
+ * investigada. Se heredan sin exigir los nodos nuevos (tecnologia3d…):
+ * engineBuildBlockReason no re-valida capacidades ya presentes.
+ */
+function migratedEngineCapabilities(
+  generation: number,
+  unlocked: readonly string[],
+): EngineCapabilityId[] {
+  const capabilities: EngineCapabilityId[] = [];
+  if (generation >= 4) capabilities.push('graficos3d', 'fisicas');
+  if (generation >= 4 && unlocked.includes('tecnologiaOnline')) capabilities.push('online');
+  return capabilities;
+}
 
 /**
  * Saneado defensivo tras migrar (docs/17 B1/B2): una partida guardada por un

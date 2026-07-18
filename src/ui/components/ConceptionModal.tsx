@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import {
+  adequacyBand,
   availableGenres,
+  availableLicensedEngines,
   availableMonetizationModels,
   availablePlatforms,
   availableThemes,
   computeFit,
+  engineAdequacy01,
+  engineMaxPlatforms,
   estimateProject,
   fitBand,
   fitRevealed,
@@ -12,6 +16,7 @@ import {
   monetizationFlagAvailable,
   platformAvailable,
   priceRevealed,
+  resolveEngine,
   sizeBlockReason,
   type Audience,
   type MonetizationModel,
@@ -165,6 +170,17 @@ function ConceptionForm() {
   const [themeId, setThemeId] = useState(themesShown[0].id);
   const [genreId, setGenreId] = useState(genresShown[0].id);
   const [platformId, setPlatformId] = useState(platformsShown[0].id);
+  // Motor del proyecto (9.2): por defecto, el mejor del taller (si lo hay).
+  const ownEngines = game.engines ?? [];
+  const licensedShown = availableLicensedEngines(game);
+  const [engineId, setEngineId] = useState<string | null>(
+    ownEngines.reduce<{ id: string; lvl: number } | null>(
+      (best, e) => (best === null || e.techLevel > best.lvl ? { id: e.id, lvl: e.techLevel } : best),
+      null,
+    )?.id ?? null,
+  );
+  // Plataformas EXTRA del lanzamiento (9.2): el motor decide cuántas caben.
+  const [extraPlatformIds, setExtraPlatformIds] = useState<string[]>([]);
   const [audience, setAudience] = useState<Audience>('amplio');
   const [size, setSize] = useState<ProjectSize>('pequeno');
   // El precio se guarda como multiplicador del recomendado (así sobrevive a
@@ -177,7 +193,18 @@ function ConceptionForm() {
   const [dayOneDLC, setDayOneDLC] = useState(false);
 
   const { fit } = computeFit({ themeId, genreId, platformId, audience });
-  const estimate = estimateProject(size, platformId);
+
+  // El motor y sus consecuencias (9.2): adecuación SIEMPRE visible (es tu
+  // taller, no conocimiento de mercado), royalty del licenciado y cuántas
+  // plataformas caben. El núcleo calcula; aquí solo se muestra.
+  const engine = resolveEngine(game, engineId);
+  const adequacy = engineAdequacy01(game, engineId, size, genreId);
+  const maxPlatforms = engineMaxPlatforms(game, engineId);
+  const extrasAllowed = Math.max(0, maxPlatforms - 1);
+  const extrasShown = extraPlatformIds.slice(0, extrasAllowed);
+  const platformIds = [platformId, ...extrasShown.filter((id) => id !== platformId)];
+
+  const estimate = estimateProject(size, platformIds, engine.upfrontFee);
   const canStart = name.trim() !== '';
 
   // Conocimiento de mercado (docs/17 P2): el atajo PREDICTIVO se paga y TODO
@@ -211,6 +238,8 @@ function ConceptionForm() {
       themeId,
       genreId,
       platformId,
+      platformIds,
+      engineId,
       audience,
       size,
       price,
@@ -310,6 +339,86 @@ function ConceptionForm() {
                 );
               })}
             </SelectField>
+          </div>
+
+          {/* Motor (9.2): propio, licenciado o artesanal, con su adecuación
+              SIEMPRE visible — es tu taller, no conocimiento de mercado. */}
+          <div className="grid gap-4 sm:grid-cols-2" data-tour="engine-pick">
+            <SelectField
+              id="concept-engine"
+              label="Motor"
+              value={engineId ?? ''}
+              onChange={(value) => setEngineId(value === '' ? null : value)}
+              detail={
+                <span
+                  className={
+                    adequacyBand(adequacy) === 'verde'
+                      ? 'text-ok'
+                      : adequacyBand(adequacy) === 'ambar'
+                        ? 'text-warn'
+                        : 'text-danger'
+                  }
+                >
+                  {adequacyBand(adequacy) === 'verde'
+                    ? 'El motor va sobrado para este proyecto.'
+                    : adequacyBand(adequacy) === 'ambar'
+                      ? 'El motor va justo: el techo tecnológico lo notará.'
+                      : 'El motor se queda corto: este juego topará bajo.'}
+                  {engine.kind === 'licenciado' &&
+                    ` Royalty: ${Math.round(engine.royaltyPct * 100)} % de las ventas.`}
+                </span>
+              }
+            >
+              <option value="">Código artesanal (sin motor)</option>
+              {ownEngines.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} (gen {e.generation}, propio)
+                </option>
+              ))}
+              {licensedShown.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} (gen {e.generation}, licencia {Math.round(e.royaltyPct * 100)} %)
+                </option>
+              ))}
+            </SelectField>
+
+            {extrasAllowed > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
+                  Plataformas extra (hasta {extrasAllowed})
+                </span>
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+                  {platformsShown
+                    .filter((p) => p.id !== platformId && platformAvailable(p, week))
+                    .map((p) => {
+                      const checked = extrasShown.includes(p.id);
+                      const full = !checked && extrasShown.length >= extrasAllowed;
+                      return (
+                        <label key={p.id} className={`flex items-center gap-1.5 ${full ? 'opacity-50' : ''}`}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={full}
+                            onChange={() =>
+                              setExtraPlatformIds((prev) =>
+                                checked ? prev.filter((id) => id !== p.id) : [...prev, p.id],
+                              )
+                            }
+                            className="accent-action-hi"
+                          />
+                          {p.name}
+                          <span className="text-xs text-ink-faint">
+                            (+{formatMoney(p.licenseCost)})
+                          </span>
+                        </label>
+                      );
+                    })}
+                </div>
+                <p className="text-xs text-ink-faint">
+                  El motor decide cuántas plataformas caben; cada una paga su licencia.
+                </p>
+              </div>
+            )}
           </div>
 
           <Field label="Público objetivo">

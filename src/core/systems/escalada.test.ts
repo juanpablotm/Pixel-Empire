@@ -9,6 +9,7 @@ import type { GameState } from '../model/gameState';
 import type { Project, ProjectSize } from '../model/project';
 import type { ReleasedGame } from '../model/release';
 import type { Employee } from '../model/staff';
+import { engineTechLevel } from './engines';
 import { computeSegmentReviews, overHypeGap } from './market';
 import { computeCeilingContext } from './maturity';
 import { advanceMoral } from './morale';
@@ -138,9 +139,14 @@ function fakeReleased(size: ProjectSize, index: number): ReleasedGame {
   };
 }
 
-/** Estudio maduro de media partida: Corporación en E5 con historial y toda la I+D. */
+/**
+ * Estudio maduro de media partida: Corporación en E5 con historial, toda la
+ * I+D y un motor propio al día (9.2: sin motor, el término tecnológico topa).
+ */
+const MATURE_ENGINE_ID = 'motor-maduro';
 function matureState(): GameState {
   const base = createInitialState(SEED);
+  const capabilities = ['graficos3d', 'fisicas', 'online'] as const;
   return {
     ...base,
     era: 'E5',
@@ -148,6 +154,16 @@ function matureState(): GameState {
     studio: { ...base.studio, scaleStage: 5 },
     releasedGames: Array.from({ length: 30 }, (_, i) => fakeReleased('grande', i)),
     research: { ...base.research, unlocked: researchNodes.map((n) => n.id) },
+    engines: [
+      {
+        id: MATURE_ENGINE_ID,
+        name: 'Motor maduro',
+        generation: 5,
+        techLevel: engineTechLevel(5, [...capabilities]),
+        capabilities: [...capabilities],
+        builtWeek: 1,
+      },
+    ],
   };
 }
 
@@ -218,7 +234,7 @@ describe('CA 9.1: las obras maestras se ganan (madurez + estrella + tech)', () =
     const state = { ...matureState(), staff: [makeEmployee({ id: 'dev' })] };
     // Buen senior (75) pero no estrella en Diseño (el rol clave del RPG).
     state.staff[0].skills.diseno = 75;
-    const ceiling = computeCeilingContext(state, state.staff, 'rpg', 'pequeno');
+    const ceiling = computeCeilingContext(state, state.staff, 'rpg', 'pequeno', MATURE_ENGINE_ID);
     expect(ceiling.keySpecialty).toBe('diseno');
     expect(ceiling.capTalento).toBeLessThan(85);
 
@@ -237,7 +253,7 @@ describe('CA 9.1: las obras maestras se ganan (madurez + estrella + tech)', () =
       ...matureState(),
       staff: [makeEmployee({ id: 'dev', skills: { diseno: 90, tecnica: 60, arte: 60, audio: 60, marketing: 30 } })],
     };
-    const ceiling = computeCeilingContext(state, state.staff, 'rpg', 'pequeno');
+    const ceiling = computeCeilingContext(state, state.staff, 'rpg', 'pequeno', MATURE_ENGINE_ID);
     expect(ceiling.capTalento).toBeGreaterThanOrEqual(85);
 
     const { q } = computeQuality(project(), {
@@ -268,11 +284,12 @@ describe('CA 9.1: las obras maestras se ganan (madurez + estrella + tech)', () =
     expect(q).toBe(balance.quality.ceiling.maturity.min);
   });
 
-  it('sin I+D el techo tecnológico muerde en eras tardías', () => {
+  it('sin motor el techo tecnológico muerde en eras tardías (9.2)', () => {
     const state = { ...matureState(), research: { ...matureState().research, unlocked: [] } };
+    // Sin engineId = código artesanal (nivel 0): en E5 la adecuación es 0.
     const ceiling = computeCeilingContext(state, [makeEmployee({ id: 'dev' })], 'rpg', 'pequeno');
-    expect(ceiling.techDepth01).toBe(0);
-    expect(ceiling.capTech).toBe(balance.quality.ceiling.tech.min);
+    expect(ceiling.motorAdequacy01).toBe(0);
+    expect(ceiling.capTech).toBe(balance.quality.ceiling.engine.min);
   });
 });
 

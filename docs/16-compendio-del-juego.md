@@ -46,8 +46,17 @@ Features/Alcance · Pulido/Bugs · Multiplicador de Equipo, con un pequeño modi
 Pesos baseline: `wF=0.30, wB=0.25, wC=0.20, wD=0.25`; `innovationMod` 0.9–1.15; `teamFactor` 0.5–1.3.
 Detalle: `03`.
 
+**Motores (Fase 9.2, docs/19 §9.2):** el término tecnológico del techo es el **MOTOR elegido al
+concebir**: propio (se construye con 💰 + 💡 + semanas y se amortiza entre juegos), licenciado
+(moderno YA, cuota por juego + **royalty 7–12 %** de las ventas para siempre) o artesanal (nivel 0,
+lo único que hay en 1980). Los motores **envejecen** (nivel fijo, exigencia de era creciente): cada
+era toca **mejorar** (60 % del coste) o cambiar — el sumidero recurrente. Un AAA sobre motor
+obsoleto **topa bajo**; el juego pequeño/narrativo depende mucho menos. El motor también decide las
+**plataformas simultáneas** (kits bi/multi que se investigan) y gatea features (el online exige
+capacidad Online). Taller y catálogo en la pantalla de I+D; adecuación **siempre visible** al concebir.
+
 **La escalada (Fase 9.1, docs/19 §9.1):** el juego ya **no se resuelve**. La `Q` tiene un **techo
-dinámico** — `min(era, madurez, talento, tecnología)` — que en el garaje ronda 45–52 juegues como
+dinámico** — `min(era, madurez, talento, motor)` — que en el garaje ronda 45–52 juegues como
 juegues y sube DESPACIO con lanzamientos y escala; una **obra maestra (85+) exige una estrella**
 (skill ≥ 80) en el rol clave, y el AAA con estudio flojo **se hunde** (encaje de alcance). La reseña
 compara `Q` contra un **listón por era en parte oculto** (`nota = 70 + 1.3·(Q − listón)`, listón
@@ -103,9 +112,12 @@ los bots de docs/08 §8: la fábrica AAA la compra en E6).
 ### 3.3 Investigación y desbloqueos (doc `02` §3)
 
 Acumulas **Puntos de Investigación 💡** al desarrollar juegos y al asignar personal a I+D (~1 por
-persona·semana). Se gastan en un árbol que desbloquea nuevos géneros, combinaciones, features,
-motores propios y capacidades de estudio (marketing avanzado, formación). Muchos desbloqueos están
-**gateados por era** (no puedes investigar "online masivo" en 1985).
+persona·semana). Se gastan en un árbol que desbloquea nuevos géneros, combinaciones, features y
+capacidades de estudio (QA, marketing), y — desde la Fase 9.2 — la **tecnología de motores**: los
+nodos de *Arquitectura de motores I/II/III* gatean qué generación puedes construir y otros habilitan
+capacidades del motor (3D, online, kits de plataforma). La obra del motor en sí cuesta 💰 + 💡 +
+semanas aparte (§2 "Motores"). Muchos desbloqueos están **gateados por era** (no puedes investigar
+"online masivo" en 1985).
 
 **Progresión del conocimiento (docs `17` P1/P2).** La investigación pesa aún más desde la Fase 8.4:
 - **Temas gateados:** empiezas con **2–3 temas libres** (fantasía, ciencia ficción, espacio) y
@@ -233,6 +245,22 @@ descatalogada) que fija su base instalada y su tamaño de mercado (`04`). Alguna
 
 (Se pueden añadir más por era como datos; la lógica es agnóstica.)
 
+### 6.1 Catálogo: Motores licenciables `[baseline v1 · Fase 9.2]` (doc `09` §4.1)
+
+Nombres ficticios reconocibles, como las plataformas. Nivel **fijo** (también envejecen); el catálogo
+se renueva por eras y los viejos se retiran de proyectos nuevos. Cuota **por juego** al concebir +
+**royalty sobre ingresos brutos, para siempre**. El motor propio se construye en el taller (I+D).
+
+| Motor | Vendor (ficticio) | Era | Gen | Nivel | Capacidades | Cuota/juego | Royalty |
+|-------|-------------------|:---:|:---:|:---:|-------------|:---:|:---:|
+| RayTech 3D | Software del Abismo | E3–E4 | 3 | 10 | 3D, físicas | 15k | 8 % |
+| Irreal Engine 2 | Juegos Épicos | E4–E5 | 4 | 14 | 3D, físicas, online | 40k | 10 % |
+| Unify | Unify Technologies | E5–E6 | 5 | 18 | + biplataforma | 25k | 7 % |
+| Irreal Engine 3 | Juegos Épicos | E5–E6 | 5 | 19 | + biplataforma | 60k | 11 % |
+| Unify 5 | Unify Technologies | E6+ | 6 | 24 | + multiplataforma | 40k | 8 % |
+| Irreal Engine 5 | Juegos Épicos | E6+ | 6 | 26 | + multiplataforma | 100k | 12 % |
+| Nebula Forge | Aureal Labs | E7 | 7 | 30 | todas | 150k | 12 % |
+
 ---
 
 ## 7. Catálogo: Features `[baseline v1]` (doc `09` §5)
@@ -339,8 +367,10 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
 | Marketing escalonado (re-comprable sin tope, 9.1) | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva); cada compra repite coste y expectación |
-| Licencia de plataforma | 10k–100k 💰 según generación |
+| Licencia de plataforma | 10k–100k 💰 según generación (multiplataforma: cada una la suya) |
 | Punto de I+D | ~1 por persona·semana en investigación |
+| Construir motor propio (9.2) | por generación 1→7: 6k…2,5M 💰 + 8…120 💡 + 6…32 semanas; **mejorar = 60 %** |
+| Licenciar motor (9.2) | cuota 15k–150k 💰 por juego + royalty 7–12 % de ingresos brutos |
 | Préstamos | hasta ~6 meses de costes fijos; interés ~1%/semana |
 
 El **tamaño** es una decisión con peso: coste base fijo + plantilla y etapa mínimas (el AAA solo como

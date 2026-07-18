@@ -3,17 +3,18 @@ import { balance } from '../../data/balance';
 import { getEra } from '../../data/eras';
 import { getFeature } from '../../data/features';
 import { researchNodeUnlocks } from '../../data/research';
+import { getResearchNode } from '../../data/research';
 import { getTheme } from '../../data/themes';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
 import type { GameState } from '../model/gameState';
 import { createMarketState } from './market';
 import { startProject, toggleFeature } from './projects';
+import { engineTechLevel, resolveEngine } from './engines';
 import {
   advanceResearch,
   balanceRevealed,
   buyResearch,
-  capabilityBonus,
   fitRevealed,
   insightKnown,
   priceRevealed,
@@ -115,9 +116,10 @@ describe('el árbol: era, prerrequisitos y compra (docs/02 §3)', () => {
   });
 
   it('comprar descuenta puntos, desbloquea y no se puede repetir', () => {
+    const cost = getResearchNode('motorPropio1').cost;
     const state = buyResearch(atEra('E2', 30), 'motorPropio1');
     expect(state.research.unlocked).toContain('motorPropio1');
-    expect(state.research.points).toBe(5);
+    expect(state.research.points).toBe(30 - cost);
     expect(state.log.some((e) => e.type === 'investigacion')).toBe(true);
     expect(() => buyResearch(state, 'motorPropio1')).toThrow(/ya está investigado/);
   });
@@ -134,20 +136,39 @@ describe('el árbol: era, prerrequisitos y compra (docs/02 §3)', () => {
 });
 
 describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () => {
-  it('el motor propio hace cundir al equipo, pero NO acorta el calendario (devOutput)', () => {
-    const base = startProject(atEra('E2', 0), {
-      name: 'Con motor',
+  it('el motor propio hace cundir al equipo, pero NO acorta el calendario (9.2)', () => {
+    // Desde 9.2 las herramientas las pone el MOTOR del proyecto (data-driven en
+    // balance.engines.devOutputByGeneration), no un nodo de I+D.
+    const engine = {
+      id: 'motor-test',
+      name: 'Motorcito',
+      generation: 2,
+      techLevel: engineTechLevel(2, []),
+      capabilities: [],
+      builtWeek: 1,
+    };
+    const withEngineState = { ...atEra('E2', 0), engines: [engine] };
+    const base = startProject(withEngineState, {
+      name: 'Sin motor',
       themeId: 'fantasia',
       genreId: 'rpg',
       platformId: 'pcCasero',
       audience: 'amplio',
       size: 'pequeno',
     });
-    const withEngine = {
-      ...base,
-      research: { ...base.research, unlocked: ['motorPropio1'] },
-    };
-    expect(capabilityBonus(withEngine, 'devOutput')).toBeCloseTo(1.1, 10);
+    const withEngine = startProject(withEngineState, {
+      name: 'Con motor',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'amplio',
+      size: 'pequeno',
+      engineId: 'motor-test',
+    });
+    expect(resolveEngine(withEngine, 'motor-test').devOutputBonus).toBeCloseTo(
+      balance.engines.devOutputByGeneration[2],
+      10,
+    );
     const slow = tick(base);
     const fast = tick(withEngine);
     // El calendario es el calendario: 1 tick = 1 semana, con motor o sin él.
@@ -158,30 +179,42 @@ describe('capacidades de estudio y desbloqueo de contenido (docs/02 §3)', () =>
     expect(fast.projects[0].techPoints).toBeGreaterThan(slow.projects[0].techPoints);
   });
 
-  it('el multijugador online exige su tecnología además de la era', () => {
+  it('el multijugador online exige su tecnología, la era Y un motor con Online (9.2)', () => {
     const e4 = atEra('E4');
     const feature = getFeature('multijugadorOnline');
     expect(featureAvailable(e4, feature)).toBe(false);
+    const engine = {
+      id: 'motor-online',
+      name: 'Netamotor',
+      generation: 4,
+      techLevel: engineTechLevel(4, ['online' as const]),
+      capabilities: ['online' as const],
+      builtWeek: 1,
+    };
     const investigada = {
       ...e4,
+      engines: [engine],
       research: { ...e4.research, unlocked: ['tecnologiaOnline'] },
     };
     expect(featureAvailable(investigada, feature)).toBe(true);
 
-    let state = startProject(investigada, {
+    const concept = {
       name: 'Online SA',
       // Tema starter (docs/17 P1): el test es sobre la feature online, no sobre
       // el gateo de temas — evitamos investigar un tema para no ensuciarlo.
       themeId: 'cienciaFiccion',
       genreId: 'shooter',
       platformId: 'pcCasero',
-      audience: 'hardcore',
-      size: 'pequeno',
-    });
-    // Sin investigar lanza; investigada se puede elegir.
+      audience: 'hardcore' as const,
+      size: 'pequeno' as const,
+    };
+    let state = startProject(investigada, { ...concept, engineId: 'motor-online' });
+    // Sin investigar lanza; y con motor SIN capacidad Online, también (9.2).
     expect(() => toggleFeature({ ...state, research: e4.research }, 'multijugadorOnline')).toThrow(
       /era o investigación/,
     );
+    const artesanal = startProject(investigada, { ...concept, name: 'Sin motor' });
+    expect(() => toggleFeature(artesanal, 'multijugadorOnline')).toThrow(/capacidad/);
     state = toggleFeature(state, 'multijugadorOnline');
     expect(state.projects[0].chosenFeatureIds).toContain('multijugadorOnline');
   });

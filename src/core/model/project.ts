@@ -26,7 +26,23 @@ export interface Project {
   name: string;
   themeId: string;
   genreId: string;
+  /** Plataforma PRINCIPAL (fija el fit y el sabor); siempre platformIds[0]. */
   platformId: string;
+  /**
+   * Todas las plataformas del lanzamiento (Fase 9.2, docs/19 §9.2): el motor
+   * decide cuántas caben (capacidades bi/multiplataforma). La demanda de
+   * ventas SUMA sus bases instaladas; cada una paga su licencia al iniciar.
+   * Opcional: los proyectos de saves previos se leen con `?? [platformId]`.
+   */
+  platformIds?: string[];
+  /**
+   * Motor del proyecto (Fase 9.2): id de un motor propio (state.engines), de
+   * uno licenciado (data/engines.ts) o null = "código artesanal" (nivel 0,
+   * lo de siempre en 1980). Es el término tecnológico del techoQ (docs/03
+   * §3.1) y decide plataformas, features gateadas y royalty al lanzar.
+   * Opcional: los proyectos de saves previos se leen con `?? null`.
+   */
+  engineId?: string | null;
   audience: Audience;
   size: ProjectSize;
   /**

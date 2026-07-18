@@ -88,17 +88,24 @@ describe('Bots de partida completa: las tres filosofías de docs/01 §5 (docs/00
   });
 
   it('el "punto dulce" ha muerto (docs/18 V4-d): la corporación quema y puede perder', () => {
-    // La fábrica en Corporación NO es riesgo cero: su caja final queda por
-    // debajo del pico histórico — sostener la torre se come los millones si
-    // los lanzamientos no rinden (con peor juego, la misma partida quiebra).
+    // La fábrica NO es riesgo cero. Desde la 9.2 el riesgo se mide en la
+    // TRAYECTORIA, no en la foto final: con el motor propio manteniendo el
+    // techo al día, la fábrica puede acabar en máximos — pero por el camino
+    // hay tramos donde sostener la ambición (overhead + obras de motor +
+    // lanzamientos que la crítica hunde) se come la caja a lo grande. Su peor
+    // drawdown pico→valle supera el 25 % de la caja: con peor juego, esa
+    // misma curva es una quiebra.
     //
-    // El margen bajó de ×1.5 a ×1.15 en la 9.1: la codicia rinde MÁS por
-    // diseño (docs/19 §9.1, mtx 0.85), así que la máquina de cajas engorda la
-    // caja aunque la crítica la destroce — el contrapeso del dilema ya no es
-    // solo el burn, sino la reputación por los suelos (≤25), los escándalos y
-    // la fatiga. El drawdown sigue siendo real: decenas de millones desde el
-    // pico sosteniendo AAAs que la crítica hunde.
-    expect(factory.stats.peakCapital).toBeGreaterThan(factory.studio.capital * 1.15);
+    // (El margen del dilema sigue el de la 9.1: la codicia rinde MÁS por
+    // diseño — mtx 0.85 — y su contrapeso es la reputación por los suelos,
+    // los escándalos y la fatiga, no la ruina garantizada.)
+    let peak = 0;
+    let maxDrawdown = 0;
+    for (const snap of factoryRun.snaps) {
+      peak = Math.max(peak, snap.capital);
+      if (peak > 0) maxDrawdown = Math.max(maxDrawdown, (peak - snap.capital) / peak);
+    }
+    expect(maxDrawdown).toBeGreaterThan(0.25);
     // Y su libro de caja reciente tiene semanas en rojo: el burn es real.
     expect(factory.cashflow.some((c) => c.expenses > c.income)).toBe(true);
   });

@@ -1,16 +1,21 @@
 import { balance } from '../../data/balance';
 import { getGenre } from '../../data/genres';
-import { getResearchNode } from '../../data/research';
 import type { GameState } from '../model/gameState';
 import type { ProjectSize } from '../model/project';
 import type { Employee, Specialty } from '../model/staff';
+import { engineAdequacy01 } from './engines';
 import { genreWeightedSkill01 } from './staff';
 
 /**
  * El techo dinámico de calidad (Fase 9.1, docs/19 §9.1 y docs/03 §3):
- *   techoQ = min(capEra, capMadurez, capTalento, capTech)
+ *   techoQ = min(capEra, capMadurez, capTalento, capMotor)
  * más el encaje de alcance (ambición vs capacidad), que no es un techo sino un
  * multiplicador que hunde la Q cuando el estudio no llena el tamaño elegido.
+ *
+ * Desde la Fase 9.2 (docs/19 §9.2) el término tecnológico es el MOTOR del
+ * proyecto (core/systems/engines.ts): un AAA sobre motor obsoleto topa bajo y
+ * un juego pequeño/narrativo depende mucho menos. En el breakdown conserva la
+ * clave histórica 'tech' (los desgloses guardados siguen siendo válidos).
  *
  * Este módulo calcula los términos que dependen del ESTUDIO (GameState);
  * computeQuality (quality.ts) recibe el resultado y sigue sin conocer el
@@ -24,11 +29,13 @@ export interface CeilingContext {
   /** Techos parciales, ya en puntos de Q (0..100). */
   capMadurez: number;
   capTalento: number;
+  /** El término tecnológico: desde 9.2, la adecuación del MOTOR del proyecto. */
   capTech: number;
   /** Términos crudos 0..1, para el desglose y los tests. */
   madurez01: number;
   mejorSkillClave01: number;
-  techDepth01: number;
+  /** Adecuación del motor a este proyecto (era × tamaño × género), 0..1. */
+  motorAdequacy01: number;
   /** Especialidad clave del género (el "rol" donde hace falta la estrella). */
   keySpecialty: Specialty;
   /** Encaje de alcance: poderEquipo / poderObjetivo(tamaño), y su factor sobre Q. */
@@ -67,21 +74,6 @@ export function bestKeySkill01(team: readonly Employee[], keySpecialty: Specialt
   return team.reduce((best, e) => Math.max(best, e.skills[keySpecialty]), 0) / 100;
 }
 
-/**
- * Profundidad tecnológica 0..1: suma de `techValue` de los nodos comprados
- * contra el objetivo de la era. Objetivo 0 (E1) = sin expectativa: completa.
- */
-export function techDepth01(state: GameState): number {
-  const t = balance.quality.ceiling.tech;
-  const target = t.targetByEra[state.era];
-  if (target <= 0) return 1;
-  const points = state.research.unlocked.reduce(
-    (sum, id) => sum + (getResearchNode(id).techValue ?? 0),
-    0,
-  );
-  return clamp01(points / target);
-}
-
 /** Poder del equipo asignado: Σ skill ponderada por género (cuerpos Y talento). */
 export function teamPower(team: readonly Employee[], genreId: string): number {
   return team.reduce((sum, e) => sum + genreWeightedSkill01(e, genreId), 0);
@@ -89,13 +81,14 @@ export function teamPower(team: readonly Employee[], genreId: string): number {
 
 /**
  * Contexto completo del techo dinámico para un lanzamiento: madurez, mejor
- * talento en el rol clave, adecuación tecnológica y encaje de alcance.
+ * talento en el rol clave, adecuación del MOTOR (9.2) y encaje de alcance.
  */
 export function computeCeilingContext(
   state: GameState,
   team: readonly Employee[],
   genreId: string,
   size: ProjectSize,
+  engineId?: string | null,
 ): CeilingContext {
   const c = balance.quality.ceiling;
   const s = balance.quality.scope;
@@ -103,7 +96,7 @@ export function computeCeilingContext(
   const madurez = maturity01(state);
   const keySpecialty = keySpecialtyOf(genreId);
   const mejorSkill = bestKeySkill01(team, keySpecialty);
-  const tech = techDepth01(state);
+  const motor = engineAdequacy01(state, engineId, size, genreId);
 
   const alcance01 = clamp01(teamPower(team, genreId) / s.powerTarget[size]);
   const alcanceFactor = Math.max(s.floor, alcance01 ** s.exponent);
@@ -111,10 +104,10 @@ export function computeCeilingContext(
   return {
     capMadurez: c.maturity.min + (c.maturity.max - c.maturity.min) * madurez,
     capTalento: c.talent.min + c.talent.span * mejorSkill,
-    capTech: c.tech.min + c.tech.span * tech,
+    capTech: c.engine.min + c.engine.span * motor,
     madurez01: madurez,
     mejorSkillClave01: mejorSkill,
-    techDepth01: tech,
+    motorAdequacy01: motor,
     keySpecialty,
     alcance01,
     alcanceFactor,

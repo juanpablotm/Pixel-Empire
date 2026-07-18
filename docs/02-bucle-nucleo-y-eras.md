@@ -22,7 +22,13 @@ El jugador define:
 - **Tema** (p. ej. Fantasía, Espacio, Zombis, Deportes, Vida...) — ver tabla en `09`.
 - **Género** (RPG, Shooter, Estrategia, Aventura, Simulación, Casual...) — ver `09`.
 - **Sub-género / mezcla** (opcional, desbloqueable): combinar dos géneros con pesos.
-- **Plataforma(s)** objetivo (según las disponibles en la era actual).
+- **Plataforma(s)** objetivo (según las disponibles en la era actual). Desde la Fase 9.2 pueden ser
+  **varias a la vez** si el motor tiene kit bi/multiplataforma (cada una paga su licencia; la demanda
+  de ventas suma sus bases instaladas).
+- **Motor** (Fase 9.2, docs/19 §9.2): uno **propio** del taller, uno **licenciado** del catálogo
+  (moderno ya, pero con **royalty** sobre las ventas) o **código artesanal** (nivel 0, lo único que
+  hay en 1980). Su **adecuación al proyecto es SIEMPRE visible** (es tu taller, no conocimiento de
+  mercado) y es el término tecnológico del techo de calidad (`03` §3.1).
 - **Público objetivo** (Hardcore / Amplio / Casual / Infantil) — afecta al fit y a los segmentos.
 - **Tamaño del proyecto** (Pequeño / Mediano / Grande / **Muy grande** / AAA, 5 desde docs/18 V4) —
   escala tiempo, coste y potencial. Cada tamaño exige un **coste base fijo**, una **plantilla mínima**
@@ -122,6 +128,27 @@ Aun con la pista oculta **siempre puedes concebir y lanzar**: nada se bloquea. Y
 intacto: el **desglose de reseña** de tus propios lanzamientos es **siempre legible** (ver `03`). Solo
 se paga saberlo *antes*, nunca la explicación *después* — así descubrir el mapa del mercado es la
 recompensa del Pilar 5, no un muro.
+
+### 3.3 Motores: construir, licenciar, envejecer (Fase 9.2, docs/19 §9.2) `[DECIDIDO · baseline v1]`
+
+El motor es **el gran gate tecnológico** y una escasez permanente. Dos vías, en tensión constante:
+
+- **Construir motor propio** en el taller (pantalla de I+D): cuesta **💰 + 💡 + semanas de
+  calendario** (una obra a la vez, pagada por adelantado; el tick la avanza). Qué **generación**
+  puedes construir lo gatean los nodos de *Arquitectura de motores I/II/III* (gen ≤ 3/5/7) y la
+  propia era (nunca por delante de su número). Las **capacidades** (Gráficos 3D, Físicas, Online,
+  kits bi/multiplataforma) se investigan aparte y se pagan como extras de la obra. El motor propio es
+  un **activo**: sin royalty, reutilizable entre juegos (amortiza) y con herramientas que hacen
+  cundir al equipo (`devOutputByGeneration`; no acorta el calendario — §6.1).
+- **Licenciar** uno de terceros (catálogo desde E3: RayTech, Irreal, Unify…): **moderno YA**, sin
+  obra ni I+D, pero con **cuota por juego** al concebir y **royalty (7–12 %) sobre los ingresos
+  brutos, para siempre** — y sin activo propio que amortizar. El puente clásico cuando tu motor se
+  quedó viejo y la obra nueva no llega.
+
+**Los motores envejecen** sin mecánica extra: su nivel es fijo y la exigencia de la era sube
+(`03` §3.1). Mejorar el motor propio cuesta el **60 %** de construir de cero: el sumidero recurrente
+de la fase — cada era toca pasar por caja. Todo data-driven: capacidades y catálogo en
+`data/engines.ts`; niveles, costes y demanda en `balance.engines` y `balance.quality.ceiling.engine`.
 
 ## 4. Progresión de escala (las 5 etapas de estudio) `[DECIDIDO · rediseñado en docs/18 V4]`
 

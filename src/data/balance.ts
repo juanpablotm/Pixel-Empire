@@ -383,8 +383,8 @@ export const balance = {
     /**
      * techoQ(era, tamaño): envolvente de Q por era (docs/03 §3). Desde la
      * Fase 9.1 es solo UNO de los techos parciales (el techo real es el
-     * mínimo con madurez/talento/tech, ver `ceiling`); en 9.2 esta envolvente
-     * pasará a ser el motor.
+     * mínimo con madurez/talento/motor, ver `ceiling`); desde 9.2 el término
+     * tecnológico es el MOTOR del proyecto (ceiling.engine).
      */
     capByEraSize: {
       E1: { pequeno: 85, mediano: 85, grande: 85, muyGrande: 85, aaa: 85 },
@@ -429,15 +429,22 @@ export const balance = {
        */
       talent: { min: 45, span: 50 },
       /**
-       * capTech = min + span · clamp01(techPoints/targetByEra). Los puntos
-       * son los `techValue` de los nodos de I+D comprados (data/research.ts);
-       * el objetivo sube con la era: llegar a E4+ sin I+D topa el techo en 55.
-       * Un objetivo 0 (E1) significa "sin expectativa": profundidad completa.
+       * capMotor (Fase 9.2, docs/19 §9.2): el MOTOR sustituye a la profundidad
+       * de I+D como término tecnológico del techo. capTech = min + span ·
+       * adecuación, con adecuación = clamp01(nivelMotor / demanda) y
+       *   demanda = demandByEra(era) × sizeFactor(tamaño)
+       *           × (genreDepBase + genreDepSpan · idealTech(género)).
+       * Un AAA/shooter 3D sobre motor obsoleto TOPA BAJO; un juego pequeño y
+       * narrativo depende mucho menos del motor. El ENVEJECIMIENTO es
+       * emergente: el nivel del motor es fijo y la demanda de la era sube —
+       * la brecha creciente es el motor quedándose viejo, sin mecánica extra.
+       * Demanda 0 (E1) = sin expectativa: adecuación completa (código
+       * artesanal, como en 1980).
        */
-      tech: {
+      engine: {
         min: 55,
         span: 45,
-        targetByEra: {
+        demandByEra: {
           E1: 0,
           E2: 3,
           E3: 6,
@@ -446,6 +453,18 @@ export const balance = {
           E6: 20,
           E7: 24,
         } satisfies Record<EraId, number>,
+        /** El tamaño escala la exigencia: el AAA pide motor puntero. */
+        sizeFactor: {
+          pequeno: 0.55,
+          mediano: 0.75,
+          grande: 1,
+          muyGrande: 1.15,
+          aaa: 1.3,
+        } satisfies Record<ProjectSize, number>,
+        /** Dependencia del género: × (base + span·idealTech). El RPG narrativo
+         * (idealTech 0.35) exige ~0.9; el shooter (0.6), ~1.06. */
+        genreDepBase: 0.7,
+        genreDepSpan: 0.6,
       },
     },
 
@@ -736,6 +755,90 @@ export const balance = {
       /** Tamaño del pool de contratación por etapa (más escala, más candidatos). */
       poolSizeByStage: { 1: 3, 2: 3, 3: 4, 4: 6, 5: 8 } satisfies Record<ScaleStage, number>,
     },
+  },
+
+  /**
+   * Motores propios (Fase 9.2, docs/19 §9.2): construir cuesta 💰 + 💡 + N
+   * semanas de calendario (una obra a la vez, pagada por adelantado, avanzada
+   * por el tick). Mejorar un motor existente cuesta la FRACCIÓN upgradeFactor
+   * de construir de cero: ese es el sumidero recurrente — cada era toca pasar
+   * por caja. Reutilizar el motor entre juegos amortiza la inversión. Qué
+   * generación puedes construir lo gatean los nodos de I+D (generationGate) y
+   * la propia era (nunca por delante de su número).
+   */
+  engines: {
+    /** Nivel tecnológico base por generación (las capacidades suman encima).
+     * Calibrado sobre demandByEra: un motor de la gen N con sus capacidades
+     * cubre de sobra su era y envejece en las dos siguientes. */
+    baseLevelByGeneration: {
+      1: 2,
+      2: 4,
+      3: 7,
+      4: 11,
+      5: 15,
+      6: 21,
+      7: 26,
+    } satisfies Record<number, number>,
+    /** Coste 💰 de construir de cero, por generación. */
+    moneyByGeneration: {
+      1: 6_000,
+      2: 15_000,
+      3: 50_000,
+      4: 150_000,
+      5: 400_000,
+      6: 1_200_000,
+      7: 2_500_000,
+    } satisfies Record<number, number>,
+    /** Coste 💡 de construir de cero, por generación. */
+    pointsByGeneration: {
+      1: 8,
+      2: 14,
+      3: 25,
+      4: 40,
+      5: 60,
+      6: 90,
+      7: 120,
+    } satisfies Record<number, number>,
+    /** Semanas de obra, por generación. */
+    weeksByGeneration: {
+      1: 6,
+      2: 8,
+      3: 12,
+      4: 16,
+      5: 20,
+      6: 26,
+      7: 32,
+    } satisfies Record<number, number>,
+    /** Mejorar un motor existente (subir generación / añadir capacidades)
+     * cuesta esta fracción de la obra nueva: amortizar tiene premio. */
+    upgradeFactor: 0.6,
+    /**
+     * Generación máxima construible por nodo de I+D (docs/02 §3): sin
+     * arquitectura investigada solo sale la gen 1 (un motorcito de garaje).
+     * La era también acota: nunca se construye por delante de su número.
+     */
+    generationGate: {
+      base: 1,
+      motorPropio1: 3,
+      motorPropio2: 5,
+      motorPropio3: 7,
+    },
+    /**
+     * Herramientas: el motor hace cundir al equipo del proyecto que lo usa
+     * (sustituye al viejo devOutput de los nodos motorPropio*; docs/02 §6.1:
+     * NO acorta el calendario — mejora la ejecución en el mismo plazo).
+     */
+    devOutputByGeneration: {
+      1: 0.05,
+      2: 0.08,
+      3: 0.1,
+      4: 0.12,
+      5: 0.15,
+      6: 0.18,
+      7: 0.2,
+    } satisfies Record<number, number>,
+    /** Umbrales del semáforo de adecuación al concebir (sobre adecuación 0..1). */
+    adequacyMeter: { verde: 0.85, ambar: 0.55 },
   },
 
   /** Investigación (docs/02 §3 y docs/12 §6): puntos 💡 y su goteo. */

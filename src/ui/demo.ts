@@ -6,6 +6,7 @@ import {
   computeSegmentReviews,
   computeTeamFactor,
   createInitialState,
+  engineTechLevel,
   generateCandidates,
   makeRng,
   reviewVerdict,
@@ -484,6 +485,42 @@ function knowledgeDemo(): GameState {
   };
 }
 
+/**
+ * Escaparate de la Fase 9.2 (docs/19 §9.2): el taller de motores. Un estudio
+ * de E5 con un motor propio ENVEJECIDO (gen 3, de la época del CD), caja y 💡
+ * para encargar la mejora, y el catálogo licenciable moderno como puente. Con
+ * `&concebir=1` se abre además el modal de concepción, para capturar la
+ * elección de motor (adecuación visible + royalty del licenciado).
+ */
+function motoresDemo(): GameState {
+  const base = studioDemo();
+  return {
+    ...base,
+    engines: [
+      {
+        id: 'demo-motor',
+        name: 'Motor Albatros',
+        generation: 3,
+        techLevel: engineTechLevel(3, ['graficos3d']),
+        capabilities: ['graficos3d'],
+        builtWeek: base.week - 420,
+      },
+    ],
+    engineBuild: null,
+    research: {
+      ...base.research,
+      points: 120,
+      unlocked: [
+        'motorPropio1',
+        'motorPropio2',
+        'tecnologia3d',
+        'kitBiplataforma',
+        'tecnologiaOnline',
+      ],
+    },
+  };
+}
+
 /** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
 function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
@@ -557,6 +594,15 @@ export function applyDemoFromQuery(): boolean {
   // temas por investigar y los nodos de conocimiento de mercado.
   if (demo === 'conocimiento') {
     seed(knowledgeDemo(), 'investigacion', null);
+    return true;
+  }
+  // El taller de motores (Fase 9.2, docs/19 §9.2): motor propio envejecido,
+  // obra de mejora al alcance y catálogo licenciable. Con `&concebir=1`, el
+  // modal de concepción encima para capturar la elección de motor.
+  if (demo === 'motores') {
+    const concebir = params.get('concebir') === '1';
+    seed(motoresDemo(), concebir ? 'estudio' : 'investigacion', null);
+    if (concebir) useGameStore.setState({ conceptionOpen: true });
     return true;
   }
   // El arranque A CIEGAS (docs/17 P2): partida recién fundada con el modal de

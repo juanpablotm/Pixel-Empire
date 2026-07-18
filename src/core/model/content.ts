@@ -1,3 +1,4 @@
+import type { EngineCapabilityId } from './engine';
 import type { EraId } from './era';
 import type { CurvePoint } from './market';
 import type { Audience, DevPhaseNumber } from './project';
@@ -67,6 +68,12 @@ export interface Feature {
   appearsInEra: EraId;
   /** Nodo de investigación necesario para desbloquearla (docs/02 §3 y docs/09 §5). */
   requiresResearch?: string;
+  /**
+   * Capacidad que debe tener el MOTOR del proyecto para elegirla (Fase 9.2,
+   * docs/19 §9.2): el multijugador online exige un motor con Online. Se valida
+   * en toggleFeature contra el motor elegido al concebir.
+   */
+  requiresEngineCapability?: EngineCapabilityId;
 }
 
 /** Rasgo de personalidad de un empleado (docs/05 §3 y docs/09 §6). */

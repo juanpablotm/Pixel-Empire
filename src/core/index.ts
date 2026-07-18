@@ -102,9 +102,40 @@ export {
   maturity01,
   studioExperience,
   teamPower,
-  techDepth01,
 } from './systems/maturity';
 export type { CeilingContext } from './systems/maturity';
+export type {
+  EngineBuild,
+  EngineCapabilityDef,
+  EngineCapabilityId,
+  LicensedEngineDef,
+  OwnedEngine,
+} from './model/engine';
+export {
+  adequacyBand,
+  advanceEngineBuild,
+  availableLicensedEngines,
+  buildableCapabilities,
+  capabilityBuildable,
+  engineAdequacy01,
+  engineBuildBlockReason,
+  engineBuildCost,
+  engineDemand,
+  engineHasCapability,
+  engineMaxPlatforms,
+  engineReferenceAdequacy01,
+  engineTechLevel,
+  getOwnedEngine,
+  maxBuildableGeneration,
+  resolveEngine,
+  startEngineBuild,
+} from './systems/engines';
+export type {
+  AdequacyBand,
+  EngineBuildCost,
+  EngineBuildSpec,
+  ResolvedEngine,
+} from './systems/engines';
 export {
   advanceProjects,
   estimateProject,

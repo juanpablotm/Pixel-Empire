@@ -3,6 +3,7 @@ import type { GameState } from '../model/gameState';
 import { advanceAwards } from '../systems/awards';
 import { advanceCommunity } from '../systems/community';
 import { advanceEconomy } from '../systems/economy';
+import { advanceEngineBuild } from '../systems/engines';
 import { advanceEras } from '../systems/eras';
 import { advanceMarket } from '../systems/market';
 import { advanceMoral } from '../systems/morale';
@@ -53,6 +54,8 @@ export function tick(state: GameState): GameState {
   s = advanceCommunity(s, communityRng);
   s = advanceEconomy(s);
   s = advanceResearch(s);
+  // La obra del motor avanza sola (9.2): ya se pagó al encargarla.
+  s = advanceEngineBuild(s);
   s = advanceAwards(s, awardsRng);
   s = refreshCandidatePool(s);
 

@@ -7,8 +7,11 @@ import type { EraId } from './era';
  */
 
 /**
- * Capacidades de estudio que puede mejorar un nodo (docs/02 §3: "motores
- * propios y capacidades de estudio"). Cada valor es un bonus aditivo sobre 1:
+ * Capacidades de estudio que puede mejorar un nodo (docs/02 §3). Desde la
+ * Fase 9.2 el devOutput de los motores ya NO viene de nodos: lo aporta el
+ * MOTOR del proyecto (balance.engines.devOutputByGeneration); los nodos de
+ * arquitectura solo gatean qué generación se puede construir.
+ * Cada valor es un bonus aditivo sobre 1:
  * p. ej. devOutput 0.1 = +10 % de capacidad semanal del equipo. Ojo: la
  * capacidad NO acorta el calendario (la duración la fija el tamaño del
  * proyecto); mejora la EJECUCIÓN en ese plazo (docs/02 §2 paso 3).
@@ -40,12 +43,6 @@ export interface ResearchNodeDef {
   effects?: Partial<Record<StudioCapability, number>>;
   /** Faceta de conocimiento de mercado que revela globalmente (docs/17 P2). */
   reveals?: MarketKnowledge;
-  /**
-   * Profundidad tecnológica que aporta al techo dinámico (Fase 9.1, docs/19
-   * §9.1): capTech compara la suma de `techValue` comprados contra el objetivo
-   * de la era (balance.quality.ceiling.tech). Los nodos de mercado aportan 0.
-   */
-  techValue?: number;
 }
 
 /** Estado de la investigación dentro de GameState (docs/08 §5). */

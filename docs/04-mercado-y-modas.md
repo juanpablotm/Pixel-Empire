@@ -149,7 +149,11 @@ Anunciada → Lanzamiento → Crecimiento (base instalada ↑) → Madurez (pico
   investigación (`02`).
 - **Guerra de consolas:** en cada generación, 2–3 plataformas compiten; su cuota cambia con el tiempo
   (guionizado + algo de ruido). Apostar por la plataforma "ganadora" temprano es una lectura de mercado.
-- Multiplataforma: en eras avanzadas puedes lanzar en varias a la vez (más coste, más alcance).
+- **Multiplataforma (Fase 9.2, docs/19 §9.2):** lanzar en varias plataformas a la vez es una
+  **capacidad del MOTOR** que se investiga (kit biplataforma = 2, pipeline multiplataforma = hasta 4).
+  Cada plataforma paga su licencia al iniciar; la **demanda semanal SUMA las bases instaladas** de
+  todas (cada una con su sesgo de público), y si una muere a mitad de la cola, su curva la apaga sola.
+  La primera plataforma es la **principal** (fija el fit género×plataforma).
 
 ## 8. Eventos de mercado `[DECIDIDO]`
 
