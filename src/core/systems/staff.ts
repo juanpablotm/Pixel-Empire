@@ -15,6 +15,7 @@ import type { GameState, ScaleStage } from '../model/gameState';
 import type { Employee, SalaryTier, Specialty, TeamFactorResult } from '../model/staff';
 import { nudgeMoralDrift } from './morale';
 import { employerPoolModifiers, withReputationDeltas } from './reputation';
+import { signQuitterWithRival } from './rivals';
 import { dropFromSquads } from './squads';
 
 /**
@@ -779,9 +780,6 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
     studio = withReputationDeltas(studio, {
       empleador: -balance.reputation.employer.quitHit * quitters.length,
     });
-    for (const quitter of quitters) {
-      events.push(`${quitter.name} renuncia, harto del trato recibido.`);
-    }
   }
 
   let next: GameState = { ...state, staff, projects, research, studio };
@@ -794,6 +792,12 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
   }
   for (const text of events) {
     next = appendLog(next, 'staff', text);
+  }
+  // El talento que se va puede acabar en la competencia (docs/05 §7, 9.5):
+  // el rival que lo ficha se fortalece — drama y consecuencia real.
+  for (const quitter of quitters) {
+    const signed = signQuitterWithRival(next, quitter, rng);
+    next = appendLog(signed.state, 'staff', signed.text);
   }
   return next;
 }

@@ -23,6 +23,7 @@ export type {
   Audience,
   DevPhaseNumber,
   FocusAllocation,
+  PendingRelease,
   Project,
   ProjectSize,
 } from './model/project';
@@ -66,6 +67,15 @@ export type {
   RegulationState,
   ReputationVector,
 } from './model/moral';
+export type {
+  PoachOffer,
+  RivalAnnouncement,
+  RivalGame,
+  RivalProfile,
+  RivalRuntime,
+  RivalsState,
+  RivalTier,
+} from './model/rivals';
 export type {
   ActiveCrisis,
   CommunityPost,
@@ -140,6 +150,8 @@ export type {
 } from './systems/engines';
 export {
   advanceProjects,
+  confirmContestedRelease,
+  delayContestedRelease,
   estimateProject,
   findProject,
   phaseWeeks,
@@ -196,6 +208,7 @@ export {
   pickCategoryWinner,
   prestigeBonus,
   rankLabel,
+  rivalNominees,
   studioScore,
 } from './systems/awards';
 export {
@@ -218,6 +231,19 @@ export {
   researchableThemes,
   themeAvailable,
 } from './systems/unlocks';
+export {
+  activeRivalStudios,
+  advanceRivals,
+  announcedReleases,
+  contestedWindowAt,
+  createInitialRivals,
+  recentRivalGames,
+  resolvePoachOffer,
+  rollRivalReview,
+  signQuitterWithRival,
+  RIVALS_STREAM,
+} from './systems/rivals';
+export type { ContestedWindow, PoachResolution } from './systems/rivals';
 export { buildReviewLines, reviewVerdict } from './systems/review';
 export { advanceSales, weeklyRevenue } from './systems/sales';
 export {

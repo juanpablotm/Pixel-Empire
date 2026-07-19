@@ -29,6 +29,7 @@ const ICONS: Record<LogEntry['type'], string> = {
   era: '🌍',
   investigacion: '💡',
   premios: '🏆',
+  industria: '🏬',
   fin: '🏛️',
 };
 

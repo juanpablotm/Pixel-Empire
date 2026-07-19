@@ -11,8 +11,10 @@ import {
   categoryBar,
   pickCategoryWinner,
   prestigeBonus,
+  rivalNominees,
   studioScore,
 } from './awards';
+import type { RivalGame } from '../model/rivals';
 import { startProject } from './projects';
 
 /**
@@ -378,5 +380,106 @@ describe('la gala en el tick (docs/06 §7 + docs/18 V7)', () => {
     const project = state.projects[state.projects.length - 1];
     expect(project.hype).toBeCloseTo(hype, 10);
     expect(state.studio.awardHype).toBe(0);
+  });
+});
+
+describe('nominados REALES desde la industria (Fase 9.5, docs/19 §9.5)', () => {
+  /** Inyecta lanzamientos del año en un rival concreto (cirugía de test). */
+  function withRivalGames(
+    state: GameState,
+    rivalId: string,
+    games: RivalGame[],
+    strength?: number,
+    closed = false,
+  ): GameState {
+    return {
+      ...state,
+      rivals: {
+        ...(state.rivals ?? { studios: [], poachOffer: null }),
+        studios: (state.rivals?.studios ?? []).map((r) =>
+          r.id === rivalId
+            ? { ...r, games, strength: strength ?? r.strength, closed }
+            : r,
+        ),
+      },
+    };
+  }
+
+  const bombazo: RivalGame = {
+    name: 'Bombazo',
+    genreId: 'puzzle',
+    themeId: 'espacio',
+    size: 'grande',
+    review: 88,
+    releaseWeek: 30,
+    hyped: true,
+  };
+
+  it('la gala nomina los lanzamientos rivales del año, con su nombre y tu baremo', () => {
+    let state = withPrestige(atCeremony([makeGame({ review: 85 })]), 50);
+    state = withRivalGames(state, 'mango', [bombazo]); // gigante, fuerza 80
+    const after = advanceAwards(state, rng());
+    const goty = after.studio.lastCeremony?.categories.find((c) => c.categoryId === 'goty');
+
+    const mango = goty?.nominees.find((n) => n.studio === 'Mango Interactive');
+    expect(mango?.gameName).toBe('Bombazo');
+    // Mismo baremo que el tuyo: reseña + prestigio (fuerza) + escala×peso.
+    const c = balance.awards.competition;
+    expect(mango?.score).toBeCloseTo(88 + (c.prestigeWeight * 80) / 100 + c.sizeBonus.grande, 2);
+    // El ranking sigue completo: reales + relleno hasta nomineeCount, y tú.
+    expect(goty?.nominees).toHaveLength(c.nomineeCount + 1);
+  });
+
+  it('la escala del rival tampoco compra la Innovación (scaleWeight)', () => {
+    let state = withPrestige(atCeremony([makeGame({ review: 85 })]), 50);
+    state = withRivalGames(state, 'mango', [bombazo]);
+    const c = balance.awards.competition;
+    const goty = rivalNominees(state, getAwardCategory('goty'))[0];
+    const inn = rivalNominees(state, getAwardCategory('innovacion'))[0];
+    expect(goty.score - inn.score).toBeCloseTo(
+      (1 - getAwardCategory('innovacion').scaleWeight) * c.sizeBonus.grande,
+      2,
+    );
+  });
+
+  it('un rival cerrado durante el año conserva su candidatura (lanzó antes de cerrar)', () => {
+    let state = withPrestige(atCeremony([makeGame({ review: 85 })]), 50);
+    state = withRivalGames(state, 'tortuga', [{ ...bombazo, name: 'Póstumo' }], 5, true);
+    expect(
+      rivalNominees(state, getAwardCategory('goty')).some((n) => n.gameName === 'Póstumo'),
+    ).toBe(true);
+  });
+
+  it('los lanzamientos fuera de la ventana anual no compiten', () => {
+    let state = withPrestige(atCeremony([makeGame({ review: 85 })]), 50);
+    state = withRivalGames(state, 'mango', [{ ...bombazo, releaseWeek: -10 }]);
+    expect(rivalNominees(state, getAwardCategory('goty'))).toHaveLength(0);
+  });
+
+  it('E7: contra un año rival típico, el AAA excelente y consagrado GANA (docs/18 V7)', () => {
+    // Un año E7 realista: el techo de nominados ronda 103–106 (rivalsReport).
+    const typicalYear: RivalGame[] = [
+      { ...bombazo, name: 'Coloso', size: 'aaa', review: 84 },
+      { ...bombazo, name: 'Secuela del Coloso', size: 'aaa', review: 79 },
+    ];
+    let state = withPrestige(
+      {
+        ...atCeremony([
+          makeGame({
+            review: 88,
+            size: 'aaa',
+            reviewsBySegment: { critica: 88, prensa: 88, hardcore: 88, casual: 88 },
+          }),
+        ]),
+        era: 'E7' as const,
+      },
+      95,
+    );
+    state = withRivalGames(state, 'mango', typicalYear, 85);
+    const after = advanceAwards(state, rng());
+    const goty = after.studio.lastCeremony?.categories.find((c) => c.categoryId === 'goty');
+    expect(goty?.rank).toBe(1);
+    // Y compites contra el catálogo REAL del gigante, presente en el ranking.
+    expect(goty?.nominees.some((n) => n.studio === 'Mango Interactive')).toBe(true);
   });
 });

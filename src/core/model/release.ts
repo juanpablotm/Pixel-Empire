@@ -169,4 +169,13 @@ export interface ReleasedGame {
    */
   personalBest?: boolean;
   previousBestReview?: number;
+  /**
+   * Aplastado por una ventana disputada (Fase 9.5, docs/19 §9.5): el juego
+   * salió dentro de la ventana de un bombazo de gigante del mismo género.
+   * Congelado al lanzar (como overHypeTailPenalty): el pico day-one se
+   * multiplica por (1 − penalty) en expectedWeeklyUnits; la cola no se toca.
+   * Siempre nombrable ("te aplastó X con Y"): Pilar 2. Opcional: 0 juegos
+   * previos y lanzamientos sin ventana no lo llevan.
+   */
+  rivalCrush?: { rivalName: string; gameName: string; penalty: number };
 }

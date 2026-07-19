@@ -160,13 +160,22 @@ export function MarketScreen() {
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Mercado y tendencias</h2>
-        <button
-          type="button"
-          onClick={() => goTo('estudio')}
-          className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
-        >
-          Volver al estudio
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => goTo('industria')}
+            className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
+          >
+            🏬 Industria
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo('estudio')}
+            className="rounded-md bg-raised px-3 py-1.5 text-sm text-ink hover:bg-control"
+          >
+            Volver al estudio
+          </button>
+        </div>
       </div>
 
       <section className="card">

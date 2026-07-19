@@ -22,6 +22,8 @@ import {
 } from '../core/systems/engines';
 import { lootBoxesBanned } from '../core/systems/morale';
 import {
+  confirmContestedRelease,
+  delayContestedRelease,
   estimateProject,
   projectTotalWeeks,
   sizeBlockReason,
@@ -30,6 +32,7 @@ import {
 } from '../core/systems/projects';
 import { comboPopularity } from '../core/systems/market';
 import { computeFit } from '../core/systems/quality';
+import { resolvePoachOffer } from '../core/systems/rivals';
 import {
   buyResearch,
   researchNodeStatus,
@@ -705,6 +708,30 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
   }
   for (const crisis of state.community.crises.filter((c) => c.status === 'abierta')) {
     state = respondToCrisis(state, crisis.id, phil.crisisResponse);
+  }
+  // Caza de talento (9.5): iguala solo por las ESTRELLAS (el techo de 9.1 las
+  // necesita) y solo si la caja aguanta; a los demás les desea suerte. Igual
+  // para los tres bots: la fábrica retiene por cinismo, el indie por cariño.
+  const offer = state.rivals?.poachOffer;
+  if (offer) {
+    const target = state.staff.find((e) => e.id === offer.employeeId);
+    const star =
+      target !== undefined &&
+      target.skills[target.specialty] >= balance.rivals.poach.starSkill;
+    const canAfford = state.studio.capital > 26 * weeklyFixedCosts(state);
+    state = resolvePoachOffer(state, star && canAfford ? 'igualar' : 'dejar');
+  }
+  // Ventana disputada (9.5): como un jugador informado — esquiva el bombazo
+  // del gigante si la espera es corta Y la caja aguanta la nómina extra; si
+  // no, lanza igual y come el aplastamiento del pico (decisión, no azar).
+  for (const project of state.projects.filter((p) => p.pendingRelease !== undefined)) {
+    const pending = project.pendingRelease as NonNullable<typeof project.pendingRelease>;
+    const wait = pending.windowEndWeek + 1 - state.week;
+    const canAfford = state.studio.capital > (wait + 8) * weeklyFixedCosts(state);
+    state =
+      wait <= 6 && canAfford
+        ? delayContestedRelease(state, project.id)
+        : confirmContestedRelease(state, project.id);
   }
   // 2. Estudio: ampliación (se compra, docs/18 V4-c), crédito, taller de
   // motores (9.2), investigación, plantilla, cuidado y rotación de energía.

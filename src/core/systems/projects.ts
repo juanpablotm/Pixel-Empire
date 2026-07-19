@@ -32,6 +32,7 @@ import {
 import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeCeilingContext } from './maturity';
 import { computeQuality } from './quality';
+import { contestedWindowAt } from './rivals';
 import {
   addReleaseResearchPoints,
   capabilityBonus,
@@ -616,6 +617,17 @@ function releaseProject(state: GameState, project: Project): GameState {
   // aunque sea un 45 — eres una persona con un casete en un garaje.
   const previousBest = state.releasedGames.reduce((best, g) => Math.max(best, g.review), 0);
   const personalBest = state.releasedGames.length === 0 || review > previousBest;
+  // Ventana disputada (9.5, docs/19 §9.5): lanzar el mismo género dentro de la
+  // ventana de un bombazo de gigante aplasta el pico day-one (congelado aquí,
+  // como el overHypeTailPenalty). La fecha rival era pública desde su anuncio.
+  const contested = contestedWindowAt(state, project.genreId, state.week);
+  const rivalCrush = contested
+    ? {
+        rivalName: contested.rivalName,
+        gameName: contested.gameName,
+        penalty: balance.rivals.window.crushPenalty,
+      }
+    : undefined;
   const released: ReleasedGame = {
     id: project.id,
     name: project.name,
@@ -653,6 +665,7 @@ function releaseProject(state: GameState, project: Project): GameState {
     overHypeTailPenalty,
     personalBest,
     previousBestReview: state.releasedGames.length > 0 ? previousBest : undefined,
+    rivalCrush,
   };
   let next: GameState = {
     ...state,
@@ -673,6 +686,14 @@ function releaseProject(state: GameState, project: Project): GameState {
     `«${released.name}» sale a la venta: reseña media ${review}/100.` +
       (personalBest && state.releasedGames.length > 0 ? ' ¡Tu mejor juego hasta ahora!' : ''),
   );
+  // El aplastamiento siempre se nombra (Pilar 2): sabes quién te robó los focos.
+  if (rivalCrush) {
+    next = appendLog(
+      next,
+      'ventas',
+      `«${released.name}» sale en plena ventana de «${rivalCrush.gameName}» de ${rivalCrush.rivalName}: su campaña aplasta tu pico de salida.`,
+    );
+  }
   // El sobre-hype que no cumple se paga (docs/17 E2): golpe a hardcore/comunidad
   // proporcional a la brecha; la cola de ventas ya lo lleva en overHypeTailPenalty.
   if (overHypeBrecha > 0) {
@@ -704,10 +725,57 @@ function releaseProject(state: GameState, project: Project): GameState {
   return applyReleaseMorale(next, review);
 }
 
+/**
+ * Un proyecto TERMINADO decide su salida (Fase 9.5, docs/19 §9.5). Normalmente
+ * se lanza en el acto (lo de siempre); pero si hay ventana disputada de su
+ * género, queda retenido con una decisión pendiente (lanzar igual o esquivar),
+ * y si el jugador ya la retrasó, espera su fecha. Las semanas retenidas
+ * cuentan como pausa: nadie desarrolla (el P&L no las cobra), pero la nómina
+ * corre — ese es el precio, y es visible.
+ */
+function resolveFinishedProject(state: GameState, project: Project): GameState {
+  const hold = (): GameState =>
+    withProject(state, { ...project, pausedWeeks: (project.pausedWeeks ?? 0) + 1 });
+
+  // Retrasado a propósito: espera a que pase la ventana (docs/19 §9.5).
+  if (project.delayedUntilWeek !== undefined && state.week < project.delayedUntilWeek) {
+    return hold();
+  }
+  // A la espera de que el jugador decida (el modal pausa; los bots resuelven).
+  if (project.pendingRelease !== undefined) {
+    return hold();
+  }
+  const contested = contestedWindowAt(state, project.genreId, state.week);
+  if (contested !== null) {
+    const next = withProject(state, {
+      ...project,
+      pendingRelease: {
+        rivalId: contested.rivalId,
+        rivalName: contested.rivalName,
+        gameName: contested.gameName,
+        releaseWeek: contested.releaseWeek,
+        windowEndWeek: contested.endWeek,
+      },
+      pausedWeeks: (project.pausedWeeks ?? 0) + 1,
+    });
+    return appendLog(
+      next,
+      'proyecto',
+      `«${project.name}» está listo… pero ${contested.rivalName} lanza «${contested.gameName}» (mismo género) en la misma ventana. ¿Lanzar igual o esquivar?`,
+    );
+  }
+  return releaseProject(state, project);
+}
+
 /** Una semana de trabajo de UN proyecto; devuelve el estado con el avance o lanzamiento. */
 function advanceOneProject(state: GameState, projectId: string): GameState {
   const project = state.projects.find((p) => p.id === projectId);
   if (!project) return state;
+
+  // Terminado y retenido (9.5): no trabaja, no acumula bugs, solo espera fecha.
+  if (project.weeksSpent >= projectTotalWeeks(project)) {
+    return resolveFinishedProject(state, project);
+  }
 
   const team = assignedTeam(state, project);
   // Capacidad del equipo esta semana: ~1 por persona, con las herramientas del
@@ -799,7 +867,8 @@ function advanceOneProject(state: GameState, projectId: string): GameState {
   const total = projectTotalWeeks(worked);
 
   if (weeksSpent >= total) {
-    return releaseProject(state, worked);
+    // Terminado esta misma semana: sale ya… salvo ventana disputada (9.5).
+    return resolveFinishedProject(withProject(state, worked), worked);
   }
 
   const newPhase: DevPhaseNumber = weeksSpent >= w1 + w2 ? 3 : weeksSpent >= w1 ? 2 : 1;
@@ -829,4 +898,44 @@ export function advanceProjects(state: GameState): GameState {
     next = advanceOneProject(next, id);
   }
   return next;
+}
+
+/**
+ * Acción: lanzar IGUAL dentro de la ventana disputada (Fase 9.5). El juego
+ * sale ya, con el pico day-one aplastado por la campaña del gigante
+ * (rivalCrush, congelado en releaseProject). Decisión informada: el modal
+ * enseña el castigo antes de confirmar.
+ */
+export function confirmContestedRelease(state: GameState, projectId?: string): GameState {
+  const project = findProject(state, projectId);
+  if (project.pendingRelease === undefined) {
+    throw new Error('El proyecto no tiene un lanzamiento en ventana disputada');
+  }
+  const cleared: Project = { ...project, pendingRelease: undefined };
+  return releaseProject(withProject(state, cleared), cleared);
+}
+
+/**
+ * Acción: RETRASAR el lanzamiento para esquivar la ventana (Fase 9.5). El
+ * juego espera en el cajón hasta la semana siguiente al cierre de la ventana
+ * y sale solo (advanceProjects). El precio es visible: nómina y calendario
+ * siguen corriendo, y el mercado no te espera.
+ */
+export function delayContestedRelease(state: GameState, projectId?: string): GameState {
+  const project = findProject(state, projectId);
+  const pending = project.pendingRelease;
+  if (pending === undefined) {
+    throw new Error('El proyecto no tiene un lanzamiento en ventana disputada');
+  }
+  const until = pending.windowEndWeek + 1;
+  const next = withProject(state, {
+    ...project,
+    pendingRelease: undefined,
+    delayedUntilWeek: until,
+  });
+  return appendLog(
+    next,
+    'proyecto',
+    `«${project.name}» retrasa su lanzamiento ${until - state.week} semanas para esquivar «${pending.gameName}» de ${pending.rivalName}. La nómina sigue corriendo.`,
+  );
 }

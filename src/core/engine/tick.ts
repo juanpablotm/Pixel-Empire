@@ -10,6 +10,7 @@ import { advanceMoral } from '../systems/morale';
 import { advancePolicies } from '../systems/policies';
 import { advanceProjects } from '../systems/projects';
 import { advanceResearch } from '../systems/research';
+import { advanceRivals, RIVALS_STREAM } from '../systems/rivals';
 import { advanceSales } from '../systems/sales';
 import { advanceStaff, refreshCandidatePool } from '../systems/staff';
 
@@ -23,6 +24,8 @@ const MARKET_STREAM = 3 << 20;
 const MORAL_STREAM = 4 << 20;
 const COMMUNITY_STREAM = 5 << 20;
 const AWARDS_STREAM = 7 << 20;
+// 6 << 20 y 8 << 20 los usan community (sabor) y projects (banda de reseña);
+// RIVALS_STREAM (9 << 20) vive en systems/rivals.ts (lo comparte la migración).
 
 /**
  * Avanza el mundo 1 tick (= 1 semana). Función pura: no muta `state`,
@@ -44,8 +47,12 @@ export function tick(state: GameState): GameState {
   const moralRng = makeRng(state.seed, MORAL_STREAM + state.week);
   const communityRng = makeRng(state.seed, COMMUNITY_STREAM + state.week);
   const awardsRng = makeRng(state.seed, AWARDS_STREAM + state.week);
+  const rivalsRng = makeRng(state.seed, RIVALS_STREAM + state.week);
 
   let s = advanceMarket(state, marketRng);
+  // La industria mueve ficha tras el mercado (9.5): sus lanzamientos suman
+  // saturación y fiebres ANTES de que los proyectos del jugador se lancen.
+  s = advanceRivals(s, rivalsRng);
   s = advanceProjects(s);
   s = advanceStaff(s, staffRng);
   s = advancePolicies(s);

@@ -21,6 +21,21 @@ export type DevPhaseNumber = 1 | 2 | 3;
  */
 export type FocusAllocation = Record<string, number>;
 
+/**
+ * La ventana disputada que retiene un proyecto terminado (Fase 9.5, docs/19
+ * §9.5): quién lanza contra ti, qué y cuándo. windowEndWeek es la última
+ * semana aplastada; retrasar fija delayedUntilWeek = windowEndWeek + 1.
+ */
+export interface PendingRelease {
+  rivalId: string;
+  rivalName: string;
+  gameName: string;
+  /** Semana de lanzamiento del bombazo rival. */
+  releaseWeek: number;
+  /** Última semana dentro de la ventana disputada. */
+  windowEndWeek: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -79,6 +94,21 @@ export interface Project {
    * que el descanso existe para enseñar. Opcional: los saves previos heredan 0.
    */
   pausedWeeks?: number;
+  /**
+   * Ventana disputada (Fase 9.5, docs/19 §9.5): el proyecto TERMINÓ, pero un
+   * gigante lanza un juego de su mismo género en la misma ventana. El juego
+   * espera en el cajón (pausa con decisión) hasta que el jugador elige lanzar
+   * igual (confirmContestedRelease) o esquivar (delayContestedRelease).
+   * Opcional: solo existe mientras la decisión está pendiente.
+   */
+  pendingRelease?: PendingRelease;
+  /**
+   * Lanzamiento retrasado a propósito (Fase 9.5): el proyecto terminado
+   * espera a esta semana para salir (fin de la ventana disputada + 1). Las
+   * semanas de espera cuentan como pausa (pausedWeeks): nadie desarrolla,
+   * pero la nómina corre — ese es el precio de esquivar.
+   */
+  delayedUntilWeek?: number;
   /** Fase de desarrollo en curso. */
   phase: DevPhaseNumber;
   /** Reparto de esfuerzo por fase: focus[fase - 1]. */

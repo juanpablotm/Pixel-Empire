@@ -159,7 +159,7 @@ Legado = {
 Diferentes filosofías (`01` §5) maximizan diferentes ejes → cada final cuenta una historia distinta
 ("Construiste un imperio odiado" vs "Un estudio adorado que nunca fue rico"). Rejugabilidad por diseño.
 
-## 7. Premios y reconocimiento `[DECIDIDO · rediseñado en 8.10]`
+## 7. Premios y reconocimiento `[DECIDIDO · rediseñado en 8.10 · nominados reales desde 9.5]`
 
 Ceremonia anual (tipo "Game Awards") que premia mejor juego, innovación, arte, etc. Ganar da
 Reputación (sobre todo Crítica/Prensa), hype para el próximo proyecto y atractivo de contratación.
@@ -171,24 +171,28 @@ y un **puesto** ("Estudio del año: 4.º"). Ganar es difícil y aspiracional.
 - **Nominación.** Tu mejor lanzamiento del año debe pasar el **umbral** de la categoría
   (`awards.thresholds`). Ese umbral es lo que da identidad a cada premio: la Innovación pide riesgo,
   la Técnica pide pulido, el Público pide nota casual. Sin umbral no hay gala.
-- **Puesto.** Compites contra un **listón de industria** que **sube con la era** y contra 4
-  **nominados ficticios** con nombre (estudio + título). Sin rivales simulados (`04` §9 sigue
-  diferido), esto es lo que hace que la industria se sienta viva. Tu puntuación:
+- **Puesto: contra los RIVALES REALES (Fase 9.5, docs/19 §9.5).** Los nominados son los **mejores
+  lanzamientos rivales del año** (`04` §9), con su estudio y su título de verdad, puntuados con **tu
+  mismo baremo** (su prestigio es su fuerza; su escala, el tamaño real de su juego). El relleno
+  ficticio alrededor del listón (`barByEra`) queda solo para saves recién migrados sin industria en
+  la ventana. Tu puntuación:
 
   ```
   puntuación = reseña + prestigio(crítica, prensa) + escala(tamaño) × pesoEscala(categoría)
   puesto     = 1 + nº de nominados por encima de ti
   ```
 
-- **Solo es realista ganar en E6–E7.** Tu reseña **no crece con las eras** (desde 9.1, el listón de
-  nota por era sube de 61 a 88 mientras tu techo dinámico de Q lo persigue — `03` §3.1 y `04` §5) y
-  la reputación satura pronto (y decae sola). Lo único que crece de verdad es la **escala**, y los
-  gates de tamaño de `18` V4-b la reparten por eras. Por eso el listón va **por delante** de tu techo
-  hasta E5 y **por detrás** en E6–E7: en el garaje aspiras a entrar en el ranking; el gordo cae
-  cuando eres Corporación y sacas un AAA excelente.
+- **Solo es realista ganar el GOTY en E6–E7 — y ahora es la industria quien lo impone.** Tu reseña
+  **no crece con las eras** (9.1) y la reputación satura pronto; lo único que crece es la
+  **escala**, y los establecidos van **un tamaño por delante** hasta E5 (`balance.rivals.
+  sizeByTierEra`, calibrado con bots contra la envolvente de `barByEra`): en E5 la ola de gigantes
+  pone el techo en ~110 y el gordo no cae hasta que eres Corporación con un AAA excelente. En un
+  **año flojo de la industria** (se VE en el panel), una obra maestra puede colarse antes en las
+  categorías de idea — eso es competencia, no regalo.
 - **Ni la escala ni el cariño bastan por separado.** La fábrica cínica no pasa el umbral (sus
   reseñas son malas) y el indie de culto no tiene escala: **el premio va a quien navegó el dilema**.
-  Y la escala **no compra la Innovación** (`scaleWeight` 0.25): ahí compite la idea.
+  Y la escala **no compra la Innovación** (`scaleWeight` 0.25) — tampoco a los rivales: sus AAA
+  pierden ahí su ventaja, y es donde el indie de culto pesca premios a media partida.
 - **La nominación no es estéril:** quedarte en el ranking sin ganar deja poso en Crítica y Prensa.
   El hype y el resto de recompensas siguen siendo solo de ganar.
 

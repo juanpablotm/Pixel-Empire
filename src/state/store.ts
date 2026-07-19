@@ -2,9 +2,11 @@ import { create } from 'zustand';
 import {
   assignCreatorKey,
   buyResearch,
+  confirmContestedRelease,
   createGameLoop,
   createInitialState,
   createSandboxState,
+  delayContestedRelease,
   expandBlockReason,
   expandStudio,
   fireEmployee,
@@ -15,6 +17,7 @@ import {
   researchInsight,
   researchTheme,
   resolveDilemma,
+  resolvePoachOffer,
   respondToCrisis,
   retireStudio,
   assignSquadToProject,
@@ -44,6 +47,7 @@ import {
   type FocusAllocation,
   type GameState,
   type MotivationKind,
+  type PoachResolution,
   type ProjectConcept,
   type ScaleStage,
   type Specialty,
@@ -124,6 +128,7 @@ export type Screen =
   | 'resena'
   | 'equipo'
   | 'mercado'
+  | 'industria'
   | 'creadores'
   | 'investigacion'
   | 'finanzas'
@@ -307,6 +312,14 @@ export interface GameStore {
   assignCreatorKey: (creatorId: string, projectId?: string) => void;
   respondToCrisis: (crisisId: string, responseId: CrisisResponseId) => void;
   resolveDilemma: (kind: DilemmaKind, choice: DilemmaChoice) => void;
+  /**
+   * Ventana disputada (Fase 9.5, docs/19 §9.5): lanzar igual (con el pico
+   * aplastado) o retrasar hasta que pase el bombazo del gigante.
+   */
+  confirmContestedRelease: (projectId: string) => void;
+  delayContestedRelease: (projectId: string) => void;
+  /** Caza de talento (Fase 9.5): igualar la oferta del rival o dejarle ir. */
+  resolvePoachOffer: (resolution: PoachResolution) => void;
   /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
   retire: () => void;
   /** Entra a la partida desde el título (Fase 7F). */
@@ -514,6 +527,14 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       s.community.crises.filter((c) => c.status === 'abierta').length;
     const crisisErupted = openCrises(after) > openCrises(before);
     const dilemmaFired = after.community.dilemmas.length > before.community.dilemmas.length;
+    // Ventana disputada (9.5): un proyecto terminado queda retenido pidiendo
+    // decisión (lanzar igual o esquivar al gigante) — pausa con modal.
+    const pendingCount = (s: GameState) =>
+      s.projects.filter((p) => p.pendingRelease !== undefined).length;
+    const releaseContested = pendingCount(after) > pendingCount(before);
+    // Caza de talento (9.5): un rival tienta a un empleado — pausa con modal.
+    const poachFired =
+      after.rivals?.poachOffer != null && before.rivals?.poachOffer == null;
     // Los beats de la Fase 6: transición de era (docs/10 §7.6) y gala anual.
     const eraChanged = after.era !== before.era;
     // La gala se celebra si te NOMINARON, aunque no ganes (docs/18 V7): el
@@ -586,6 +607,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       staffLost ||
       crisisErupted ||
       dilemmaFired ||
+      releaseContested ||
+      poachFired ||
       eraChanged ||
       ceremonyHeld ||
       phaseChanged ||
@@ -861,6 +884,18 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   resolveDilemma: (kind, choice) => {
     set((s) => ({ game: resolveDilemma(s.game, kind, choice) }));
+  },
+
+  confirmContestedRelease: (projectId) => {
+    set((s) => ({ game: confirmContestedRelease(s.game, projectId) }));
+  },
+
+  delayContestedRelease: (projectId) => {
+    set((s) => ({ game: delayContestedRelease(s.game, projectId) }));
+  },
+
+  resolvePoachOffer: (resolution) => {
+    set((s) => ({ game: resolvePoachOffer(s.game, resolution) }));
   },
 
   retire: () => {

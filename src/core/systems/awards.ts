@@ -1,11 +1,10 @@
 import {
   awardCategories,
   playerStudioLabel,
-  rivalStudios,
-  rivalTitles,
   type AwardCategoryDef,
 } from '../../data/awards';
 import { balance } from '../../data/balance';
+import { fallbackNomineeStudios, getRivalDef, rivalGameTitles } from '../../data/rivals';
 import { appendLog } from '../engine/log';
 import type { Rng } from '../engine/rng';
 import type { Award, AwardCategoryResult, AwardCeremony, AwardNominee } from '../model/awards';
@@ -17,14 +16,15 @@ import { withReputationDeltas } from './reputation';
 /**
  * Premios anuales (docs/06 §7 + docs/18 V7): cada fin de año (52 ticks) se
  * celebra la gala. Son COMPETITIVOS: tu mejor lanzamiento del año se NOMINA si
- * pasa el umbral de la categoría y luego compite por un PUESTO contra el
- * "listón de industria" (que sube con la era) y unos nominados ficticios con
- * nombre. Ganar (puesto 1) es difícil y aspiracional; solo es realista en
- * E6–E7, cuando tienes escala y prestigio.
+ * pasa el umbral de la categoría y luego compite por un PUESTO contra los
+ * LANZAMIENTOS RIVALES REALES del año (Fase 9.5, docs/19 §9.5) — mismo
+ * baremo que tú: reseña + prestigio (su fuerza) + escala (su tamaño). Ganar
+ * (puesto 1) es difícil y aspiracional; solo es realista en E6–E7, cuando
+ * tienes escala y prestigio.
  *
- * Todo es determinista: el listón, tu puntuación y el puesto salen de datos y
- * estado. El PRNG solo pone el sabor (qué estudios y qué títulos aparecen, y
- * dónde caen dentro de la dispersión del listón).
+ * Todo es determinista: los nominados salen del estado de la industria. El
+ * PRNG queda solo para el relleno ficticio (fallback), que aparece únicamente
+ * si la industria aún no tiene lanzamientos en la ventana (saves migrados).
  */
 
 /** Nota media del año: candidatos = lanzados en las últimas 52 semanas. */
@@ -117,23 +117,58 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/** Prestigio de un rival en la gala: su fuerza vota por él, como a ti te
+ * votan crítica y prensa (mismo peso máximo: prestigeWeight). */
+function rivalPrestige(strength: number): number {
+  return (balance.awards.competition.prestigeWeight * strength) / 100;
+}
+
 /**
- * Los nominados ficticios de una categoría: nombres con sabor y puntuaciones
- * repartidas alrededor del listón. Sin rivales simulados (docs/04 §9 sigue
- * diferido), esto es lo que hace que la industria se sienta viva.
+ * Los nominados REALES de una categoría (Fase 9.5, docs/19 §9.5): los mejores
+ * lanzamientos rivales del año, puntuados con TU MISMA fórmula — reseña +
+ * prestigio (su fuerza) + escala × scaleWeight. Los estudios cerrados durante
+ * el año conservan su candidatura (lanzaron antes de cerrar). Determinista:
+ * sale del estado de la industria, sin PRNG.
  */
-function fictionalNominees(
+export function rivalNominees(state: GameState, category: AwardCategoryDef): AwardNominee[] {
+  const c = balance.awards.competition;
+  const from = state.week - balance.awards.intervalWeeks;
+  const scored: AwardNominee[] = [];
+  for (const rival of state.rivals?.studios ?? []) {
+    for (const game of rival.games) {
+      if (game.releaseWeek <= from || game.releaseWeek > state.week) continue;
+      scored.push({
+        studio: getRivalDef(rival.id).name,
+        gameName: game.name,
+        score: round2(
+          game.review + rivalPrestige(rival.strength) + category.scaleWeight * c.sizeBonus[game.size],
+        ),
+        isPlayer: false,
+      });
+    }
+  }
+  return scored.sort((a, b) => b.score - a.score).slice(0, c.nomineeCount);
+}
+
+/**
+ * Relleno ficticio alrededor del listón (docs/18 V7): SOLO cuando la industria
+ * simulada no llena la gala (p. ej. un save recién migrado a v16, sin
+ * lanzamientos rivales aún en la ventana). Nombres fuera del roster para no
+ * atribuir juegos falsos a un rival real.
+ */
+function fallbackNominees(
   category: AwardCategoryDef,
   era: EraId,
+  count: number,
   rng: Rng,
 ): AwardNominee[] {
   const c = balance.awards.competition;
   const bar = categoryBar(category, era);
-  const studios = [...rivalStudios];
-  const titles = [...rivalTitles];
+  const studios = [...fallbackNomineeStudios];
+  const titles = [...rivalGameTitles];
   const nominees: AwardNominee[] = [];
 
-  for (let i = 0; i < c.nomineeCount; i++) {
+  for (let i = 0; i < count; i++) {
     // Sin repetir estudio ni título dentro de la misma categoría.
     const studio = studios.splice(rng.int(0, studios.length - 1), 1)[0];
     const gameName = titles.splice(rng.int(0, titles.length - 1), 1)[0];
@@ -143,14 +178,23 @@ function fictionalNominees(
   return nominees;
 }
 
-/** Resuelve una categoría: nominados ficticios, tu puntuación y tu puesto. */
+/** Resuelve una categoría: nominados reales (+ relleno), tu puntuación y tu puesto. */
 function resolveCategory(
   state: GameState,
   category: AwardCategoryDef,
   candidates: readonly ReleasedGame[],
   rng: Rng,
 ): AwardCategoryResult {
-  const nominees = fictionalNominees(category, state.era, rng);
+  const real = rivalNominees(state, category);
+  const nominees = [
+    ...real,
+    ...fallbackNominees(
+      category,
+      state.era,
+      balance.awards.competition.nomineeCount - real.length,
+      rng,
+    ),
+  ];
   const mine = pickCategoryWinner(category.id, candidates);
 
   if (mine) {

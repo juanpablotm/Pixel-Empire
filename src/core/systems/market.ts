@@ -430,6 +430,9 @@ export function expectedWeeklyUnits(
     (1 + balance.market.hype.salesSpikeCoef * game.hypeAtRelease) *
     // La campaña de creadores empuja el pico de salida (docs/07 §3).
     (1 + (game.creatorSpikeBoost ?? 0)) *
+    // Ventana disputada (9.5): el bombazo del gigante te robó los focos del
+    // day-one. Solo el pico — la cola (el boca a boca) sigue siendo tuya.
+    (1 - (game.rivalCrush?.penalty ?? 0)) *
     s.launch.spikeDecay ** weeksSinceRelease;
   const tailDecay =
     s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * (game.review / 100);
@@ -518,7 +521,7 @@ export function buildFever(
   target: 'genre' | 'theme',
   targetId: string,
   week: number,
-  source: 'organica' | 'hit',
+  source: Fever['source'],
   rng: Rng,
 ): Fever {
   const f = balance.market.fevers;

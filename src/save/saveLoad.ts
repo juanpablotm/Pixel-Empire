@@ -1,6 +1,7 @@
 import {
   clampHype,
   createFounder,
+  createInitialRivals,
   createMarketState,
   defaultPolicies,
   engineTechLevel,
@@ -23,7 +24,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -323,6 +324,19 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
         ...file.state.market,
         fevers: file.state.market.fevers ?? [],
       },
+    },
+  }),
+  // v15 (Fase 9.4) → v16 (Fase 9.5): estudios rivales. No destructiva: la
+  // industria arranca desde YA con el roster de la era del save (fuerza =
+  // baseline del tier, sin historiales — no se reconstruye un pasado que no
+  // se simuló) y sus primeros anuncios escalonados. Determinista por semilla.
+  15: (file) => ({
+    saveVersion: 16,
+    state: {
+      ...file.state,
+      rivals:
+        file.state.rivals ??
+        createInitialRivals(file.state.seed, file.state.week, file.state.era),
     },
   }),
 };

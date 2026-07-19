@@ -62,6 +62,11 @@ export function StudioScreen() {
               }
               button="📈 Ver tendencias"
               onClick={() => goTo('mercado')}
+              extra={
+                <button type="button" onClick={() => goTo('industria')} className="btn btn-quiet">
+                  🏬 Industria
+                </button>
+              }
             />
             <QuickAccess
               caption="Caja y campañas"

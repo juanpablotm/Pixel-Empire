@@ -28,7 +28,8 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 - Juegos por partida objetivo: **35–45**.
 - 7 eras (E1–E7) y 4 etapas de escala como **lista cerrada** (garaje → corporación).
 - Investigación: puntos 💡 + árbol de desbloqueos gateado por era (cerrado como sistema).
-- Estudios rivales: **diferidos a Fase 8** (el diseño los admite sin reescritura).
+- Estudios rivales: diferidos a Fase 8 en el alcance base; **implementados en la Fase 9.5**
+  (docs/19 §9.5) sin reescribir el mercado, como estaba previsto.
 
 ## 3. Fórmulas de calidad (doc 03)
 
@@ -128,7 +129,8 @@ eras, creadores, eventos, monetización). Los *esquemas* de tipos ya eran firmes
 
 - **Números de balance:** ajustables en playtest sin tocar el diseño (por eso viven en `balance.ts`).
 - **Registro de riesgos** (`00` §10): seguimiento continuo durante el desarrollo.
-- **Stretch de Fase 8** (rivales con IA, franquicias, fabricar consola): fuera del alcance base por decisión.
+- **Stretch de Fase 8** (franquicias, fabricar consola): fuera del alcance base por decisión.
+  Los **rivales con IA** dejaron de estar en esta lista: se implementaron en la Fase 9.5 (docs/19 §9.5).
 
 ---
 

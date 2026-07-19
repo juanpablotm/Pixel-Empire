@@ -404,6 +404,23 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(() => tick(state)).not.toThrow();
   });
 
+  it('migra un guardado v15 (Fase 9.4) a v16 (Fase 9.5): la industria arranca desde ya', () => {
+    const base = createInitialState(SEED);
+    // Un estado "v15": el campo rivals aún no existía; simulamos media partida (E3).
+    const { rivals: _v16, ...noRivals } = base;
+    const v15State = { ...noRivals, week: 700, era: 'E3' as const };
+    const state = deserializeSave(JSON.stringify({ saveVersion: 15, state: v15State }));
+    // Roster de su era (E3 = 7 estudios), sin historial inventado y con
+    // anuncios escalonados por delante (no se reconstruye un pasado no simulado).
+    expect(state.rivals?.studios.length).toBe(7);
+    for (const r of state.rivals?.studios ?? []) {
+      expect(r.games).toEqual([]);
+      expect(r.nextAnnounceWeek).toBeGreaterThanOrEqual(700);
+    }
+    expect(state.rivals?.poachOffer).toBeNull();
+    expect(() => tick(state)).not.toThrow();
+  });
+
   it('al cargar, sanea solo el hype negativo: sin tope superior desde 9.1 (docs/19)', () => {
     let state = startProject(createInitialState(SEED), {
       name: 'Desbordado',

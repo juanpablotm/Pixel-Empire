@@ -8,8 +8,9 @@ import { PopIn } from './Motion';
 
 /**
  * La gala anual de premios (docs/06 §7 + docs/18 V7): modal que revela el
- * RANKING de cada categoría en la que te nominaron — los nominados ficticios y
- * tu puesto entre ellos. Solo muestra estado: el puesto lo calculó el tick
+ * RANKING de cada categoría en la que te nominaron — desde la 9.5, los
+ * nominados son los lanzamientos RIVALES REALES del año (docs/19 §9.5) — y tu
+ * puesto entre ellos. Solo muestra estado: el puesto lo calculó el tick
  * (core/systems/awards.ts), aquí no se decide nada (docs/08 §1).
  */
 

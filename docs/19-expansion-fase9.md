@@ -18,7 +18,7 @@ resume la propia guía de diseño del jugador: **"el jugador siempre debe sentir
 | **9.2** ✅ | Motores / Tecnología | Escasez permanente; techo de los juegos grandes |
 | **9.3** ✅ | Features por género | Intuición y profundidad en la creación |
 | **9.4** ✅ | Tendencias tipo "fiebre" (+ más consolas / multiplataforma) | Repetición; mercado muerto |
-| **9.5** | Estudios rivales con IA | "No estás solo"; adaptación forzada |
+| **9.5** ✅ | Estudios rivales con IA | "No estás solo"; adaptación forzada |
 | **9.6** | Publishers + Early Access | Escasez temprana; arco de negocio |
 | **9.7** | GaaS + adquisiciones | Piloto automático del late-game |
 
@@ -170,12 +170,47 @@ satura; un juego multiplataforma requiere la I+D/motor; repetir el mismo género
 plana + fatiga de 9.1) y las 3 filosofías siguen viables.
 **Tocó:** `04` (tendencias/saturación/plataformas), `09` (consolas + tipo `Fever`), `16`.
 
-## 9.5 — Estudios rivales con IA `[dirección]` (activa el stretch de Fase 8)
+## 9.5 — Estudios rivales con IA `[IMPLEMENTADO · commit "Fase 9.5: estudios rivales"]` (cierra el stretch de Fase 8)
+
+> Baseline actualizada en `04` §2.1/§3/§9, `05` §7, `06` §7, `11` (Fase 8), `12` §2/§10 y `16`
+> §2/§13/§14. Roster y perfiles en `data/rivals.ts`; comportamiento en `balance.rivals`; lógica en
+> `core/systems/rivals.ts` (tick con stream propio) + ganchos en `projects`/`staff`/`awards`; panel
+> de Industria en `ui/screens/IndustryScreen.tsx`; save v16 (siembra el roster de la era del save).
+> CA verificados con tests (`rivals.test.ts`, `windows.test.ts`, `poach.test.ts`, `awards.test.ts`,
+> `fullGame.test.ts`) y bots (`rivalsReport.ts`). Capturas: `capturas/9-5-industria.png` y
+> `capturas/9-5-premios-rivales.png` (script `scripts/verify95.mjs`, escaparate
+> `?demo=industria[&premios=1]`).
 
 **Meta:** "no estás solo"; adaptación y competencia reales.
-- Rivales que **lanzan juegos** (aportan a saturación y disparan fiebres), compiten por **ventanas de
-  lanzamiento** (¿esquivas su bombazo?), **roban talento** y pelean por los **premios competitivos** (7).
-**Toca:** `04` (mercado), `05` (talento), `06` (premios), `07`, `16`.
+
+- **Roster que EVOLUCIONA:** 12 estudios con tier (indie/medio/gigante), perfil (`fabrica` encadena
+  secuelas e inunda, `prestigio` lanza poco y bueno, `oportunista` persigue fiebres) y entrada
+  escalonada por eras — en 1980 ya existe una industria establecida (tú eres el garaje). Su
+  **fuerza** sube con hits y fichajes y baja con flops; sostenida fuera de banda, **promociona o
+  degrada el tier**, y un indie hundido **cierra**. Todo determinista y con noticia.
+- **Lanzan juegos:** anuncian con 10–24 semanas de antelación y al salir **suman a la saturación**
+  de su combo (docs/04 §3) y, si es un bombazo (reseña ≥ 85), pueden **encender una fiebre**
+  (`source: 'rival'` — la "fiebre del oro" de docs/04 §2.1 ya es orgánica de verdad).
+- **Ventanas de lanzamiento:** la campaña de un GIGANTE domina ±3 semanas alrededor de su fecha.
+  Lanzar tu juego del mismo género dentro **aplasta tu pico day-one** (~−45 %, congelado al lanzar
+  y siempre nombrado); la cola no se toca. Si tu proyecto termina en ventana disputada, el juego
+  **espera con decisión**: lanzar igual o **retrasar** hasta que pase (la nómina corre — precio
+  visible). Nunca es emboscada: el anuncio es público en el calendario de Industria.
+- **Robo de talento** (docs/05 §7 por fin real): los rivales tientan a empleados con **lealtad
+  hundida** — modal de **contraoferta** (igualas su salario PARA SIEMPRE o le dejas ir y el rival
+  se fortalece, mucho más si era estrella) — y las renuncias espontáneas pueden **fichar por la
+  competencia**. La mala fama de Empleador atrae buitres.
+- **Premios con nominados REALES** (docs/06 §7): la gala nomina los lanzamientos rivales del año
+  con **tu mismo baremo** (reseña + prestigio-fuerza + escala×peso); el relleno ficticio queda solo
+  para saves recién migrados. La calibración de 8.10 emerge de la industria: los establecidos van
+  un tamaño por delante hasta E5 y en E6–E7 tu AAA excelente ya compite por el gordo.
+- **Panel de Industria** (Pilar 2): ranking con tier y momento, **calendario de anuncios** (con ⚠
+  si chocan con un proyecto tuyo), lanzamientos recientes (🔥 si encendieron fiebre) y cierres.
+
+**CA:** un rival lanza y satura su género; un hit rival puede disparar una fiebre; lanzar contra el
+gigante en su ventana hunde ventas (y retrasar lo esquiva); un empleado con lealtad baja puede irse
+a un rival (que se fortalece); los bots confirman presión real con las 3 filosofías viables.
+**Tocó:** `04` (mercado/saturación/fiebres), `05` (talento), `06` (premios), `11`/`12` (stretch), `16`.
 
 ## 9.6 — Publishers + Early Access `[dirección]`
 

@@ -13,11 +13,14 @@ import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { MenuModals } from './components/MenuModals';
 import { MoralTint } from './components/MoralScale';
 import { ScreenFade } from './components/Motion';
+import { PoachModal } from './components/PoachModal';
+import { ReleaseWindowModal } from './components/ReleaseWindowModal';
 import { FontScaleSelect, SoundControls } from './components/PreferenceControls';
 import { Timeline } from './components/Timeline';
 import { Toasts } from './components/Toasts';
 import { CreatorsScreen } from './screens/CreatorsScreen';
 import { FinancesScreen } from './screens/FinancesScreen';
+import { IndustryScreen } from './screens/IndustryScreen';
 import { LegacyScreen } from './screens/LegacyScreen';
 import { MarketScreen } from './screens/MarketScreen';
 import { ResearchScreen } from './screens/ResearchScreen';
@@ -50,6 +53,7 @@ const SCREEN_BY_KEY: Record<string, Screen> = {
   '7': 'investigacion',
   '8': 'finanzas',
   '9': 'legado',
+  '0': 'industria',
 };
 
 /**
@@ -172,6 +176,7 @@ export function App() {
           {screen === 'resena' && <ReviewScreen />}
           {screen === 'equipo' && <TeamScreen />}
           {screen === 'mercado' && <MarketScreen />}
+          {screen === 'industria' && <IndustryScreen />}
           {screen === 'creadores' && <CreatorsScreen />}
           {screen === 'investigacion' && <ResearchScreen />}
           {screen === 'finanzas' && <FinancesScreen />}
@@ -197,6 +202,8 @@ export function App() {
         {/* La capa social interrumpe cuando toca decidir (docs/07 §4–§5). */}
         <DilemmaModal />
         <CrisisModal />
+        <ReleaseWindowModal />
+        <PoachModal />
         {/* Los beats de la Fase 6: el mundo cambia y la gala anual (docs/10 §7.6). */}
         <EraTransition />
         <AwardsModal />

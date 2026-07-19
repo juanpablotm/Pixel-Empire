@@ -2,6 +2,7 @@ import type { EraId } from '../core/model/era';
 import type { ScaleStage } from '../core/model/gameState';
 import type { MonetizationModel } from '../core/model/moral';
 import type { ProjectSize } from '../core/model/project';
+import type { RivalProfile, RivalTier } from '../core/model/rivals';
 import type { SalaryTier, Specialty } from '../core/model/staff';
 
 /**
@@ -997,6 +998,145 @@ export const balance = {
        * Por categoría nominada y no ganada.
        */
       nominationRepDeltas: { critica: 0.5, prensa: 0.5 },
+    },
+  },
+
+  /**
+   * Estudios rivales (Fase 9.5, docs/19 §9.5 y docs/04 §9): la industria
+   * simulada. Sus perfiles viven en data/rivals.ts; aquí, todo su
+   * comportamiento numérico. Calibrado con los bots (docs/08 §8) para crear
+   * presión real (saturación ajena, ventanas, fichajes) sin volverse imposible.
+   */
+  rivals: {
+    /** Fuerza inicial de cada tier, y baseline al que la fuerza revierte. */
+    baseStrengthByTier: { indie: 30, medio: 55, gigante: 80 } satisfies Record<RivalTier, number>,
+    /** Reversión semanal de la fuerza hacia el baseline del tier (fracción). */
+    strengthRevertRate: 0.01,
+    /**
+     * Evolución por resultados (docs/19 §9.5 "crecen o decaen"): un hit suma
+     * fuerza, un flop la resta. Los umbrales son POR TIER porque el listón de
+     * cada casa es el suyo: un 70 es fiesta en un garaje y drama en un gigante.
+     */
+    strengthHitGain: 10,
+    strengthFlopLoss: 10,
+    hitReviewByTier: { indie: 76, medio: 80, gigante: 84 } satisfies Record<RivalTier, number>,
+    flopReviewByTier: { indie: 54, medio: 60, gigante: 68 } satisfies Record<RivalTier, number>,
+    /**
+     * Reseña de un lanzamiento rival: uniforme en el rango de su tier,
+     * desplazada por su fuerza (±span·(fuerza−baseline)/50) y su perfil.
+     * Rangos anchos a propósito: los gigantes también sacan fiascos (y de un
+     * garaje sale a veces la joya del año). El tope del indie queda bajo la
+     * barra de fiebre: mover el mercado es cosa de los grandes.
+     */
+    reviewRangeByTier: {
+      indie: [48, 82],
+      medio: [56, 86],
+      gigante: [60, 92],
+    } satisfies Record<RivalTier, [number, number]>,
+    strengthReviewSpan: 10,
+    reviewBiasByProfile: { fabrica: -2, prestigio: 3, oportunista: 0 } satisfies Record<
+      RivalProfile,
+      number
+    >,
+    /**
+     * Tamaño de sus juegos por tier e ÍNDICE de era (0..6). Calibrado contra
+     * awards.competition.barByEra (docs/18 V7): los establecidos lanzan un
+     * tamaño por encima de tu techo de era hasta E5 (por eso el listón de la
+     * gala va delante de ti) y en E6–E7 tu AAA ya los alcanza.
+     */
+    sizeByTierEra: {
+      indie: ['pequeno', 'pequeno', 'mediano', 'mediano', 'mediano', 'mediano', 'mediano'],
+      medio: ['mediano', 'grande', 'muyGrande', 'muyGrande', 'muyGrande', 'muyGrande', 'muyGrande'],
+      gigante: ['grande', 'grande', 'muyGrande', 'aaa', 'aaa', 'aaa', 'aaa'],
+    } satisfies Record<RivalTier, readonly ProjectSize[]>,
+    /** Semanas entre su último lanzamiento y el SIGUIENTE anuncio ([min, max]). */
+    announceGapByTier: {
+      indie: [14, 26],
+      medio: [22, 40],
+      gigante: [30, 56],
+    } satisfies Record<RivalTier, [number, number]>,
+    /** Antelación del anuncio: semanas entre anunciar y lanzar ([min, max]). */
+    announceLeadWeeks: [10, 24] as [number, number],
+    /** Retraso del primer anuncio al activarse un estudio ([min, max], escalona la entrada). */
+    initialAnnounceDelay: [2, 30] as [number, number],
+    /**
+     * Probabilidad de que un HIT rival (reseña ≥ market.fevers.hitFeverBar)
+     * encienda una fiebre (docs/04 §2.1: los rivales disparan la "fiebre del
+     * oro" desde 9.5). Misma barra que el jugador, moneda propia.
+     */
+    feverChance: 0.5,
+    /** Oportunista: probabilidad de perseguir una fiebre activa al anunciar. */
+    chaseFeverChance: 0.75,
+    /** Fábrica: probabilidad de anunciar una secuela de su mejor juego reciente. */
+    sequelChance: 0.55,
+    /** Resto de perfiles: probabilidad de tirar de género de especialidad. */
+    specialtyChance: 0.7,
+    /**
+     * Promoción / caída de tier (docs/19 §9.5 "evolucionan"): fuerza sostenida
+     * fuera de banda durante `sustainWeeks`. Un indie hundido bajo `closeBar`
+     * durante `closeWeeks` CIERRA el estudio.
+     */
+    tierShift: {
+      /**
+       * Barras calibradas contra la reversión (playtest con rivalsReport.ts):
+       * con baseline medio 55 y ~1 lanzamiento/48 sem, promocionar exige una
+       * racha de 2–3 hits seguidos (pasa un par de veces por partida); con
+       * demoteBar pegada al baseline indie, TODOS los indies morían — el
+       * colchón de 6 puntos deja el cierre para los hundidos de verdad.
+       */
+      promoteBar: 66,
+      demoteBar: 24,
+      sustainWeeks: 20,
+      closeBar: 10,
+      closeWeeks: 39,
+    },
+    /** Historial de lanzamientos retenido por rival (panel + gala). */
+    maxGamesKept: 10,
+    /**
+     * Ventanas de lanzamiento disputadas (docs/19 §9.5): la campaña masiva de
+     * un GIGANTE (solo ellos hacen hype de ese calibre) domina la conversación
+     * durante ±radiusWeeks alrededor de su fecha. Lanzar un juego del MISMO
+     * género dentro aplasta tu pico day-one (× 1 − crushPenalty, congelado al
+     * lanzar como el overHypeTailPenalty); la cola no se toca — el boca a boca
+     * sigue siendo tuyo. Siempre con aviso previo: el anuncio se ve en el
+     * calendario de Industria semanas antes (decides con información).
+     */
+    window: {
+      radiusWeeks: 3,
+      crushPenalty: 0.45,
+    },
+    /**
+     * Caza de talento (docs/19 §9.5 + docs/05 §7): los rivales tientan a tus
+     * empleados con la LEALTAD hundida — el descontento es la puerta, no el
+     * azar. Una oferta pendiente como mucho; se resuelve con contraoferta
+     * (igualas su salario, para siempre) o dejándole ir (el rival se
+     * fortalece). Las renuncias espontáneas también pueden acabar en un rival.
+     */
+    poach: {
+      /** Lealtad por debajo de la cual un empleado es cazable. */
+      loyaltyThreshold: 40,
+      /** Probabilidad semanal de intento por empleado vulnerable. */
+      chancePerVulnerable: 0.02,
+      /**
+       * La mala fama de Empleador atrae buitres: factor 1.5 − rep/100
+       * (rep 0 → ×1.5 · rep 50 → ×1 · rep 100 → ×0.5). Cuidar al equipo
+       * también protege por fuera (docs/05 §7).
+       */
+      employerRepBase: 1.5,
+      /** La oferta del rival: multiplicador sobre el salario actual. */
+      offerSalaryMult: 1.5,
+      /** Contraoferta: la lealtad y la moral respiran al sentirse valorado. */
+      counterLoyaltyBoost: 20,
+      counterMoraleBoost: 8,
+      /** Fuerza que gana el rival al llevarse a alguien (estrella: skill ≥ 80). */
+      strengthGain: 4,
+      strengthGainStar: 10,
+      /** Umbral de skill en su especialidad para contar como estrella (docs/05 §2). */
+      starSkill: 80,
+      /** Golpe a Empleador cuando un rival te levanta a alguien. */
+      employerRepHit: 2,
+      /** Probabilidad de que una renuncia espontánea acabe fichando por un rival. */
+      quitSignChance: 0.6,
     },
   },
 

@@ -34,6 +34,7 @@ Recursos que gestionas: **Capital 💰**, **Reputación ⭐** (vector por públi
 | **Personal y equipo** | Empleados con rasgos, moral, energía, química; contratar, formar, crunch, despedir | `05` |
 | **Dilema moral y economía** | Palancas codicia/integridad, reputación segmentada, escándalos, economía completa | `06` |
 | **Comunidad y streamers** | Sentimiento de comunidad, creadores de contenido, hype/leaks, review bombing, gestión de crisis | `07` |
+| **Estudios rivales (9.5)** | Industria simulada: 12 estudios con tier y perfil que lanzan (saturan, encienden fiebres), disputan ventanas, cazan talento y son los nominados reales de la gala | `04` §9, docs/19 §9.5 |
 
 **Cómo crear un juego (el bucle):** (1) concepción (tema/género/plataforma/público/tamaño/nombre) con
 medidor de Fit → (2) equipo y presupuesto → (3) desarrollo en 3 fases con reparto de esfuerzo y
@@ -425,20 +426,30 @@ grande sin éxitos se desangra. Bancarrota sostenida (sin poder pagar salarios) 
   positivo y rendimientos decrecientes salvo que caigas en el sobre-hype.
 - **Crisis:** parche malo, subida de precio, bug viral, escándalo. Se gestionan con un evento con
   **reloj** y respuestas que mueven los segmentos; la reputación previa amortigua o amplifica.
+- **La industria rival (Fase 9.5, docs/19 §9.5):** 12 estudios con tier (indie/medio/gigante) y
+  perfil (fábrica de secuelas / prestigio / oportunista de fiebres) que **lanzan juegos de verdad**
+  (suman a la saturación; sus bombazos encienden fiebres), **evolucionan** (promocionan, decaen,
+  cierran), **cazan a tus empleados** con la lealtad baja (contraoferta: igualar para siempre o
+  dejarle ir) y **disputan ventanas de lanzamiento**: la campaña de un gigante aplasta ~45 % del
+  pico day-one de un juego ajeno de su género en ±3 semanas — el tuyo puede **retrasarse** para
+  esquivarla (la nómina corre). Todo visible en el panel de **Industria** (ranking, calendario de
+  anuncios con ⚠ de choque, lanzamientos recientes): decides con información, nunca es emboscada.
 
 ---
 
 ## 14. Reconocimiento y cierre de partida (doc `06`)
 
-- **Premios anuales** (tipo Game Awards): **competitivos** (docs `18` V7). Te **nominan** si tu mejor
-  juego del año pasa el umbral de la categoría, y compites por un **puesto** ("Estudio del año: 4.º")
-  contra un **listón de industria que sube con la era** y 4 nominados ficticios con nombre. Tu
-  puntuación = reseña + prestigio (crítica/prensa) + escala (tamaño del juego). Como la reseña está
-  normalizada por era y la reputación satura pronto, **lo único que crece es la escala**: ganar solo
-  es realista en **E6–E7**, con Corporación y un AAA excelente. Antes aspiras a entrar en el ranking
-  (la nominación ya deja poso en Crítica/Prensa). Ganar da Reputación, hype y atractivo de
-  contratación. Ni la fábrica cínica (no pasa el umbral) ni el indie de culto (sin escala) se llevan
-  el gordo: es de quien navega el dilema. La Innovación no se compra con presupuesto.
+- **Premios anuales** (tipo Game Awards): **competitivos** (docs `18` V7) y — desde la 9.5 — contra
+  los **RIVALES REALES**: los nominados son los mejores lanzamientos del año de la industria
+  simulada, con tu mismo baremo (reseña + prestigio + escala × peso de la categoría). Te **nominan**
+  si tu mejor juego del año pasa el umbral de la categoría, y compites por un **puesto** ("Estudio
+  del año: 4.º"). Como la reseña está normalizada por era y la reputación satura pronto, **lo único
+  que crece es la escala** — y los establecidos van un tamaño por delante hasta E5: ganar el GOTY
+  solo es realista en **E6–E7**, con Corporación y un AAA excelente (en años flojos de la industria,
+  una obra maestra pesca antes en las categorías de idea — Innovación/Diseño/Público — donde la
+  escala casi no puntúa, ni para ti ni para sus AAA). La nominación ya deja poso en Crítica/Prensa;
+  ganar da Reputación, hype y atractivo de contratación. Ni la fábrica cínica (no pasa el umbral) ni
+  el indie de culto (sin escala) se llevan el gordo: es de quien navega el dilema.
 - **Puntuación de Legado** al final (o al retirarse), multi-dimensional: **Riqueza · Prestigio · Impacto
   (géneros que definiste) · Obras maestras (juegos 90+) · Ética (trato al equipo y honestidad)**.
   No hay victoria única: cada filosofía maximiza ejes distintos y cuenta una historia distinta.

@@ -22,6 +22,7 @@ import {
   type ReleasedGame,
   type ReviewLine,
 } from '../core';
+import type { RivalGame, RivalRuntime, RivalsState } from '../core';
 import { researchNodes } from '../data/research';
 import { eraOrder, getEra } from '../data/eras';
 import { useGameStore, type ImportantNotice, type Screen } from '../state/store';
@@ -45,6 +46,7 @@ const SCREENS: readonly Screen[] = [
   'resena',
   'equipo',
   'mercado',
+  'industria',
   'creadores',
   'investigacion',
   'finanzas',
@@ -694,6 +696,137 @@ function fiebreDemo(): GameState {
   };
 }
 
+/**
+ * Estado de escaparate: la industria viva (Fase 9.5, docs/19 §9.5) — ranking
+ * con tiers y momento, calendario con un bombazo de gigante que CHOCA con tu
+ * proyecto en curso, lanzamientos recientes (uno encendió fiebre) y un cierre.
+ */
+function industriaDemo(): GameState {
+  const base = studioDemo();
+  const week = base.week;
+  const g = (
+    name: string,
+    genreId: string,
+    review: number,
+    weeksAgo: number,
+    partial: Partial<RivalGame> = {},
+  ): RivalGame => ({
+    name,
+    genreId,
+    themeId: 'espacio',
+    size: 'grande',
+    review,
+    releaseWeek: week - weeksAgo,
+    hyped: false,
+    ...partial,
+  });
+  const runtime = (id: string, tier: RivalRuntime['tier'], strength: number, partial: Partial<RivalRuntime> = {}): RivalRuntime => ({
+    id,
+    tier,
+    strength,
+    weeksHigh: 0,
+    weeksLow: 0,
+    nextAnnounceWeek: week + 20,
+    nextRelease: null,
+    games: [],
+    closed: false,
+    ...partial,
+  });
+  const rivals: RivalsState = {
+    poachOffer: null,
+    studios: [
+      runtime('mango', 'gigante', 82, {
+        games: [g('Praderas de Acero', 'plataformas', 81, 30), g('Praderas de Acero 2', 'plataformas', 74, 9)],
+        // El bombazo anunciado del gigante: MISMO género que «Némesis Solar»
+        // (shooter) y justo en su fin estimado (quedan 9 semanas de sus 18) →
+        // el calendario avisa ⚠ de la ventana disputada.
+        nextRelease: {
+          gameName: 'Sombras de Hierro',
+          genreId: 'shooter',
+          themeId: 'militar',
+          size: 'aaa',
+          announcedWeek: week - 2,
+          releaseWeek: week + 9,
+          hyped: true,
+        },
+      }),
+      runtime('aurora', 'gigante', 88, {
+        games: [g('Réquiem de Neón', 'rpg', 91, 5, { size: 'aaa', hyped: true })],
+      }),
+      runtime('wolfbyte', 'medio', 68, {
+        games: [g('Marea Negra', 'shooter', 84, 14, { size: 'muyGrande' })],
+      }),
+      runtime('lumen', 'medio', 61, {
+        games: [g('El Jardín Vertical', 'aventura', 88, 3, { size: 'muyGrande', feverIgnited: true })],
+      }),
+      runtime('havoc', 'medio', 52, {
+        games: [g('Distrito Cero', 'carreras', 66, 21, { size: 'muyGrande' })],
+        nextRelease: {
+          gameName: 'Distrito Cero 2',
+          genreId: 'carreras',
+          themeId: 'crimen',
+          size: 'muyGrande',
+          announcedWeek: week - 6,
+          releaseWeek: week + 5,
+          hyped: false,
+        },
+      }),
+      runtime('cincoPixeles', 'indie', 33, {
+        games: [g('Vacío Azul', 'puzzle', 58, 11, { size: 'mediano' })],
+      }),
+      runtime('nimbus', 'indie', 41, {
+        games: [g('La Cosecha Silente', 'simulacion', 77, 7, { size: 'mediano' })],
+      }),
+      runtime('peluche', 'indie', 45, {
+        games: [g('Fábulas del Vacío', 'ritmo', 82, 16, { size: 'mediano' })],
+      }),
+      runtime('tortuga', 'indie', 4, { closed: true }),
+    ],
+  };
+  return { ...base, rivals };
+}
+
+/**
+ * Estado de escaparate: la gala con NOMINADOS REALES (Fase 9.5) — los juegos
+ * del año de la industria compiten contigo con tu mismo baremo. El jugador
+ * queda a mitad de tabla: el caso realista de E5.
+ */
+function industriaPremiosDemo(): GameState {
+  const base = industriaDemo();
+  const week = 52 * 31; // gala de 2010 (E5), múltiplo del intervalo anual
+  const yearGame = (studios: RivalsState, id: string, game: RivalGame): RivalsState => ({
+    ...studios,
+    studios: studios.studios.map((r) => (r.id === id ? { ...r, games: [game] } : r)),
+  });
+  let rivals = base.rivals as RivalsState;
+  rivals = yearGame(rivals, 'aurora', { name: 'Réquiem de Neón', genreId: 'rpg', themeId: 'cyberpunk', size: 'aaa', review: 89, releaseWeek: week - 10, hyped: true });
+  rivals = yearGame(rivals, 'mango', { name: 'Coloso del Alba', genreId: 'plataformas', themeId: 'fantasia', size: 'aaa', review: 86, releaseWeek: week - 25, hyped: true });
+  rivals = yearGame(rivals, 'wolfbyte', { name: 'Marea Negra 2', genreId: 'shooter', themeId: 'militar', size: 'muyGrande', review: 83, releaseWeek: week - 18, hyped: false });
+  rivals = yearGame(rivals, 'peluche', { name: 'Fábulas del Vacío', genreId: 'ritmo', themeId: 'vidaSocial', size: 'mediano', review: 84, releaseWeek: week - 6, hyped: false });
+
+  const mine: ReleasedGame = {
+    ...makeReleasedGame(84, week - 12),
+    size: 'mediano',
+    reviewsBySegment: { critica: 84, prensa: 83, hardcore: 81, casual: 79 },
+  };
+  const seeded: GameState = {
+    ...base,
+    week,
+    era: 'E5',
+    rivals,
+    releasedGames: [mine],
+    studio: {
+      ...base.studio,
+      awards: [],
+      lastCeremony: null,
+      awardHype: 0,
+      reputation: { ...base.studio.reputation, critica: 55, prensa: 55 },
+    },
+  };
+  // El mismo stream que usa el tick (core/engine/tick.ts) para la gala.
+  return advanceAwards(seeded, makeRng(seeded.seed, (7 << 20) + week));
+}
+
 /** Sitúa el estado de escaparate en otra era (para capturar sus pieles, 7E). */
 function withEra(state: GameState, era: EraId): GameState {
   return { ...state, era, week: getEra(era).startWeek + 26 };
@@ -814,6 +947,19 @@ export function applyDemoFromQuery(): boolean {
       useGameStore.setState({ conceptionOpen: true });
     } else {
       seed(state, 'mercado', null);
+    }
+    return true;
+  }
+  // La industria viva (Fase 9.5, docs/19 §9.5): el panel de Industria con
+  // ranking, calendario (con choque de ventana ⚠) y lanzamientos recientes.
+  // Con `&premios=1`, la gala con NOMINADOS REALES de la industria.
+  if (demo === 'industria') {
+    if (params.get('premios') === '1') {
+      const game = industriaPremiosDemo();
+      seed(game, 'estudio', null);
+      useGameStore.setState({ awardsWeek: game.studio.lastCeremony?.week ?? null });
+    } else {
+      seed(industriaDemo(), 'industria', null);
     }
     return true;
   }

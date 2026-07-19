@@ -76,49 +76,12 @@ export function getAwardCategory(id: string): AwardCategoryDef {
 }
 
 /**
- * Estudios ficticios contra los que compites (docs/18 V7). No son rivales
- * simulados (esos siguen diferidos, docs/04 §9): son el sabor de una industria
- * viva alrededor del listón.
- */
-export const rivalStudios: readonly string[] = [
-  'Mango Interactive',
-  'Wolfbyte Studios',
-  'Peluche Digital',
-  'Iron Kraken Games',
-  'Studio Lumen',
-  'Tortuga Bros.',
-  'Nimbus Softworks',
-  'Cinco Pixeles',
-  'Havoc & Sons',
-  'Aurora Machine',
-  'Bad Robot Bytes',
-  'Nocturno Games',
-];
-
-/**
  * Cómo aparece el jugador en el ranking. El estado no guarda nombre de
  * estudio (docs/09 §1), así que la gala lo nombra así.
+ *
+ * Desde la 9.5 los nominados son los ESTUDIOS RIVALES REALES y sus
+ * lanzamientos del año (data/rivals.ts + core/systems/rivals.ts); el relleno
+ * ficticio (fallbackNomineeStudios) solo aparece si la industria aún no tiene
+ * lanzamientos en la ventana (saves recién migrados).
  */
 export const playerStudioLabel = 'Tu estudio';
-
-/** Títulos ficticios para los juegos nominados (sabor; el PRNG los combina). */
-export const rivalTitles: readonly string[] = [
-  'Últimos Faros',
-  'Corazón de Óxido',
-  'Vientos de Kessel',
-  'La Caída de Arben',
-  'Neón Roto',
-  'Manifiesto',
-  'El Jardín Vertical',
-  'Sombras de Hierro',
-  'Cazadores de Ecos',
-  'Retorno a Val',
-  'Vacío Azul',
-  'Grito Silencioso',
-  'La Última Sinfonía',
-  'Rutas Perdidas',
-  'Hijos del Trueno',
-  'Quimera',
-  'Ámbar',
-  'El Puente de los Cuervos',
-];

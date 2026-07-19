@@ -38,9 +38,10 @@ ventana** cobran el pico (más ventas y mejor recepción); si la fiebre muere de
 se enfría sola (las ventas se recalculan por tick con la pop viva).
 
 - **Disparadores:** **orgánico** (PRNG con semilla, `spawnChancePerWeek` ~2 %/sem con tope
-  `maxConcurrent` 2 ≈ una fiebre cada ~1 año, repartidas por era) o **por HIT** propio (un lanzamiento
-  con reseña ≥ `hitFeverBar` 85 puede encender una "fiebre del oro" sobre su género o tema; los rivales
-  la disparan en 9.5).
+  `maxConcurrent` 2 ≈ una fiebre cada ~1 año, repartidas por era) o **por HIT** (un lanzamiento con
+  reseña ≥ `hitFeverBar` 85 puede encender una "fiebre del oro" sobre su género o tema — tuyo, o
+  **de un rival** desde 9.5: `Fever.source = 'rival'`, con su noticia "el bombazo de X enciende una
+  fiebre". En la práctica son los bombazos de los grandes quienes más mercados mueven).
 - **Inundarla la satura más rápido** (§3): subirse tú con un buen juego la aprovecha; apilar secuelas
   sobre ella la quema antes.
 - **Legibilidad (Pilar 2):** el jugador ve las fiebres **ACTIVAS**, nunca las futuras —**aviso tipo
@@ -54,7 +55,9 @@ sube/baja únicamente mientras una fiebre crece o se enfría.
 ## 3. Saturación `[DECIDIDO]`
 
 Cada género+tema acumula un contador de saturación por la cantidad de juegos similares lanzados
-recientemente en el mercado (por el jugador y — en fases con rivales — por la IA).
+recientemente en el mercado — por el jugador **y por los estudios rivales** (reales desde 9.5:
+cada lanzamiento rival pasa por el mismo `registerReleaseSaturation`, multiplicador de fiebre
+incluido; una fábrica rival exprimiendo su género lo quema para todos, y se ve en el panel).
 
 ```
 saturación += lanzamientosSimilaresRecientes
@@ -191,12 +194,23 @@ Eventos periódicos que sacuden el tablero (sabor + decisiones), siempre legible
 - **Nacimiento de una moda:** un género/tema salta a "Creciendo" de golpe (oportunidad de oro para el atento).
 - **Cambio regulatorio:** p. ej. una ley que limita loot boxes en E6/E7 (conecta con `06`).
 
-## 9. Estudios rivales `[DECIDIDO — diferido a Fase 8]`
+## 9. Estudios rivales `[IMPLEMENTADO · Fase 9.5, docs/19 §9.5]`
 
-No están en el alcance inicial (el jugador no eligió "rivales con IA" como prioridad), pero el sistema
-se diseña para **admitirlos después**: los rivales serían agentes que también lanzan juegos, aportando
-a la saturación, compitiendo por ventas y — en `05` — por talento. Se introducen como capa opcional en
-una fase avanzada del roadmap (`11`), sin reescribir el mercado.
+El diferido de Fase 8 se activó en la **Fase 9.5** sin reescribir el mercado, tal y como estaba
+previsto: los rivales son agentes que **lanzan juegos** (misma saturación de §3, mismas fiebres de
+§2.1), disputan **ventanas de lanzamiento** (la campaña de un gigante aplasta el pico day-one de un
+lanzamiento ajeno del mismo género en ±3 semanas — esquivable retrasando el tuyo, porque el anuncio
+es público) y compiten por **talento** (`05` §7) y por los **premios** (`06` §7).
+
+- **Roster data-driven** (`data/rivals.ts`): 12 estudios con tier (indie/medio/gigante), perfil
+  (`fabrica`/`prestigio`/`oportunista`) y entrada escalonada por eras. Su **fuerza** evoluciona con
+  sus resultados (hits/flops/fichajes): promocionan de tier, decaen o — los indies hundidos —
+  **cierran**. Números en `balance.rivals`; lógica pura en `core/systems/rivals.ts` (stream propio
+  del PRNG: determinista y reproducible).
+- **Legibilidad (Pilar 2):** el panel de **Industria** muestra el ranking (tier + momento), el
+  **calendario de lanzamientos anunciados** (con ⚠ si uno choca con tu proyecto en curso), los
+  lanzamientos recientes con sus reseñas (🔥 si encendieron fiebre) y los cierres. Decides con
+  información: el mundo compite, pero nunca te embosca.
 
 ## 10. Criterios de aceptación (para Claude Code)
 

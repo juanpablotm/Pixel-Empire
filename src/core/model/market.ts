@@ -62,8 +62,11 @@ export interface Fever {
   endWeek: number;
   /** Boost máximo de popularidad en el pico (se suma a la base, clamp 0..1). */
   intensity: number;
-  /** Origen para el sabor de la noticia: orgánica o encendida por un hit. */
-  source: 'organica' | 'hit';
+  /**
+   * Origen para el sabor de la noticia: orgánica, encendida por un hit tuyo o
+   * por el bombazo de un rival (Fase 9.5, docs/19 §9.5).
+   */
+  source: 'organica' | 'hit' | 'rival';
 }
 
 /** Etapa del ciclo de vida de una plataforma (docs/04 §7). */

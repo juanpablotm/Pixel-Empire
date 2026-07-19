@@ -10,6 +10,7 @@ import { createMarketState } from '../systems/market';
 import { defaultPolicies } from '../systems/policies';
 import { initialReputation } from '../systems/reputation';
 import { initialResearchState } from '../systems/research';
+import { createInitialRivals } from '../systems/rivals';
 import { createFounder } from '../systems/staff';
 
 /** Contadores de legado a cero (docs/06 §6). */
@@ -42,6 +43,8 @@ export function createSandboxState(seed: number, startEra: EraId): GameState {
     week: startWeek,
     era: startEra,
     market: createMarketState(startWeek),
+    // La industria arranca con el roster de la era elegida (9.5).
+    rivals: createInitialRivals(seed, startWeek, startEra),
     studio: { ...base.studio, capital: balance.sandbox.initialCapital },
     research: {
       ...base.research,
@@ -76,6 +79,8 @@ export function createInitialState(seed: number): GameState {
     projects: [],
     releasedGames: [],
     market: createMarketState(balance.time.startWeek),
+    // La industria establecida de 1980 (9.5): tú eres el garaje, no el mundo.
+    rivals: createInitialRivals(seed, balance.time.startWeek, balance.time.startEra),
     loanPrincipal: 0,
     scandals: [],
     community: initialCommunityState(),

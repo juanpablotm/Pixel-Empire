@@ -134,8 +134,11 @@ moral, curva sentida).
 ## Fase 8 — Extensiones opcionales `[post-lanzamiento / stretch]`
 No en el alcance base; el diseño las admite sin reescritura:
 
-- **Estudios rivales con IA** (`04` §9): agentes que lanzan juegos, saturan el mercado y compiten por
-  talento (el talento que se va puede ir a ellos, `05` §7).
+- ~~**Estudios rivales con IA** (`04` §9): agentes que lanzan juegos, saturan el mercado y compiten por
+  talento (el talento que se va puede ir a ellos, `05` §7).~~ **CERRADO en la Fase 9.5**
+  (docs/19 §9.5, commit "Fase 9.5: estudios rivales"): roster con tiers y perfiles que evoluciona,
+  ventanas de lanzamiento disputadas, robo de talento con contraoferta, nominados reales en la gala
+  y panel de Industria — sin reescribir el mercado, tal y como estaba previsto.
 - Franquicias/IP y secuelas con expectativas heredadas.
 - Fabricar tu propia consola / publicar juegos de otros estudios (late-game clásico de tycoon).
 - Eventos históricos guionizados adicionales; más contenido de datos.

@@ -15,6 +15,7 @@ import type { StudioPolicies } from './policies';
 import type { Project } from './project';
 import type { ReleasedGame } from './release';
 import type { ResearchState } from './research';
+import type { RivalsState } from './rivals';
 import type { Squad } from './squad';
 import type { Employee } from './staff';
 
@@ -75,6 +76,7 @@ export interface LogEntry {
     | 'era'
     | 'investigacion'
     | 'premios'
+    | 'industria'
     | 'fin';
   text: string;
 }
@@ -143,6 +145,12 @@ export interface GameState {
    * `engines`. Una sola obra a la vez. Opcional: saves previos → `?? null`.
    */
   engineBuild?: EngineBuild | null;
+  /**
+   * Estudios rivales (Fase 9.5, docs/19 §9.5): la industria simulada que
+   * lanza, satura, disputa ventanas y roba talento. Opcional: los saves
+   * previos lo estrenan en la migración v16 y el tick lo trata con `??`.
+   */
+  rivals?: RivalsState;
   /** Gestión por políticas en la escala grande (docs/02 §4 y docs/10 §14). */
   policies: StudioPolicies;
   /** Contadores históricos para el Legado (docs/06 §6). */

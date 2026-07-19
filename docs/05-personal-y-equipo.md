@@ -102,14 +102,23 @@ grande, egos que chocan. El factor entra en el `teamFactor` de `03`.
   docs/17 E3) son un ERE sonado que hunde con fuerza la reputación de **Empleador**, la moral de los
   supervivientes y —al filtrarse como noticia— también a la **Comunidad**.
 
-## 7. Retención y fuga de talento `[DECIDIDO]`
+## 7. Retención y fuga de talento `[DECIDIDO · rivales reales desde 9.5]`
 
 - Moral+lealtad bajas → probabilidad creciente de **renuncia**. Perder a una estrella a mitad de
   proyecto es un desastre productivo y de hype.
 - **Reputación como empleador** (una faceta de la Reputación, ver `06`): estudios conocidos por el
   crunch atraen peor talento y más caro; estudios "buen sitio para trabajar" atraen a los mejores.
-- En **fase avanzada** (con rivales, `04`/`11`), el talento que se va puede **irse a la competencia**
-  y potenciar a un rival — drama y consecuencia real.
+- **El talento migra a la competencia (Fase 9.5, docs/19 §9.5):**
+  - Las **renuncias espontáneas** pueden acabar fichando por un estudio rival (probabilidad
+    `quitSignChance`), que **se fortalece** con tu gente — mucho más si era una **estrella**
+    (skill ≥ 80 en su especialidad, el mismo umbral del techo de 9.1).
+  - Los rivales también **cazan en activo**: un empleado con la **lealtad hundida**
+    (< `poach.loyaltyThreshold`) puede recibir una oferta (salario ×1,5). Salta un **modal de
+    contraoferta** que pausa: **igualar** (su salario pasa a ser el ofertado PARA SIEMPRE, con la
+    lealtad y la moral reforzadas) o **dejarle ir** (el rival se fortalece y tu fama de Empleador
+    se resiente). La mala reputación de Empleador **atrae más buitres** (factor 1,5 − rep/100).
+  - El fundador nunca se ficha; una oferta como mucho a la vez; todo con noticia y trazable
+    (la caza no es azar: la puerta la abre el descontento que tú causaste).
 
 ## 8. Escala: de hacerlo tú a dirigir `[DECIDIDO · 5 etapas desde docs/18 V4]`
 
@@ -139,5 +148,6 @@ Coherente con las 5 etapas (`02` §4):
 - [ ] Existe pool de contratación cuya calidad/coste dependen de era y reputación de empleador.
 - [ ] Formar, asignar, motivar, crunchear, despedir están implementados con sus efectos.
 - [ ] La química de equipo modifica el resultado por composición del proyecto.
-- [ ] Moral/lealtad bajas producen renuncias; en fase con rivales, el talento puede migrar a la competencia.
+- [x] Moral/lealtad bajas producen renuncias; el talento puede migrar a la competencia (renuncias
+      fichadas + caza activa con contraoferta, Fase 9.5).
 - [ ] La gestión pasa de individual (garaje) a por políticas (corporación).
