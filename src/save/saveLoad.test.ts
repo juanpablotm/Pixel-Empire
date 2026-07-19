@@ -421,6 +421,34 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(() => tick(state)).not.toThrow();
   });
 
+  it('migra un guardado v16 (Fase 9.5) a v17 (Fase 9.6): todo era auto-publicado y sin EA', () => {
+    const base = createInitialState(SEED);
+    // Un estado "v16": media partida con un proyecto y un juego lanzado, sin
+    // rastro de publishers ni early access (los campos no existían).
+    let v16State = startProject(base, {
+      name: 'Veterano',
+      themeId: 'fantasia',
+      genreId: 'rpg',
+      platformId: 'pcCasero',
+      audience: 'amplio',
+      size: 'pequeno',
+    });
+    v16State = {
+      ...v16State,
+      projects: v16State.projects.map((p) => {
+        const { publisherDeal: _deal, earlyAccess: _ea, ...rest } = p;
+        return rest;
+      }),
+    };
+    const state = deserializeSave(JSON.stringify({ saveVersion: 16, state: v16State }));
+    // Auto-publicado y sin EA: exactamente lo que eran las partidas pre-9.6.
+    expect(state.projects[0].publisherDeal).toBeUndefined();
+    expect(state.projects[0].earlyAccess).toBeUndefined();
+    expect(state.stats.publisherDeals).toBeUndefined();
+    // Y el mundo sigue andando (los `??` hacen el resto).
+    expect(() => tick(state)).not.toThrow();
+  });
+
   it('al cargar, sanea solo el hype negativo: sin tope superior desde 9.1 (docs/19)', () => {
     let state = startProject(createInitialState(SEED), {
       name: 'Desbordado',

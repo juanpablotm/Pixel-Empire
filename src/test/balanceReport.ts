@@ -8,6 +8,7 @@
 import { computeLegacy } from '../core/systems/legacy';
 import { aggregateReputation } from '../core/systems/reputation';
 import type { GameState } from '../core/model/gameState';
+import { eraForWeek } from '../data/eras';
 import { FACTORY, INDIE, STUDIO, runFullGame } from './bots';
 
 function snap(s: GameState): string {
@@ -36,6 +37,32 @@ function snap(s: GameState): string {
   ].join(' · ');
 }
 
+/**
+ * La curva de dependencia del publisher (9.6, docs/19 §9.6): lanzamientos
+ * firmados vs auto-publicados por era. El arco sano: casi todo firmado en
+ * E1–E2, casi nada desde que la caja se sostiene sola.
+ */
+function publisherCurve(s: GameState): string {
+  const eras = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7'];
+  const byEra = eras.map((era) => {
+    const bounds = s.releasedGames.filter((g) => eraOfWeek(g.releaseWeek) === era);
+    const signed = bounds.filter((g) => g.publisherName !== undefined).length;
+    return `${era} ${signed}/${bounds.length}`;
+  });
+  const paid = s.stats.publisherPaidTotal ?? 0;
+  const indep = s.stats.independenceWeek;
+  return (
+    `firmados/lanzados por era: ${byEra.join(' · ')}\n` +
+    `  el peaje del publisher: ${Math.round(paid / 1000)}k 💰 · ` +
+    `independencia: ${indep !== undefined ? `semana ${indep} (año ${1979 + Math.ceil(indep / 52)})` : '—'} · ` +
+    `EA usados: ${s.releasedGames.filter((g) => g.earlyAccessInfo !== undefined).length}`
+  );
+}
+
+function eraOfWeek(week: number): string {
+  return eraForWeek(week);
+}
+
 for (const phil of [INDIE, FACTORY, STUDIO]) {
   console.log(`\n=== ${phil.name} ===`);
   const snaps: string[] = [];
@@ -45,6 +72,7 @@ for (const phil of [INDIE, FACTORY, STUDIO]) {
   console.log('FINAL →', snap(end));
   if (end.gameOver) console.log('GAME OVER:', JSON.stringify(end.gameOver));
   console.log('legado:', JSON.stringify(computeLegacy(end)));
+  console.log(publisherCurve(end));
   console.log('reseñas:', end.releasedGames.map((g) => Math.round(g.review)).join(','));
   const last = end.releasedGames[end.releasedGames.length - 1];
   if (last) {

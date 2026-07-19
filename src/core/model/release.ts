@@ -178,4 +178,30 @@ export interface ReleasedGame {
    * previos y lanzamientos sin ventana no lo llevan.
    */
   rivalCrush?: { rivalName: string; gameName: string; penalty: number };
+  /**
+   * Trato con publisher, congelado al lanzar (Fase 9.6, docs/19 §9.6):
+   * quién publicó, qué fracción del bruto se lleva cada semana, cuánto se ha
+   * llevado ya (`publisherPaid`, para el P&L) y el adelanto que te pagó.
+   * Opcionales: juegos previos y auto-publicados no los llevan (share 0).
+   */
+  publisherName?: string;
+  publisherShare?: number;
+  publisherPaid?: number;
+  publisherAdvance?: number;
+  /** Red de distribución del publisher: demanda × (1 + boost), toda la curva. */
+  publisherBoost?: number;
+  /**
+   * Dueño de la IP (Fase 9.6): 'publisher' si el trato la exigía. Limita
+   * franquicias/secuelas de este juego (se aplica en 9.7). Opcional:
+   * undefined = 'estudio' (todo lo anterior a 9.6 es tuyo).
+   */
+  ipOwner?: 'estudio' | 'publisher';
+  /**
+   * Historia del acceso anticipado (Fase 9.6), congelada al lanzar la 1.0:
+   * cuánto duró, cuántos compraron la promesa y qué ingresó (aparte de
+   * totalRevenue: lo de EA ya entró en caja semana a semana). spikePenalty
+   * recorta el pico day-one en expectedWeeklyUnits (los compradores de EA ya
+   * tienen el juego); la cola no se toca. Opcional: sin EA no existe.
+   */
+  earlyAccessInfo?: { weeks: number; units: number; revenue: number; spikePenalty: number };
 }

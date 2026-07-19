@@ -19,7 +19,7 @@ resume la propia guía de diseño del jugador: **"el jugador siempre debe sentir
 | **9.3** ✅ | Features por género | Intuición y profundidad en la creación |
 | **9.4** ✅ | Tendencias tipo "fiebre" (+ más consolas / multiplataforma) | Repetición; mercado muerto |
 | **9.5** ✅ | Estudios rivales con IA | "No estás solo"; adaptación forzada |
-| **9.6** | Publishers + Early Access | Escasez temprana; arco de negocio |
+| **9.6** ✅ | Publishers + Early Access | Escasez temprana; arco de negocio |
 | **9.7** | GaaS + adquisiciones | Piloto automático del late-game |
 
 ---
@@ -212,14 +212,52 @@ gigante en su ventana hunde ventas (y retrasar lo esquiva); un empleado con leal
 a un rival (que se fortalece); los bots confirman presión real con las 3 filosofías viables.
 **Tocó:** `04` (mercado/saturación/fiebres), `05` (talento), `06` (premios), `11`/`12` (stretch), `16`.
 
-## 9.6 — Publishers + Early Access `[dirección]`
+## 9.6 — Publishers + Early Access `[IMPLEMENTADO · commit "Fase 9.6: publishers y early access"]`
 
-**Meta:** escasez temprana y arco de negocio.
-- Al principio firmas **contratos leoninos con publishers** (ponen dinero, se llevan ~70% + la IP);
-  meta: reunir capital para **auto-publicarte**.
-- **Early Access:** lanzar a medio hacer para financiarte y recibir feedback, con riesgo de quemar la
-  reputación si te demoras en la 1.0.
-**Toca:** `06` (economía/contratos), `07` (comunidad/EA), `02`, `16`.
+> Baseline actualizada en `02` §5, `06` §4.1/§4, `07` §4.1, `12` §6 y `16`. Catálogo de
+> publishers en `data/publishers.ts` (perfil de trato: reparto, adelanto, IP, exclusividad,
+> bolsa, distribución); factores en `balance.publishers` y `balance.earlyAccess`; lógica pura
+> en `core/systems/publishers.ts` y `core/systems/earlyAccess.ts` + ganchos en
+> `projects`/`sales`/`economy`/`market`; save v17 (campos opcionales, migración vacía).
+> CA verificados con tests (`publishers.test.ts`, `earlyAccess.test.ts`, `fullGame.test.ts`
+> CA 9.6a–c) y bots. Capturas: `capturas/9-6-publisher-oferta.png` y
+> `capturas/9-6-early-access.png` (script `scripts/verify96.mjs`, escaparate
+> `?demo=publisher[&ea=1]`).
+
+**Meta:** escasez temprana y arco de negocio — de depender de otros a independizarte.
+
+- **Contratos leoninos, congelados al firmar:** el publisher paga los **costes de arranque** y un
+  **adelanto no recuperable** (semanas × coste dev × cobertura del perfil × tu reputación de
+  prensa/crítica), y se lleva su **% del bruto para siempre** (0,55–0,75; el "~70 %") — mismo
+  patrón que la royalty de motor. A veces exige la **IP** (`ipOwner: 'publisher'`, la limitación
+  real de secuelas llega con 9.7) o **exclusividad de plataforma**; pone además una **bolsa de
+  marketing** (tus campañas cobran de ella hasta agotarla) y su **red de distribución** agranda
+  la demanda del juego entero (`distributionBoost`, +15–45 %): el 30 % de un pastel más grande.
+  Sin la distribución el trato era pura trampa — el firmado pobre nunca acumulaba para
+  independizarse (lección de bots).
+- **Ofertas deterministas y sin PRNG** (`publisherOffersFor`): perfil × tamaño × reputación,
+  comparables en una tarjeta junto a "Auto-publicado" en la concepción (Pilar 2). Catálogo
+  escalonado por eras; la industria moderna (E5+) trata mejor — para entonces ya no la necesitas.
+- **Escasez temprana REAL:** el capital inicial baja de 10.000 a **4.000 💰** (un pequeño cuesta
+  ~4.100 con todo): auto-publicar el primer juego pasa por números rojos hasta que las ventas
+  llegan; firmar (o el préstamo) es una decisión de verdad. Con 6–10k los bots demostraron que
+  la oferta jamás se firmaba.
+- **El arco emerge:** los bots firman sus 2–3 primeros juegos, se destetan al reunir caja y
+  nadie vuelve a firmar desde E3; el primer ≥ mediano auto-publicado tras un trato dispara el
+  hito **"Te has independizado"** (`stats.independenceWeek`, modal 🕊️ con el peaje acumulado).
+- **Early Access (desde E5, decidido):** solo juegos **auto-publicados** (el publisher controla
+  el lanzamiento de los suyos) y en fase de **Pulido**. Vende a precio rebajado con demanda a
+  escala de "juego a medias" que decae sola; la comunidad **pule el juego** cada semana (QA y
+  bugs). Pasada la **paciencia** (~1 año), quema progresiva de sentimiento y reputación
+  (comunidad/hardcore), avisada y trazable. En la 1.0, los compradores de EA **recortan el pico
+  day-one** (congelado como `overHypeTailPenalty`); si sale floja (< 60), **traición**: golpe
+  extra escalado por cuántos compraron la promesa.
+
+**CA:** con publisher entra dinero antes pero te quedas ~25–45 % del bruto; auto-publicar cuesta
+más y rinde más; un EA demorado quema reputación de forma progresiva y nombrada; las 3
+filosofías siguen viables y el arco de independencia existe (bots: firman en E1, libres desde E3).
+**Tocó:** `02` §5 (EA nace en E5), `06` §4/§4.1 (contratos + capital inicial), `07` §4.1 (EA),
+`12` §6, `16`; nuevos `data/publishers.ts`, `balance.publishers`, `balance.earlyAccess`.
 
 ## 9.7 — GaaS + adquisiciones `[dirección]`
 

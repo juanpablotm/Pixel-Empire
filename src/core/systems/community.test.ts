@@ -353,10 +353,13 @@ describe('review bombing (docs/07 §5, CA: estado TEMPORAL sobre nota visible y 
 });
 
 describe('gestión de crisis (docs/07 §5 y docs/10 §10.8, CA: respuestas que mueven segmentos)', () => {
-  /** Crisis de loot boxes con juego señalado, severidad forzada vía deuda. */
+  /** Crisis de loot boxes con juego señalado, severidad forzada vía deuda.
+   * Caja explícita: la disculpa cuesta dinero y el garaje de 9.6 arranca con
+   * 4.000 💰 — el fixture dota un estudio que puede permitirse responder. */
   function inCrisis(severityRaw = 0.8): GameState {
     const base = withGame(createInitialState(SEED), makeGame({ monetization: greedy }));
-    return spawnCrisis(base, rng(), 'lootboxes', 'proyecto-9', severityRaw);
+    const funded: GameState = { ...base, studio: { ...base.studio, capital: 50_000 } };
+    return spawnCrisis(funded, rng(), 'lootboxes', 'proyecto-9', severityRaw);
   }
 
   it('estalla con reloj, review bombing y feed en llamas', () => {

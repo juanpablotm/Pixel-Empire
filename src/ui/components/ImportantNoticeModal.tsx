@@ -45,6 +45,8 @@ function noticeSubtitle(notice: ImportantNotice): string | null {
       return `${notice.employeeName} · ${notice.role}`;
     case 'scaleUp':
       return notice.stageName;
+    case 'independence':
+      return `«${notice.gameName}»`;
     case 'bankruptcyWarning':
       return null;
   }
@@ -62,11 +64,26 @@ function PnlRow({ label, value, tone }: { label: string; value: string; tone: st
 
 /** Cuerpo del aviso "sale del mercado": el P&L (generó vs costó) — Pilar 2. */
 function MarketExitBody({ notice }: { notice: Extract<ImportantNotice, { kind: 'marketExit' }> }) {
-  const net = notice.revenue - notice.cost;
+  // Con publisher (9.6) el adelanto y las ventas del EA también fueron
+  // ingresos del juego: el "generó" los suma y cada fuente tiene su fila.
+  const advance = notice.publisherAdvance ?? 0;
+  const eaRevenue = notice.eaRevenue ?? 0;
+  const generated = notice.revenue + advance + eaRevenue;
+  const net = generated - notice.cost;
   return (
     <div className="mt-4">
       <div className="rounded-md border border-line bg-raised/60 px-4 py-2">
-        <PnlRow label="Generó (ingresos)" value={formatMoney(notice.revenue)} tone="text-ok" />
+        <PnlRow label="Generó (ingresos netos)" value={formatMoney(notice.revenue)} tone="text-ok" />
+        {advance > 0 && (
+          <PnlRow
+            label={`Adelanto de ${notice.publisherName ?? 'publisher'}`}
+            value={`+${formatMoney(advance)}`}
+            tone="text-ok"
+          />
+        )}
+        {eaRevenue > 0 && (
+          <PnlRow label="Acceso anticipado" value={`+${formatMoney(eaRevenue)}`} tone="text-ok" />
+        )}
         <PnlRow label="Costó (desarrollo)" value={`−${formatMoney(notice.cost)}`} tone="text-ink" />
         <div className="my-1 border-t border-line" />
         <PnlRow
@@ -74,14 +91,22 @@ function MarketExitBody({ notice }: { notice: Extract<ImportantNotice, { kind: '
           value={`${net >= 0 ? '+' : '−'}${formatMoney(Math.abs(net))}`}
           tone={net >= 0 ? 'text-ok' : 'text-danger'}
         />
+        {(notice.publisherPaid ?? 0) > 0 && (
+          <PnlRow
+            label={`Se llevó ${notice.publisherName ?? 'el publisher'} (su ${''}parte)`}
+            value={formatMoney(notice.publisherPaid ?? 0)}
+            tone="text-capital"
+          />
+        )}
       </div>
       <p className="mt-3 text-sm text-ink">
         Vendió {notice.units.toLocaleString('es-ES')} copias en total. A partir de ahora{' '}
         <span className="font-semibold text-warn">deja de generar ingresos</span>.
       </p>
       <p className="mt-2 text-xs text-ink-faint">
-        Coste = desarrollo + licencia + marketing de este juego (sin la nómina general del estudio,
-        que es un gasto compartido).
+        Coste = desarrollo + licencia + marketing que pagaste TÚ por este juego (sin la nómina
+        general del estudio, que es un gasto compartido
+        {notice.publisherName ? `; lo que puso ${notice.publisherName} no se te cobra` : ''}).
       </p>
     </div>
   );
@@ -116,6 +141,24 @@ function NoticeBody({ notice }: { notice: ImportantNotice }) {
           gratis: cuesta <span className="font-semibold text-capital">{formatMoney(notice.cost)}</span>{' '}
           y subirá los gastos fijos semanales. Cuando quieras dar el paso, el botón está en la
           cronología de escala.
+        </p>
+      );
+    case 'independence':
+      return (
+        <p className="mt-4 text-sm text-ink">
+          <span className="font-semibold text-ink-hi">«{notice.gameName}»</span> sale al mercado{' '}
+          <span className="font-semibold text-ok">sin publisher</span>: todo el riesgo — y toda la
+          recompensa — son tuyos.
+          {notice.publisherPaidTotal > 0 && (
+            <>
+              {' '}
+              Por el camino, los publishers se llevaron{' '}
+              <span className="font-semibold text-capital">
+                {formatMoney(notice.publisherPaidTotal)}
+              </span>{' '}
+              de tus ventas. Ese peaje se acabó.
+            </>
+          )}
         </p>
       );
   }

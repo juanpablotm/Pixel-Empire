@@ -4,6 +4,8 @@ import {
   computeBugLevel,
   computeTeamFactor,
   computeTeamOutput,
+  earlyAccessAvailable,
+  earlyAccessBlockReason,
   engineHasCapability,
   featureFitRevealed,
   policiesUnlocked,
@@ -240,6 +242,18 @@ function DevelopmentBody({ project }: { project: Project }) {
   // El marketing no existe hasta Producción (docs/04 §4): antes ni ocupa sitio.
   const marketingOpen = project.phase >= balance.market.hype.startPhase;
 
+  // Publicación (9.6): el trato con el publisher viaja congelado en el
+  // proyecto; el acceso anticipado solo existe para auto-publicados desde su
+  // era. El núcleo decide (earlyAccessBlockReason); aquí se muestra.
+  const deal = project.publisherDeal;
+  const ea = project.earlyAccess;
+  const eaCfg = balance.earlyAccess;
+  const eaBlocked = earlyAccessBlockReason(game, project);
+  const launchEA = useGameStore((s) => s.launchEarlyAccess);
+  const showPublishing = deal !== undefined || ea !== undefined || earlyAccessAvailable(game);
+  const eaWeeksIn = ea ? game.week - ea.startWeek : 0;
+  const eaPatienceLeft = ea ? eaCfg.patienceWeeks - eaWeeksIn : 0;
+
   const onSlider = (aspectId: string, value: number) => {
     setFocus(project.phase, { ...allocation, [aspectId]: value / 100 }, project.id);
   };
@@ -426,6 +440,81 @@ function DevelopmentBody({ project }: { project: Project }) {
 
           {/* ── Columna B: el CONTEXTO con el que se decide ───────────── */}
           <div className="flex flex-col gap-4">
+            {/* Publicación (9.6): quién publica este juego y, para los
+                auto-publicados desde E5, el acceso anticipado con su reloj. */}
+            {showPublishing && (
+              <Panel title="Publicación">
+                {deal ? (
+                  <div className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-semibold text-ink-hi">📜 Publica {deal.publisherName}</span>
+                    <ul className="text-xs text-ink">
+                      <li>· adelanto cobrado: {formatMoney(deal.advance)} (+ arranque a su cargo)</li>
+                      <li>
+                        · se queda el {Math.round(deal.revShare * 100)} % de las ventas — tú, el{' '}
+                        {Math.round((1 - deal.revShare) * 100)} %
+                      </li>
+                      <li>
+                        · bolsa de marketing restante: {formatMoney(deal.marketingBudgetLeft)}
+                      </li>
+                      {deal.keepsIp && (
+                        <li className="font-medium text-warn">· ⚠ la IP del juego es suya</li>
+                      )}
+                    </ul>
+                    <p className="text-xs text-ink-faint">
+                      El trato quedó firmado en la concepción y acompaña al juego para siempre.
+                    </p>
+                  </div>
+                ) : ea ? (
+                  <div className="flex flex-col gap-1.5 text-sm" data-tour="ea-panel">
+                    <span className="font-semibold text-ink-hi">🚧 En ACCESO ANTICIPADO</span>
+                    <ul className="text-xs text-ink">
+                      <li>
+                        · {eaWeeksIn} semanas abierto · {ea.unitsSold.toLocaleString('es-ES')}{' '}
+                        compradores de la promesa
+                      </li>
+                      <li>· ingresado por adelantado: {formatMoney(ea.revenue)}</li>
+                      <li>
+                        · el feedback pule el juego cada semana (QA y bugs) — llega mejor a la 1.0
+                      </li>
+                    </ul>
+                    <p
+                      className={`text-xs font-medium ${
+                        eaPatienceLeft <= 0
+                          ? 'text-danger'
+                          : eaPatienceLeft <= 12
+                            ? 'text-warn'
+                            : 'text-ink-mute'
+                      }`}
+                    >
+                      {eaPatienceLeft > 0
+                        ? `⏳ La comunidad espera la 1.0: ${eaPatienceLeft} semanas de paciencia.`
+                        : `🔥 Paciencia agotada hace ${-eaPatienceLeft} semanas: cada semana sin 1.0 quema sentimiento y reputación.`}
+                    </p>
+                    <p className="text-xs text-ink-faint">
+                      La 1.0 sale sola al terminar el Pulido; los compradores de EA restan del pico
+                      de estreno, y si sale floja se sentirán estafados.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      data-tour="ea-launch"
+                      disabled={eaBlocked !== null}
+                      title={eaBlocked ?? undefined}
+                      onClick={() => launchEA(project.id)}
+                      className="btn btn-primary self-start px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-control disabled:text-ink-faint"
+                    >
+                      🚧 Abrir acceso anticipado
+                    </button>
+                    <p className="text-xs text-ink-faint">
+                      {eaBlocked ??
+                        'Vender el juego a medio hacer: dinero y feedback desde ya, con la comunidad esperando la 1.0.'}
+                    </p>
+                  </div>
+                )}
+              </Panel>
+            )}
             <Panel
               title="Equipo asignado"
               action={
@@ -556,6 +645,12 @@ function DevelopmentBody({ project }: { project: Project }) {
                 }
               >
                 <HypeGauge hype={project.hype} />
+                {deal && deal.marketingBudgetLeft > 0 && (
+                  <p className="text-xs text-capital">
+                    📜 La bolsa de {deal.publisherName} paga los próximos{' '}
+                    {formatMoney(deal.marketingBudgetLeft)} de campañas.
+                  </p>
+                )}
                 <div className="flex flex-col gap-1.5 border-t border-line pt-3">
                   {/* 9.1: las campañas son RE-COMPRABLES (marketing sin tope,
                       docs/19): cada compra vuelve a pagar y a sumar. El

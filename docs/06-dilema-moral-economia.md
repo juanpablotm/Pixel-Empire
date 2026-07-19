@@ -89,12 +89,38 @@ ingresosJuego = Σ_t ( ventas(t) × precio × factorMonetización )
 - **I+D** (investigación, `02`).
 - **Infraestructura:** oficinas (upgrades por etapa de escala), licencias de plataforma (`04`).
 
+### 4.1 Contratos con publishers `[DECIDIDO · Fase 9.6, docs/19 §9.6]`
+
+La otra fuente de financiación del early game: **quien no tiene dinero, firma**. Cada publisher
+(`data/publishers.ts`) es un **perfil de trato** y su oferta concreta es **determinista**
+(perfil × tamaño × tu reputación de prensa/crítica, sin PRNG — `core/systems/publishers.ts`):
+
+- **Al firmar (en la concepción):** el publisher paga los **costes de arranque** (coste base +
+  licencias + cuota de motor) y te ingresa un **adelanto no recuperable** (~coste de desarrollo
+  del tamaño × cobertura 0,8–1,35 × reputación 0,9–1,15). El trato queda **congelado** en el
+  proyecto: no mejora aunque tu fama suba después.
+- **Cada semana de ventas:** se lleva su **% del bruto, para siempre** (0,55–0,75 según perfil;
+  el "~70 %") — mismo patrón que la royalty de motor: tu caja ve el neto y `publisherPaid`
+  acumula el peaje, visible en ficha y P&L.
+- **A cambio, algo real además del cheque:** su **red de distribución** multiplica la demanda
+  del juego entero (+15–45 % de alcance) — el 30 % de un pastel más grande — y una **bolsa de
+  marketing** paga tus campañas hasta agotarse. Sin la distribución, el contrato era una trampa
+  sin salida para el estudio pobre (lección de bots de 9.6).
+- **La letra pequeña:** algunos exigen la **IP** (ese juego deja de ser tuyo para
+  franquicias/secuelas — se aplica en 9.7) o **exclusividad de plataforma** (una sola, aunque tu
+  motor admita más).
+- **Auto-publicarte es la meta:** pagas todo y te quedas todo. El primer juego ≥ mediano
+  auto-publicado tras haber firmado dispara el hito **"Te has independizado"** (con el peaje
+  total a la vista). El catálogo se ablanda con las eras (la boutique de E5 pide solo el 55 %):
+  la industria te trata mejor justo cuando ya no la necesitas.
+
 ### Cifras base v1
 Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 
 | Concepto | Valor base v1 |
 |----------|---------------|
-| Capital inicial (garaje) | 10.000 💰 |
+| Capital inicial (garaje) | **4.000 💰** (recalibrado en 9.6: era 10.000; con un pequeño costando ~4.100 con todo, el primer juego auto-publicado es una apuesta real y la oferta del publisher, una decisión de verdad) |
+| Publisher (9.6): reparto / adelanto / distribución | se queda el 55–75 % del bruto para siempre · adelanto = coste dev del tamaño × 0,8–1,35 × reputación 0,9–1,15 (no recuperable; arranque a su cargo) · distribución +15–45 % de demanda · bolsa de marketing por tamaño (3k–200k × perfil) |
 | Precio recomendado por juego | 20–60 💰 según tamaño/era |
 | **Coste base por tamaño** (docs/17 E1 + docs/18 V4) | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
 | **Overhead fijo semanal por etapa** (docs/18 V4-d) | 0 / 300 / 1.500 / 7.000 / 30.000 💰 extra sobre el coste fijo base (100 💰) según etapa 1–5 |

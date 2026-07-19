@@ -18,17 +18,24 @@ import type {
   ProjectSize,
 } from '../model/project';
 import type { ReleasedGame } from '../model/release';
-import { applyReleaseCommunityEffects } from './community';
+import { addSentiment, applyReleaseCommunityEffects } from './community';
 import {
   activeFeverFor,
   buildFever,
   clampHype,
   computeSegmentReviews,
   effectiveSaturation,
+  expectedWeeklyUnits,
   overHypeGap,
   platformAvailable,
   registerReleaseSaturation,
 } from './market';
+import {
+  buildPublisherOffer,
+  dealFromOffer,
+  getPublisher,
+  publisherBlockReason,
+} from './publishers';
 import { applyReleaseMoralEffects, lootBoxesBanned } from './morale';
 import { computeCeilingContext } from './maturity';
 import { computeQuality } from './quality';
@@ -102,6 +109,12 @@ export interface ProjectConcept {
   price?: number;
   /** Modelo de negocio (docs/09 §9). Si se omite, premium honesto. */
   monetization?: MonetizationConfig;
+  /**
+   * Publisher que financia el juego (Fase 9.6, docs/19 §9.6), o null/omitido
+   * = AUTO-publicado. Firmar congela el trato: el publisher paga los costes
+   * de arranque y un adelanto, y se lleva su % del bruto para siempre.
+   */
+  publisherId?: string | null;
 }
 
 /** Proyecto por id; sin id, el primero en curso (compatibilidad mono-proyecto). */
@@ -253,7 +266,11 @@ export function releasedGameCost(project: Project, releaseWeek: number): number 
   // resolveEngine exige estado; aquí basta el catálogo licenciable (los
   // propios y el artesanal no cobran cuota por juego).
   const engineFee = project.engineId ? getLicensedEngineFeeOrZero(project.engineId) : 0;
-  const baseCost = balance.economy.sizeBaseCost[project.size] + engineFee;
+  // Con publisher (9.6), los costes de arranque los pagó ÉL: el P&L cuenta lo
+  // que salió de TU caja, que es lo que el aviso "generó vs costó" compara.
+  const upfront = project.publisherDeal
+    ? 0
+    : licenseCost + balance.economy.sizeBaseCost[project.size] + engineFee;
   // Las semanas en pausa no cuentan: nadie trabajó, no hay desarrollo que
   // cobrar (docs/18 V5). La nómina del estudio va aparte y ya se pagó semana a
   // semana; esta cifra es el coste atribuible AL JUEGO.
@@ -262,11 +279,13 @@ export function releasedGameCost(project: Project, releaseWeek: number): number 
     releaseWeek - (project.startWeek ?? releaseWeek) - (project.pausedWeeks ?? 0),
   );
   const devCost = devWeeks * balance.economy.devCostPerPersonWeek;
-  const marketingCost = project.marketingUsed.reduce(
-    (sum, level) => sum + (balance.economy.marketing.levels[level]?.cost ?? 0),
-    0,
-  );
-  return Math.round(licenseCost + baseCost + devCost + marketingCost);
+  // El marketing que pagó el publisher de su bolsa tampoco es coste tuyo.
+  const marketingCost =
+    project.marketingUsed.reduce(
+      (sum, level) => sum + (balance.economy.marketing.levels[level]?.cost ?? 0),
+      0,
+    ) - (project.publisherDeal?.marketingCovered ?? 0);
+  return Math.round(upfront + devCost + Math.max(0, marketingCost));
 }
 
 /** Empleados sin proyecto ni I+D: el equipo por defecto de un proyecto nuevo. */
@@ -363,6 +382,28 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     );
   }
 
+  // Costes de arranque: licencias de TODAS las plataformas, coste base del
+  // tamaño (docs/17 E1) y cuota del motor licenciado (9.2).
+  const upfrontCost =
+    platformIds.reduce((sum, id) => sum + getPlatform(id).licenseCost, 0) +
+    balance.economy.sizeBaseCost[concept.size] +
+    engine.upfrontFee;
+
+  // Publisher (9.6, docs/19 §9.6): validar la oferta y CONGELAR el trato. El
+  // publisher paga los costes de arranque y te ingresa el adelanto; a cambio
+  // se lleva su % del bruto (advanceSales) y, a veces, la IP.
+  const publisherId = concept.publisherId ?? null;
+  let deal: Project['publisherDeal'];
+  if (publisherId !== null) {
+    const def = getPublisher(publisherId);
+    const blocked = publisherBlockReason(state, def, concept.size);
+    if (blocked) throw new Error(blocked);
+    if (def.exclusivePlatform && platformIds.length > 1) {
+      throw new Error(`${def.name} exige exclusividad: una sola plataforma de lanzamiento`);
+    }
+    deal = dealFromOffer(buildPublisherOffer(state, def, concept.size), upfrontCost);
+  }
+
   const project: Project = {
     id: `proyecto-${state.projectCounter + 1}`,
     name,
@@ -375,6 +416,7 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     size: concept.size,
     price,
     monetization,
+    publisherDeal: deal,
     marketingUsed: [],
     creatorCampaign: [],
     overPromised: false,
@@ -396,28 +438,39 @@ export function startProject(state: GameState, concept: ProjectConcept): GameSta
     bugDebt: 0,
   };
 
-  // Al arrancar se pagan las licencias de TODAS las plataformas, el coste base
-  // del tamaño (docs/17 E1) y la cuota del motor licenciado (9.2):
-  // comprometerse con un proyecto grande cuesta de entrada.
-  const upfrontCost =
-    platformIds.reduce((sum, id) => sum + getPlatform(id).licenseCost, 0) +
-    balance.economy.sizeBaseCost[concept.size] +
-    engine.upfrontFee;
+  // Sin publisher, los costes de arranque salen de TU caja: comprometerse con
+  // un proyecto grande cuesta de entrada. Con trato, los paga el publisher y
+  // además ingresa el adelanto — la muleta útil pero cara (docs/19 §9.6).
   const next: GameState = {
     ...state,
     studio: {
       ...state.studio,
-      capital: state.studio.capital - upfrontCost,
+      capital: deal
+        ? state.studio.capital + deal.advance
+        : state.studio.capital - upfrontCost,
       awardHype: 0,
     },
     projects: [...state.projects, project],
     projectCounter: state.projectCounter + 1,
+    stats: deal
+      ? { ...state.stats, publisherDeals: (state.stats.publisherDeals ?? 0) + 1 }
+      : state.stats,
   };
   const platformNames = platformIds.map((id) => getPlatform(id).name).join(' + ');
-  return appendLog(
+  const started = appendLog(
     next,
     'proyecto',
     `Empieza el desarrollo de «${name}» (${platformNames}, motor: ${engine.name}).`,
+  );
+  if (!deal) return started;
+  return appendLog(
+    started,
+    'economia',
+    `«${name}» se firma con ${deal.publisherName}: adelanto de ${deal.advance.toLocaleString(
+      'es-ES',
+    )} 💰 y los costes de arranque a su cargo, a cambio del ${Math.round(
+      deal.revShare * 100,
+    )} % de las ventas${deal.keepsIp ? ' — y la IP es suya' : ''}.`,
   );
 }
 
@@ -523,6 +576,13 @@ function assignedTeam(state: GameState, project: Project): Employee[] {
   return state.staff.filter((e) => project.assignedStaff.includes(e.id));
 }
 
+/** Orden canónico de tamaños, para comparar "≥ mediano" (9.6). */
+const SIZE_ORDER: readonly ProjectSize[] = ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'];
+
+function sizeAtLeast(size: ProjectSize, min: ProjectSize): boolean {
+  return SIZE_ORDER.indexOf(size) >= SIZE_ORDER.indexOf(min);
+}
+
 /**
  * Fiebre del oro (docs/19 §9.4): un lanzamiento con reseña ≥ hitFeverBar puede
  * encender una fiebre sobre su género o su tema (a suertes del PRNG), salvo que
@@ -553,6 +613,39 @@ function maybeIgniteHitFever(
     'mercado',
     `🔥 El éxito de «${project.name}» enciende una fiebre ${kind} ${name}: todo el mundo quiere más.`,
   );
+}
+
+/**
+ * Historia del acceso anticipado congelada al lanzar la 1.0 (Fase 9.6): los
+ * compradores de EA ya tienen el juego, así que el pico day-one se recorta en
+ * proporción a cuántos fueron frente a la semana 0 esperada (mismo patrón
+ * congelado que overHypeTailPenalty y rivalCrush; la cola no se toca).
+ */
+function attachEarlyAccessInfo(
+  state: GameState,
+  project: Project,
+  released: ReleasedGame,
+): ReleasedGame {
+  const ea = project.earlyAccess;
+  if (!ea) return released;
+  const cfg = balance.earlyAccess;
+  const expected0 = expectedWeeklyUnits(released, 0, state.market);
+  const spikePenalty =
+    expected0 > 0
+      ? Math.round(
+          Math.min(cfg.spike.maxPenalty, (ea.unitsSold * cfg.spike.cannibalFrac) / expected0) *
+            100,
+        ) / 100
+      : 0;
+  return {
+    ...released,
+    earlyAccessInfo: {
+      weeks: state.week - ea.startWeek,
+      units: ea.unitsSold,
+      revenue: ea.revenue,
+      spikePenalty,
+    },
+  };
 }
 
 /** Convierte el proyecto terminado en un juego lanzado con reseña y desglose. */
@@ -628,7 +721,8 @@ function releaseProject(state: GameState, project: Project): GameState {
         penalty: balance.rivals.window.crushPenalty,
       }
     : undefined;
-  const released: ReleasedGame = {
+  const deal = project.publisherDeal;
+  const releasedBase: ReleasedGame = {
     id: project.id,
     name: project.name,
     themeId: project.themeId,
@@ -641,6 +735,14 @@ function releaseProject(state: GameState, project: Project): GameState {
     engineName: engine.name,
     royaltyPct: engine.royaltyPct,
     royaltyPaid: 0,
+    // El trato con el publisher también se congela (9.6): su % del bruto se
+    // cobrará semana a semana (advanceSales) y la IP queda de quien firme.
+    publisherName: deal?.publisherName,
+    publisherShare: deal?.revShare,
+    publisherPaid: deal ? 0 : undefined,
+    publisherAdvance: deal?.advance,
+    publisherBoost: deal?.distributionBoost,
+    ipOwner: deal?.keepsIp ? 'publisher' : 'estudio',
     audience: project.audience,
     size: project.size,
     price: project.price,
@@ -667,6 +769,8 @@ function releaseProject(state: GameState, project: Project): GameState {
     previousBestReview: state.releasedGames.length > 0 ? previousBest : undefined,
     rivalCrush,
   };
+  // El acceso anticipado deja su historia congelada en la ficha (9.6).
+  const released = attachEarlyAccessInfo(state, project, releasedBase);
   let next: GameState = {
     ...state,
     // Solo sale del tablero el proyecto lanzado; el resto sigue (docs/02 §4).
@@ -708,6 +812,53 @@ function releaseProject(state: GameState, project: Project): GameState {
       next,
       'comunidad',
       `El bombo de «${released.name}» prometía más de lo que entrega (reseña ${review}): la cola de ventas se hunde y hardcore y comunidad se sienten estafados.`,
+    );
+  }
+  // La 1.0 tras el acceso anticipado (9.6): su historia se nombra siempre
+  // (Pilar 2), y si el juego sale FLOJO, quienes compraron la promesa se
+  // sienten estafados — golpe extra a comunidad/hardcore y al sentimiento,
+  // escalado por cuántos fueron (la penalización de pico, normalizada).
+  const eaInfo = released.earlyAccessInfo;
+  if (eaInfo) {
+    next = appendLog(
+      next,
+      'lanzamiento',
+      `«${released.name}» alcanza la 1.0 tras ${eaInfo.weeks} semanas de acceso anticipado (${eaInfo.units.toLocaleString(
+        'es-ES',
+      )} unidades vendidas por el camino).`,
+    );
+    const t = balance.earlyAccess.betrayal;
+    const maxPenalty = balance.earlyAccess.spike.maxPenalty;
+    const betrayalScale = maxPenalty > 0 ? eaInfo.spikePenalty / maxPenalty : 0;
+    if (review < t.reviewBar && betrayalScale > 0) {
+      next = {
+        ...next,
+        studio: withReputationDeltas(next.studio, {
+          comunidad: t.repHit.comunidad * betrayalScale,
+          hardcore: t.repHit.hardcore * betrayalScale,
+        }),
+        community: addSentiment(next.community, t.sentimentHit * betrayalScale),
+      };
+      next = appendLog(
+        next,
+        'comunidad',
+        `La 1.0 de «${released.name}» no está a la altura de la promesa (reseña ${review}): quienes pagaron el acceso anticipado se sienten estafados.`,
+      );
+    }
+  }
+  // La liberación GANADA (9.6, docs/19 §9.6): el primer juego con peso que te
+  // auto-publicas tras haber dependido de publishers marca el arco del negocio.
+  if (
+    !deal &&
+    (next.stats.publisherDeals ?? 0) > 0 &&
+    next.stats.independenceWeek === undefined &&
+    sizeAtLeast(project.size, balance.publishers.independenceMinSize)
+  ) {
+    next = { ...next, stats: { ...next.stats, independenceWeek: state.week } };
+    next = appendLog(
+      next,
+      'estudio',
+      `🕊️ Te has independizado: «${released.name}» sale al mercado sin publisher. Todo el riesgo — y toda la recompensa — son tuyos.`,
     );
   }
   // Desarrollar también enseña: puntos 💡 por lanzamiento (docs/02 §3).

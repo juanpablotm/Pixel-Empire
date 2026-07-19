@@ -191,6 +191,63 @@ describe('Bots de partida completa: las tres filosofías de docs/01 §5 (docs/00
     );
   });
 
+  // -------------------------------------------------------------------------
+  // CA de la Fase 9.6 (docs/19 §9.6): publishers + early access
+  // -------------------------------------------------------------------------
+
+  it('CA 9.6(a): el publisher es la muleta del arranque — los tres firman sus primeros juegos', () => {
+    const e2Start = getEra('E2').startWeek;
+    for (const { name, state } of bots) {
+      const early = state.releasedGames.filter((g) => g.releaseWeek < e2Start);
+      const signed = early.filter((g) => g.publisherName !== undefined);
+      // Con 4.000 💰 de arranque, ni el bot óptimo escapa de firmar al menos
+      // sus primeros lanzamientos (la escasez temprana es real).
+      expect(signed.length, `${name}: firmados en E1`).toBeGreaterThanOrEqual(2);
+      // Y el peaje se paga de verdad: el publisher se llevó su parte.
+      expect(state.stats.publisherPaidTotal ?? 0, `${name}: peaje`).toBeGreaterThan(0);
+      // Los términos congelados en la ficha: reparto leonino, dinero antes.
+      for (const g of signed) {
+        expect(g.publisherShare, `${name}: «${g.name}»`).toBeGreaterThanOrEqual(0.55);
+        expect(g.publisherAdvance ?? 0, `${name}: «${g.name}»`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('CA 9.6(b): independizarse es una meta que se ALCANZA — y no se vuelve atrás', () => {
+    const e3Start = getEra('E3').startWeek;
+    for (const { name, state } of bots) {
+      // El hito de independencia queda grabado (primer ≥ mediano sin publisher
+      // tras haber firmado) y llega pronto en la partida: el arco existe.
+      expect(state.stats.independenceWeek, `${name}: independencia`).toBeDefined();
+      expect(state.stats.independenceWeek!, `${name}: independencia`).toBeLessThan(e3Start);
+      // Desde E3 nadie vuelve a firmar: reunido el capital, auto-publicarse
+      // rinde más y el publisher queda atrás (la liberación es ganada).
+      const late = state.releasedGames.filter((g) => g.releaseWeek >= e3Start);
+      expect(
+        late.filter((g) => g.publisherName !== undefined).length,
+        `${name}: firmados desde E3`,
+      ).toBe(0);
+    }
+  });
+
+  it('CA 9.6(c): el indie financia su madurez con Early Access disciplinado', () => {
+    const eaGames = indie.releasedGames.filter((g) => g.earlyAccessInfo !== undefined);
+    expect(eaGames.length).toBeGreaterThanOrEqual(5);
+    for (const g of eaGames) {
+      const info = g.earlyAccessInfo!;
+      // Vendió la promesa (dinero antes de la 1.0)…
+      expect(info.units, `«${g.name}»`).toBeGreaterThan(0);
+      expect(info.revenue, `«${g.name}»`).toBeGreaterThan(0);
+      // …y la 1.0 llegó DENTRO de la paciencia (nunca quemó a la comunidad):
+      // el calendario del tamaño manda y el bot no se enquista.
+      expect(info.weeks, `«${g.name}»`).toBeLessThanOrEqual(
+        balance.earlyAccess.patienceWeeks,
+      );
+    }
+    // Los que no usan EA no tienen historia EA: el trade-off es una elección.
+    expect(factory.releasedGames.every((g) => g.earlyAccessInfo === undefined)).toBe(true);
+  });
+
   it('los legados cuentan tres historias distintas (docs/06 §6)', () => {
     const indieLegacy = computeLegacy(indie);
     const factoryLegacy = computeLegacy(factory);

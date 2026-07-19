@@ -2,6 +2,7 @@ import { makeRng } from './rng';
 import type { GameState } from '../model/gameState';
 import { advanceAwards } from '../systems/awards';
 import { advanceCommunity } from '../systems/community';
+import { advanceEarlyAccess } from '../systems/earlyAccess';
 import { advanceEconomy } from '../systems/economy';
 import { advanceEngineBuild } from '../systems/engines';
 import { advanceEras } from '../systems/eras';
@@ -54,6 +55,9 @@ export function tick(state: GameState): GameState {
   // saturación y fiebres ANTES de que los proyectos del jugador se lancen.
   s = advanceRivals(s, rivalsRng);
   s = advanceProjects(s);
+  // El goteo del acceso anticipado (9.6) va tras los proyectos: si uno lanzó
+  // su 1.0 esta misma semana, ya no vende EA (sus ventas reales empiezan hoy).
+  s = advanceEarlyAccess(s);
   s = advanceStaff(s, staffRng);
   s = advancePolicies(s);
   s = advanceSales(s, rng);

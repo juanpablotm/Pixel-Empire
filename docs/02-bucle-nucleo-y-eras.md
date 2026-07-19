@@ -195,8 +195,8 @@ automático por el avance del tiempo, con un evento de transición que resume qu
 | **E2 — Las consolas** | ~1985–1992 | 1ª gen de consolas ("Gameling", "Master V") | Cartuchos; licencias de plataforma |
 | **E3 — El salto 3D** | ~1993–2000 | CD-ROM, consolas 32/64-bit ("Playsystem") | Presupuestos mayores; marketing masivo |
 | **E4 — La red** | ~2001–2008 | Online, PC dominante, portátiles | Parches post-venta; primer DLC |
-| **E5 — Digital y móvil** | ~2009–2015 | Tiendas digitales, smartphones, indies | Free-to-play, microtransacciones, app stores |
-| **E6 — Servicios y streamers** | ~2016–2023 | Streaming, early access, cloud | Loot boxes, pases de batalla, games-as-a-service |
+| **E5 — Digital y móvil** | ~2009–2015 | Tiendas digitales, smartphones, indies | Free-to-play, microtransacciones, app stores, **early access** (9.6) |
+| **E6 — Servicios y streamers** | ~2016–2023 | Streaming, cloud | Loot boxes, pases de batalla, games-as-a-service |
 | **E7 — El futuro cercano** | ~2024+ | Realidad mixta, IA generativa, nubes | Modelos emergentes (satíricos/especulativos) |
 
 Cada era también **mueve las modas** (ver `04`): géneros y temas que triunfan en E2 pueden estar

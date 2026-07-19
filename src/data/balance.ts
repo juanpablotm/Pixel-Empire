@@ -40,8 +40,17 @@ export const balance = {
   },
 
   economy: {
-    /** Capital inicial del garaje: 10.000 💰 [DECIDIDO, docs/12 §6]. */
-    initialCapital: 10_000,
+    /**
+     * Capital inicial del garaje [DECIDIDO docs/12 §6; recalibrado en 9.6]:
+     * bajó de 10.000 a 4.000 💰 para que la escasez temprana sea real
+     * (docs/19 §9.6). Un pequeño cuesta ~4.100 💰 con todo (500 de arranque +
+     * 600/semana de desarrollo y luz durante 6 semanas): auto-publicar el
+     * primer juego es una apuesta que pasa por números rojos hasta que las
+     * ventas llegan, y la oferta del publisher (o el préstamo) es una
+     * decisión de verdad, no decoración. Con 6–10k los bots demostraron que
+     * la oferta jamás se firma (el pequeño se autofinancia de sobra).
+     */
+    initialCapital: 4_000,
     /** Coste fijo semanal del garaje (luz, alquiler...); infraestructura de docs/06 §4. */
     weeklyUpkeep: 100,
     /**
@@ -135,6 +144,111 @@ export const balance = {
     cashflowMaxWeeks: 52,
     /** Semanas de flujo medio usadas para estimar el runway. */
     runwayLookbackWeeks: 4,
+  },
+
+  /**
+   * Publishers (Fase 9.6, docs/19 §9.6): la muleta útil pero cara del early
+   * game. Los PERFILES de trato (reparto, IP, exclusividad) viven en
+   * data/publishers.ts; aquí, los factores económicos comunes a todas las
+   * ofertas. El adelanto es NO recuperable y el reparto es sobre el BRUTO,
+   * para siempre — sencillez leonina, legible en una tarjeta.
+   */
+  publishers: {
+    advance: {
+      /**
+       * El adelanto cubre el coste de desarrollo estimado del tamaño
+       * (semanas de calendario × devCostPerPersonWeek) × advanceCoverage del
+       * publisher × ajuste por reputación. No incluye los costes de arranque
+       * (licencias + coste base + cuota de motor): esos los paga el publisher
+       * DIRECTAMENTE al firmar — tú no ves ese dinero, ni su factura.
+       */
+      repFactorMin: 0.9,
+      repFactorMax: 1.15,
+      /** Redondeo del adelanto (que la cifra de la tarjeta sea legible). */
+      roundTo: 500,
+    },
+    /**
+     * Bolsa de marketing base por tamaño (× marketingBudgetMult del
+     * publisher): tus campañas de ese proyecto se pagan de la bolsa hasta
+     * agotarla; a partir de ahí, de tu caja. Sin bolsa infinita: el marketing
+     * sin tope de 9.1 sería explotable con dinero ajeno.
+     */
+    marketingBudgetBySize: {
+      pequeno: 3_000,
+      mediano: 8_000,
+      grande: 25_000,
+      muyGrande: 80_000,
+      aaa: 200_000,
+    } satisfies Record<ProjectSize, number>,
+    /**
+     * Tamaño mínimo del primer juego auto-publicado que celebra la
+     * independencia (aviso "Te has independizado", tras ≥1 trato firmado).
+     */
+    independenceMinSize: 'mediano' as ProjectSize,
+  },
+
+  /**
+   * Early Access (Fase 9.6, docs/19 §9.6 y docs/07 §4.1): lanzar a medio hacer
+   * para financiarte y recibir feedback, con la comunidad mirando el reloj.
+   * Solo juegos AUTO-publicados (el publisher controla su lanzamiento): es la
+   * herramienta de autofinanciación del estudio independiente.
+   */
+  earlyAccess: {
+    /** Era en que se inventa (docs/02 §5: tiendas digitales; decidido E5). */
+    appearsInEra: 'E5' as EraId,
+    /** Fase mínima de desarrollo para abrir el acceso anticipado (Pulido). */
+    minPhase: 3,
+    /** Precio EA = precio final × este factor (compras una promesa). */
+    priceFactor: 0.7,
+    /**
+     * Escala de la demanda EA frente a un lanzamiento normal: un juego a
+     * medias, sin reseña, solo atrae a los curiosos.
+     */
+    salesScale: 0.2,
+    /** El hype empuja a los curiosos: demanda EA × (1 + coef × hype). */
+    hypeCoef: 0.5,
+    /** La novedad se agota sin 1.0: decaimiento semanal de las ventas EA. */
+    weeklyDecay: 0.97,
+    /**
+     * Feedback de la comunidad, por semana en EA: QA extra (misma unidad que
+     * qaInvested) y deuda de bugs que se corrige. El juego llega mejor a la
+     * 1.0 que su gemelo desarrollado a puerta cerrada.
+     */
+    feedbackQaPerWeek: 0.35,
+    feedbackBugFixPerWeek: 0.3,
+    /** Semanas de gracia antes de que la comunidad empiece a quemarse. */
+    patienceWeeks: 52,
+    /**
+     * Quema progresiva pasada la paciencia: cada semana extra resta
+     * sentimiento y reputación, con una rampa que crece hasta rampMaxFactor
+     * a lo largo de rampWeeks (demorarse un poco escuece; enquistarse arde).
+     */
+    burn: {
+      sentimentPerWeek: 0.8,
+      repPerWeek: { comunidad: 0.3, hardcore: 0.18 },
+      rampWeeks: 26,
+      rampMaxFactor: 2,
+      /** Cada cuántas semanas de quema se repite el aviso en el historial. */
+      logEveryWeeks: 8,
+    },
+    /**
+     * 1.0: los compradores de EA ya tienen el juego. El pico day-one se
+     * multiplica por (1 − penalización), con penalización = min(cap,
+     * unidadesEA × cannibalFrac / unidadesEsperadasSemana0). Congelado al
+     * lanzar, como overHypeTailPenalty (docs/17 E2).
+     */
+    spike: { cannibalFrac: 0.6, maxPenalty: 0.6 },
+    /**
+     * Traición: si la 1.0 sale por debajo de este listón de reseña, quienes
+     * compraron la promesa se sienten estafados — golpe extra a comunidad y
+     * hardcore, escalado por cuántos compraron (la penalización de pico
+     * normalizada). Encima del castigo normal de una reseña floja.
+     */
+    betrayal: {
+      reviewBar: 60,
+      repHit: { comunidad: -5, hardcore: -4 },
+      sentimentHit: -8,
+    },
   },
 
   /** factorMonetización v1 [DECIDIDO, docs/12 §6] y sus consecuencias. */

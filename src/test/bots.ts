@@ -22,6 +22,11 @@ import {
 } from '../core/systems/engines';
 import { lootBoxesBanned } from '../core/systems/morale';
 import {
+  earlyAccessBlockReason,
+  launchEarlyAccess,
+} from '../core/systems/earlyAccess';
+import { publisherOffersFor } from '../core/systems/publishers';
+import {
   confirmContestedRelease,
   delayContestedRelease,
   estimateProject,
@@ -90,6 +95,14 @@ export interface Philosophy {
   sizeAmbition: 'indie' | 'media' | 'aaa';
   /** Etapa de escala máxima que compra (docs/18 V4-c): la identidad manda. */
   stageAmbition: 1 | 2 | 3 | 4 | 5;
+  /**
+   * Con quién firma cuando la caja no da (9.6, docs/19 §9.6): 'sinIp' no
+   * vende el alma (rechaza tratos que se quedan la IP); 'siempre' coge el
+   * cheque más gordo sin leer la letra pequeña.
+   */
+  publisherStance: 'sinIp' | 'siempre';
+  /** Abre acceso anticipado en sus auto-publicados cuando existe (9.6). */
+  useEarlyAccess: boolean;
   crisisResponse: CrisisResponseId;
   dilemma: Record<DilemmaKind, DilemmaChoice>;
 }
@@ -109,6 +122,11 @@ export const INDIE: Philosophy = {
   teamTargetByEra: [1, 4, 4, 5, 6, 6, 6],
   sizeAmbition: 'indie',
   stageAmbition: 3,
+  // Firma cuando no queda otra, pero JAMÁS cede la IP (el alma no se vende);
+  // y en cuanto existe el acceso anticipado, financia sus juegos con su
+  // comunidad — la 1.0 llega sola a tiempo (el calendario del tamaño manda).
+  publisherStance: 'sinIp',
+  useEarlyAccess: true,
   crisisResponse: 'disculpa',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
@@ -134,6 +152,9 @@ export const FACTORY: Philosophy = {
   teamTargetByEra: [1, 4, 8, 12, 20, 46, 48],
   sizeAmbition: 'aaa',
   stageAmbition: 5,
+  // El cheque más gordo, la IP da igual: los juegos son producto, no obra.
+  publisherStance: 'siempre',
+  useEarlyAccess: false,
   crisisResponse: 'silencio',
   dilemma: { leakAlpha: 'capitalizar', sobreHype: 'prometer' },
 };
@@ -151,6 +172,9 @@ export const STUDIO: Philosophy = {
   teamTargetByEra: [1, 4, 5, 8, 12, 18, 20],
   sizeAmbition: 'media',
   stageAmbition: 4,
+  // Firma con cabeza (sin ceder la IP) y lanza a la antigua: sin EA.
+  publisherStance: 'sinIp',
+  useEarlyAccess: false,
   crisisResponse: 'corporativo',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
@@ -166,24 +190,69 @@ const SIZE_CEILING: Record<Philosophy['sizeAmbition'], ProjectSize> = {
 };
 
 /**
- * Tamaño de proyecto: el mayor que (a) no supere el techo de ambición del
- * arquetipo, (b) pase el gate real (docs/17 E1: plantilla + etapa mínimas,
- * vía sizeBlockReason — como el jugador que ve los tamaños atenuados) y
- * (c) la caja aguante EL PROYECTO ENTERO: coste estimado más ~3/4 de los
- * costes fijos de toda su duración. Con el overhead de 8.8 (docs/18 V4-d) la
- * trampa mortal es empezar un AAA de 120 semanas que la caja no puede
- * terminar; el bot no la pisa — si no le llega, baja de tamaño solo.
+ * Tamaño Y financiación del siguiente juego (docs/17 E1 + 9.6, docs/19 §9.6):
+ * el mayor tamaño que (a) no supere la ambición del arquetipo, (b) pase el
+ * gate real (plantilla + etapa, vía sizeBlockReason) y (c) SE PUEDA PAGAR —
+ * y ahí está la gracia de 9.6:
+ *
+ * - AUTO-PUBLICADO si la caja aguanta el proyecto entero (coste estimado +
+ *   ~3/4 de los costes fijos de su calendario): te quedas todo — la opción
+ *   del que puede. Con el overhead de 8.8, empezar lo que la caja no puede
+ *   terminar es la trampa mortal; el bot no la pisa.
+ * - FIRMADO con publisher si el tamaño se te escapa pero el adelanto + el
+ *   arranque a su cargo lo vuelven viable: la muleta que financia el SALTO
+ *   de tamaño que aún no te puedes permitir… al 70 %. La postura del
+ *   arquetipo filtra ('sinIp' no vende el alma; 'siempre' coge el cheque).
+ * - Si ni firmado sale, baja de tamaño. El suelo es el pequeño: solo, si la
+ *   caja da; firmado, si está en apuros (mejor pobre que muerto).
+ *
+ * Así el arco emerge del propio bot: al principio firma (los saltos y los
+ * apuros), y en cuanto la caja sostiene el tamaño, se independiza — la
+ * liberación GANADA que pide el CA.
  */
-function pickSize(state: GameState, phil: Philosophy): ProjectSize {
+function pickProject(
+  state: GameState,
+  phil: Philosophy,
+): { size: ProjectSize; publisherId: string | null } {
+  // La postura solo gatea la IP ('sinIp' no vende el alma; 'siempre' firma lo
+  // que haga falta — Goliath incluido). El criterio económico es el mismo para
+  // todos: el reparto menos leonino, con el adelanto de desempate. Elegir por
+  // cheque gordo (Magnavista, 75 %) es la espiral de la muerte: el 25 %
+  // restante nunca da para destetarse — lección de bots de esta fase.
+  const bestOffer = (size: ProjectSize) => {
+    const offers = publisherOffersFor(state, size).filter(
+      (o) => phil.publisherStance === 'siempre' || !o.keepsIp,
+    );
+    if (offers.length === 0) return null;
+    return [...offers].sort((a, b) => a.revShare - b.revShare || b.advance - a.advance)[0];
+  };
+
+  const fixed = weeklyFixedCosts(state);
+  // Auto-publicarse exige aguantar el proyecto Y sus costes fijos de
+  // calendario COMPLETOS: quedarse sin caja a mitad es la trampa mortal.
+  const selfCushion = (estimate: { cost: number; weeks: number }) =>
+    estimate.cost + estimate.weeks * fixed;
   const ceiling = SIZE_ORDER.indexOf(SIZE_CEILING[phil.sizeAmbition]);
   for (let i = ceiling; i > 0; i--) {
     const size = SIZE_ORDER[i];
     if (sizeBlockReason(state, size) !== null) continue;
     const estimate = estimateProject(size, 'pcCasero');
-    const cushion = estimate.cost + 0.75 * estimate.weeks * weeklyFixedCosts(state);
-    if (state.studio.capital > cushion) return size;
+    if (state.studio.capital > selfCushion(estimate)) {
+      return { size, publisherId: null };
+    }
+    const offer = bestOffer(size);
+    if (
+      offer !== null &&
+      state.studio.capital + offer.advance > 0.75 * (estimate.cost + estimate.weeks * fixed)
+    ) {
+      return { size, publisherId: offer.publisherId };
+    }
   }
-  return 'pequeno';
+  const small = estimateProject('pequeno', 'pcCasero');
+  if (state.studio.capital > selfCushion(small)) {
+    return { size: 'pequeno', publisherId: null };
+  }
+  return { size: 'pequeno', publisherId: bestOffer('pequeno')?.publisherId ?? null };
 }
 
 /**
@@ -374,7 +443,10 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
   }
   if (combo === null) return state; // sin combo fresco: espera una semana
 
-  const size = pickSize(state, phil);
+  // Tamaño y financiación a la vez (9.6): el publisher es lo que vuelve
+  // viable el salto de tamaño que la caja aún no aguanta. Los bots lanzan
+  // monoplataforma, así que la exclusividad de plataforma no muerde.
+  const { size, publisherId } = pickProject(state, phil);
   const recommended = balance.economy.priceBySize[size];
   let next = startProject(state, {
     name: `${phil.name} ${gameNumber + 1}`,
@@ -388,6 +460,7 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
     engineId: pickEngine(state, size, combo.genreId),
     price: Math.round(recommended * phil.priceMult),
     monetization: pickMonetization(state, phil),
+    publisherId,
   });
 
   // Features hasta el objetivo de alcance del tamaño (docs/03 factor C), por
@@ -732,6 +805,17 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
       wait <= 6 && canAfford
         ? delayContestedRelease(state, project.id)
         : confirmContestedRelease(state, project.id);
+  }
+  // Early Access (9.6): el arquetipo que lo usa abre el acceso anticipado de
+  // sus auto-publicados al entrar en Pulido. Disciplinado por construcción:
+  // la 1.0 llega sola con el calendario del tamaño (6–18 semanas de Pulido),
+  // muy por debajo de la paciencia — dinero y feedback sin quemar a nadie.
+  if (phil.useEarlyAccess) {
+    for (const project of state.projects) {
+      if (earlyAccessBlockReason(state, project) === null) {
+        state = launchEarlyAccess(state, project.id);
+      }
+    }
   }
   // 2. Estudio: ampliación (se compra, docs/18 V4-c), crédito, taller de
   // motores (9.2), investigación, plantilla, cuidado y rotación de energía.

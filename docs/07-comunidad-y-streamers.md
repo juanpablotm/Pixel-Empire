@@ -65,6 +65,30 @@ Esto convierte el marketing en una **decisión de casting** legible y con riesgo
 Antes del lanzamiento se acumula **Hype (📣)** por marketing, ferias (`04`) y campaña de creadores. El
 hype es de **doble filo** (ver `04` §4): sube ventas day-one pero endurece las reseñas.
 
+### 4.1 Early Access: vender la promesa `[DECIDIDO · Fase 9.6, docs/19 §9.6]`
+
+Desde la era digital (**E5**), un juego **auto-publicado** (el publisher controla el lanzamiento
+de los suyos) que llegue a la fase de **Pulido** puede abrir su **acceso anticipado**: venderse a
+medio hacer, con la comunidad dentro del desarrollo. Es la herramienta de autofinanciación del
+estudio independiente — y un reloj en marcha (`core/systems/earlyAccess.ts`, números en
+`balance.earlyAccess`):
+
+- **Entra dinero antes:** ventas semanales a precio rebajado (×0,7), con demanda a escala de
+  "juego a medias sin reseña" (×0,2, empujada por el hype) que **se enfría sola** semana a
+  semana: la novedad se agota sin 1.0.
+- **Entra feedback:** la comunidad reporta bugs y pule el diseño — QA extra y deuda de bugs que
+  baja cada semana. El juego llega a la 1.0 **mejor** que su gemelo a puerta cerrada.
+- **La paciencia se agota (~1 año):** pasada la gracia, cada semana sin 1.0 **quema sentimiento
+  y reputación** (comunidad/hardcore) con una rampa progresiva (hasta ×2) — siempre avisada en
+  el feed y el historial ("¿y la 1.0?"), nunca emboscada (Pilar 2).
+- **La 1.0 ajusta cuentas:** quienes compraron en EA **ya tienen el juego** — el pico day-one se
+  recorta en proporción (congelado al lanzar, como el sobre-hype; la cola no se toca). Y si la
+  1.0 sale **floja** (reseña < 60), **traición**: golpe extra a comunidad/hardcore y al
+  sentimiento, escalado por cuántos pagaron la promesa.
+
+Riesgo/oportunidad legible: dinero y un juego más pulido HOY, contra un estreno sin sorpresas y
+una comunidad que no perdona el enquistamiento.
+
 ### Eventos de pre-lanzamiento (dilemas)
 - **Leak de la build alpha:** un empleado filtra una alpha por accidente en Discord. Dilema:
   - *Comunicado de disculpa y transparencia* → −sorpresa, +confianza de comunidad.

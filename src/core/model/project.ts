@@ -36,6 +36,44 @@ export interface PendingRelease {
   windowEndWeek: number;
 }
 
+/**
+ * Contrato con un publisher, congelado al FIRMAR (Fase 9.6, docs/19 §9.6):
+ * los términos no cambian aunque tu reputación suba después. El publisher
+ * pagó los costes de arranque y el adelanto; a cambio se lleva revShare del
+ * bruto de este juego, para siempre — y a veces la IP.
+ */
+export interface PublisherDeal {
+  publisherId: string;
+  publisherName: string;
+  /** Fracción de los ingresos brutos que se queda el publisher (0..1). */
+  revShare: number;
+  /** Adelanto cobrado al firmar (no recuperable; para el P&L y la ficha). */
+  advance: number;
+  /** El publisher se quedó la IP: limita franquicias/secuelas (9.7). */
+  keepsIp: boolean;
+  /** Su red de distribución: demanda del juego × (1 + boost) al lanzar. */
+  distributionBoost: number;
+  /** Bolsa de marketing restante: campañas que aún paga el publisher. */
+  marketingBudgetLeft: number;
+  /** Marketing ya pagado por el publisher (no cuenta en TU coste del P&L). */
+  marketingCovered: number;
+  /** Costes de arranque que pagó el publisher (licencias + base + motor). */
+  upfrontCovered: number;
+}
+
+/**
+ * Acceso anticipado en curso (Fase 9.6, docs/19 §9.6 y docs/07 §4.1): el
+ * juego se vende a medio hacer mientras el desarrollo sigue hacia la 1.0.
+ * Entra dinero y feedback; la comunidad mira el reloj.
+ */
+export interface EarlyAccessState {
+  startWeek: number;
+  /** Unidades vendidas durante el acceso anticipado. */
+  unitsSold: number;
+  /** Ingresos acumulados del acceso anticipado. */
+  revenue: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -109,6 +147,18 @@ export interface Project {
    * pero la nómina corre — ese es el precio de esquivar.
    */
   delayedUntilWeek?: number;
+  /**
+   * Contrato con el publisher que financia este juego, o undefined =
+   * AUTO-publicado (Fase 9.6, docs/19 §9.6). Congelado al firmar en la
+   * concepción. Opcional: los proyectos de saves previos son auto-publicados.
+   */
+  publisherDeal?: PublisherDeal;
+  /**
+   * Acceso anticipado en curso, o undefined = desarrollo a puerta cerrada
+   * (Fase 9.6). Solo proyectos auto-publicados. Opcional: saves previos no
+   * lo llevan.
+   */
+  earlyAccess?: EarlyAccessState;
   /** Fase de desarrollo en curso. */
   phase: DevPhaseNumber;
   /** Reparto de esfuerzo por fase: focus[fase - 1]. */

@@ -55,7 +55,7 @@ export const eras: readonly EraDef[] = [
     startWeek: 1509,
     transitionHeadline: 'Tiendas digitales y smartphones: todo el mundo juega.',
     transitionSummary:
-      'El móvil multiplica el mercado y llegan el free-to-play y las microtransacciones. Los indies florecen; las loot boxes asoman. El público se vuelve exigente.',
+      'El móvil multiplica el mercado y llegan el free-to-play, las microtransacciones y el acceso anticipado. Los indies florecen; las loot boxes asoman. El público se vuelve exigente.',
   },
   {
     id: 'E6',
@@ -64,7 +64,7 @@ export const eras: readonly EraDef[] = [
     startWeek: 1873,
     transitionHeadline: 'El streaming manda: los juegos son servicios y los streamers, prensa.',
     transitionSummary:
-      'Cloud, early access, pases de batalla y battle royale. Los creadores de contenido deciden qué se juega. La regulación acecha a las loot boxes.',
+      'Cloud, pases de batalla y battle royale. Los creadores de contenido deciden qué se juega. La regulación acecha a las loot boxes.',
   },
   {
     id: 'E7',

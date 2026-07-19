@@ -11,6 +11,7 @@ import {
   expandStudio,
   fireEmployee,
   hireCandidate,
+  launchEarlyAccess,
   launchMarketingCampaign,
   motivateEmployee,
   repayLoan,
@@ -79,11 +80,29 @@ export interface MarketExitNotice {
   kind: 'marketExit';
   gameId: string;
   gameName: string;
-  /** Lo que generó en toda su vida (ingresos, incluye MTX). */
+  /** Lo que generó en toda su vida (ingresos NETOS, incluye MTX). */
   revenue: number;
-  /** Lo que costó (desarrollo + licencia + marketing; docs/17 U4). */
+  /** Lo que costó (desarrollo + licencia + marketing QUE PAGASTE; docs/17 U4). */
   cost: number;
   units: number;
+  /**
+   * El trato del publisher en el P&L (9.6): el adelanto suma al "generó" y la
+   * tajada acumulada se enseña aparte — el precio de la muleta, en cifras.
+   * Opcionales: los juegos auto-publicados no los llevan.
+   */
+  publisherName?: string;
+  publisherAdvance?: number;
+  publisherPaid?: number;
+  /** Ingresos del acceso anticipado (9.6): entraron antes de la 1.0. */
+  eaRevenue?: number;
+}
+/** La liberación ganada (9.6, docs/19 §9.6): el hito narrativo del arco. */
+export interface IndependenceNotice {
+  id: number;
+  kind: 'independence';
+  gameName: string;
+  /** Lo que los publishers se llevaron de tus ventas hasta hoy. */
+  publisherPaidTotal: number;
 }
 export interface StaffLeftNotice {
   id: number;
@@ -116,7 +135,8 @@ export type ImportantNotice =
   | MarketExitNotice
   | StaffLeftNotice
   | BankruptcyNotice
-  | ScaleUpNotice;
+  | ScaleUpNotice
+  | IndependenceNotice;
 
 /**
  * Pantallas de las Fases 1–6 (docs/10 §10.1–10.10). Desde la Fase 8.5 ni la
@@ -318,6 +338,11 @@ export interface GameStore {
    */
   confirmContestedRelease: (projectId: string) => void;
   delayContestedRelease: (projectId: string) => void;
+  /**
+   * Early Access (Fase 9.6, docs/19 §9.6): abre el acceso anticipado de un
+   * proyecto auto-publicado en Pulido. El núcleo valida (earlyAccessBlockReason).
+   */
+  launchEarlyAccess: (projectId: string) => void;
   /** Caza de talento (Fase 9.5): igualar la oferta del rival o dejarle ir. */
   resolvePoachOffer: (resolution: PoachResolution) => void;
   /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
@@ -560,8 +585,29 @@ export const useGameStore = create<GameStore>()((set, get) => ({
           revenue: g.totalRevenue,
           cost: g.cost ?? 0,
           units: g.totalUnits,
+          // El trato del publisher y el EA entran al P&L (9.6): el adelanto y
+          // lo vendido en acceso anticipado también fueron ingresos del juego.
+          publisherName: g.publisherName,
+          publisherAdvance: g.publisherAdvance,
+          publisherPaid: g.publisherPaid,
+          eaRevenue: g.earlyAccessInfo?.revenue,
         });
       }
+    }
+
+    // La liberación ganada (9.6): el núcleo fija stats.independenceWeek una
+    // sola vez; el flanco de subida se celebra con su modal.
+    if (
+      before.stats.independenceWeek === undefined &&
+      after.stats.independenceWeek !== undefined
+    ) {
+      const latest = after.releasedGames[after.releasedGames.length - 1];
+      notices.push({
+        id: nextNoticeId++,
+        kind: 'independence',
+        gameName: latest?.name ?? '',
+        publisherPaidTotal: after.stats.publisherPaidTotal ?? 0,
+      });
     }
 
     // Renuncias: quien estaba y ya no, durante el tick, se ha ido por su pie
@@ -892,6 +938,10 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   delayContestedRelease: (projectId) => {
     set((s) => ({ game: delayContestedRelease(s.game, projectId) }));
+  },
+
+  launchEarlyAccess: (projectId) => {
+    set((s) => ({ game: launchEarlyAccess(s.game, projectId) }));
   },
 
   resolvePoachOffer: (resolution) => {

@@ -75,7 +75,9 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 
 | Concepto | Valor base v1 |
 |----------|---------------|
-| Capital inicial (garaje) | 10.000 💰 |
+| Capital inicial (garaje) | **4.000 💰** (recalibrado en 9.6, docs/19 §9.6: la escasez temprana es real — un pequeño cuesta ~4.100 con todo y la oferta del publisher es una decisión de verdad) |
+| Publisher (9.6) | reparto 55–75 % del bruto para siempre · adelanto = coste dev × cobertura 0,8–1,35 × rep 0,9–1,15, no recuperable, arranque a su cargo · distribución +15–45 % de demanda · bolsa de marketing 3k–200k × perfil · a veces IP y/o exclusividad de plataforma · ofertas deterministas (sin PRNG) |
+| Early Access (9.6, desde E5) | solo auto-publicados en Pulido · precio ×0,7 · demanda ×0,2 (+hype, decae ×0,97/sem) · feedback: +0,35 QA y −0,3 bugs/sem · paciencia 52 sem, quema progresiva (rampa hasta ×2) · 1.0: pico recortado por compradores EA (tope 60 %) · traición si reseña < 60 |
 | Precio por juego | 20–60 💰 según tamaño/era |
 | Coste base por tamaño (docs/17 E1 + docs/18 V4) | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), cobrado al iniciar |
 | Requisito por tamaño (docs/18 V4-b) | plantilla mín. 1 / 3 / 8 / 15 / 40 · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** |

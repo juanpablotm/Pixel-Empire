@@ -21,6 +21,7 @@ export type NoticeKind =
   | 'staffLeft' // renuncia de un empleado (cualquiera; docs/17 U4 ajustado)
   | 'bankruptcyWarning' // primera semana en números rojos (docs/06 §1)
   | 'scaleUp' // la ampliación de estudio pasa a estar disponible (docs/18 V4-c)
+  | 'independence' // primer juego con peso auto-publicado tras depender de publishers (9.6)
   | 'crisis' // escándalo/crisis (beat: CrisisModal, docs/07 §5)
   | 'era' // cambio de era (beat: EraTransition, docs/10 §7.6)
   | 'award'; // premio ganado (beat: AwardsModal, docs/06 §7)
@@ -74,6 +75,17 @@ export const IMPORTANT_NOTICES: Record<NoticeKind, NoticeSpec> = {
     title: 'Aviso de bancarrota',
     acceptLabel: 'Lo asumo',
     accent: 'danger',
+  },
+  // El arco del negocio (9.6, docs/19 §9.6): el primer juego con peso que te
+  // auto-publicas tras haber dependido de publishers. La liberación GANADA
+  // merece parar el reloj — es el hito narrativo de la partida temprana.
+  independence: {
+    level: 'importante',
+    surface: 'modal',
+    icon: '🕊️',
+    title: 'Te has independizado',
+    acceptLabel: '¡A por todas!',
+    accent: 'ok',
   },
   // Desde 8.8 la etapa se compra (docs/18 V4-c): el aviso celebra que CUMPLES
   // los requisitos para ampliar; el botón manda a la cronología de escala.

@@ -420,7 +420,14 @@ export function expectedWeeklyUnits(
     s.popDemandScale *
     ((market.genres[game.genreId]?.pop ?? base) / base) *
     ((market.themes[game.themeId]?.pop ?? base) / base);
-  const demand = installedDemand * s.sizeDemandFactor[game.size] * popFactor;
+  // La red de distribución del publisher (9.6) agranda el pastel entero:
+  // más tiendas, toda la curva — el 30 % que te queda es de un juego que
+  // llega a más gente. La otra mitad del trato leonino.
+  const demand =
+    installedDemand *
+    s.sizeDemandFactor[game.size] *
+    popFactor *
+    (1 + (game.publisherBoost ?? 0));
 
   const reviewFactor = (game.review / 100) ** s.reviewExponent;
   const satMod = saturationModifier(effectiveSaturation(market, game.genreId, game.themeId));
@@ -433,6 +440,10 @@ export function expectedWeeklyUnits(
     // Ventana disputada (9.5): el bombazo del gigante te robó los focos del
     // day-one. Solo el pico — la cola (el boca a boca) sigue siendo tuya.
     (1 - (game.rivalCrush?.penalty ?? 0)) *
+    // Acceso anticipado (9.6): quienes compraron la promesa ya tienen el
+    // juego — el estreno reparte menos sorpresas. Solo el pico; la cola (el
+    // boca a boca de un juego mejor pulido) sigue intacta.
+    (1 - (game.earlyAccessInfo?.spikePenalty ?? 0)) *
     s.launch.spikeDecay ** weeksSinceRelease;
   const tailDecay =
     s.launch.tailDecayMin + (s.launch.tailDecayMax - s.launch.tailDecayMin) * (game.review / 100);

@@ -833,6 +833,50 @@ function withEra(state: GameState, era: EraId): GameState {
 }
 
 /**
+ * Escaparate 9.6 (`?demo=publisher&ea=1`): un juego a medio hacer vendiéndose
+ * en ACCESO ANTICIPADO en E5, con el reloj de paciencia en ámbar (el proyecto
+ * pasó una temporada en pausa: por eso lleva 46 semanas abierto). Atrezzo de
+ * presentación sobre tipos del núcleo, como todo el arnés.
+ */
+function earlyAccessDemo(): GameState {
+  const base = withEra(createInitialState(DEMO_SEED), 'E5');
+  const staff = demoStaff(base, 4);
+  const project: Project = {
+    ...demoProject(staff.map((e) => e.id)),
+    name: 'Promesas del Vacío',
+    themeId: 'fantasia',
+    genreId: 'rpg',
+    phase: 3,
+    // Semana 16 de 18 (mediano): en pleno Pulido. Las 46 semanas de EA no
+    // contradicen el calendario: el proyecto pasó una larga temporada en
+    // pausa (pausedWeeks) mientras el acceso anticipado seguía vendiendo.
+    weeksSpent: 16,
+    pausedWeeks: 28,
+    qaInvested: 6.5,
+    bugDebt: 2.1,
+    hype: 0.58,
+    monetization: {
+      model: 'premium',
+      aggressiveness: 0,
+      hasLootBoxes: false,
+      hasBattlePass: false,
+      dayOneDLC: false,
+    },
+    earlyAccess: {
+      startWeek: base.week - 46,
+      unitsSold: 15_400,
+      revenue: 216_000,
+    },
+  };
+  return {
+    ...base,
+    staff,
+    projects: [project],
+    studio: { ...base.studio, capital: 214_000, scaleStage: 2 },
+  };
+}
+
+/**
  * Aplica el escaparate pedido por la query string. Devuelve true si sembró algo.
  *
  * De paso expone el store en `window` para la verificación por CDP (docs/08 §8:
@@ -960,6 +1004,20 @@ export function applyDemoFromQuery(): boolean {
       useGameStore.setState({ awardsWeek: game.studio.lastCeremony?.week ?? null });
     } else {
       seed(industriaDemo(), 'industria', null);
+    }
+    return true;
+  }
+  // Publishers + Early Access (Fase 9.6, docs/19 §9.6): el paso "¿Quién
+  // publica?" del Concepto en el garaje pelado de 1980 — la decisión del
+  // early game, con las ofertas leoninas sobre la mesa. Con `&ea=1`, un juego
+  // a medio hacer vendiéndose en acceso anticipado con su reloj de paciencia.
+  if (demo === 'publisher') {
+    if (params.get('ea') === '1') {
+      seed(earlyAccessDemo(), 'estudio', null);
+      useGameStore.setState({ devProjectId: 'demo-proj' });
+    } else {
+      seed(createInitialState(DEMO_SEED), 'estudio', null);
+      useGameStore.setState({ conceptionOpen: true, activeProjectId: null });
     }
     return true;
   }

@@ -118,15 +118,30 @@ export function launchMarketingCampaign(
     throw new Error('Demasiado pronto: el marketing arranca con la Producción (el anuncio)');
   }
 
+  // Con publisher (9.6), la campaña tira primero de SU bolsa de marketing
+  // hasta agotarla; el resto lo pagas tú. Lo cubierto se acumula en el trato
+  // para que el P&L no te cobre lo que no pagaste (releasedGameCost).
+  const deal = project.publisherDeal;
+  const covered = deal ? Math.min(deal.marketingBudgetLeft, campaign.cost) : 0;
+  const yourCost = campaign.cost - covered;
+
   const next: GameState = {
     ...state,
-    studio: { ...state.studio, capital: state.studio.capital - campaign.cost },
+    studio: { ...state.studio, capital: state.studio.capital - yourCost },
     projects: state.projects.map((p) =>
       p.id === project.id
         ? {
             ...p,
             hype: clampHype(p.hype + campaign.hypeBoost),
             marketingUsed: [...p.marketingUsed, level],
+            publisherDeal:
+              deal && covered > 0
+                ? {
+                    ...deal,
+                    marketingBudgetLeft: deal.marketingBudgetLeft - covered,
+                    marketingCovered: deal.marketingCovered + covered,
+                  }
+                : p.publisherDeal,
           }
         : p,
     ),
@@ -134,9 +149,13 @@ export function launchMarketingCampaign(
   return appendLog(
     next,
     'economia',
-    `Campaña de marketing (nivel ${level + 1}) para «${project.name}»: −${campaign.cost.toLocaleString(
-      'es-ES',
-    )} 💰, el hype sube.`,
+    covered > 0
+      ? `Campaña de marketing (nivel ${level + 1}) para «${project.name}»: ${deal!.publisherName} pone ${covered.toLocaleString(
+          'es-ES',
+        )} 💰 de su bolsa${yourCost > 0 ? ` y tú ${yourCost.toLocaleString('es-ES')} 💰` : ''}, el hype sube.`
+      : `Campaña de marketing (nivel ${level + 1}) para «${project.name}»: −${campaign.cost.toLocaleString(
+          'es-ES',
+        )} 💰, el hype sube.`,
   );
 }
 

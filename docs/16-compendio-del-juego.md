@@ -35,6 +35,7 @@ Recursos que gestionas: **Capital 💰**, **Reputación ⭐** (vector por públi
 | **Dilema moral y economía** | Palancas codicia/integridad, reputación segmentada, escándalos, economía completa | `06` |
 | **Comunidad y streamers** | Sentimiento de comunidad, creadores de contenido, hype/leaks, review bombing, gestión de crisis | `07` |
 | **Estudios rivales (9.5)** | Industria simulada: 12 estudios con tier y perfil que lanzan (saturan, encienden fiebres), disputan ventanas, cazan talento y son los nominados reales de la gala | `04` §9, docs/19 §9.5 |
+| **Publishers + Early Access (9.6)** | El arco del negocio: contratos leoninos que financian el arranque (adelanto + distribución a cambio del 55–75 % y a veces la IP) hasta que reúnes capital para auto-publicarte; y el acceso anticipado (E5+) como autofinanciación con reloj de paciencia | `06` §4.1, `07` §4.1, docs/19 §9.6 |
 
 **Cómo crear un juego (el bucle):** (1) concepción (tema/género/plataforma/público/tamaño/nombre) con
 medidor de Fit → (2) equipo y presupuesto → (3) desarrollo en 3 fases con reparto de esfuerzo y
@@ -56,6 +57,18 @@ era toca **mejorar** (60 % del coste) o cambiar — el sumidero recurrente. Un A
 obsoleto **topa bajo**; el juego pequeño/narrativo depende mucho menos. El motor también decide las
 **plataformas simultáneas** (kits bi/multi que se investigan) y gatea features (el online exige
 capacidad Online). Taller y catálogo en la pantalla de I+D; adecuación **siempre visible** al concebir.
+
+**Publishers y Early Access (Fase 9.6, docs/19 §9.6):** en la concepción decides **quién publica**.
+Con 4.000 💰 de arranque (recalibrado) el primer juego auto-publicado es una apuesta que pasa por
+números rojos; los **publishers** ponen el arranque + un **adelanto** y su **distribución** agranda
+la demanda (+15–45 %), a cambio del **55–75 % del bruto para siempre** — y a veces la **IP** o la
+exclusividad de plataforma. Las ofertas son deterministas (perfil × tamaño × reputación) y el trato
+se congela al firmar; la bolsa de marketing del publisher paga tus campañas hasta agotarse. La meta
+es **independizarte**: el primer ≥ mediano auto-publicado tras un trato se celebra con su hito (y el
+peaje acumulado a la vista). El **Early Access** (E5+, solo auto-publicados en Pulido) vende la
+promesa: dinero antes y feedback que pule QA y bugs, con **paciencia de ~1 año** — demorarse quema
+sentimiento y reputación en rampa; en la 1.0 los compradores de EA recortan el pico day-one y una
+1.0 floja (< 60) es **traición** escalada por cuántos pagaron.
 
 **La escalada (Fase 9.1, docs/19 §9.1):** el juego ya **no se resuelve**. La `Q` tiene un **techo
 dinámico** — `min(era, madurez, talento, motor)` — que en el garaje ronda 45–52 juegues como
@@ -391,7 +404,9 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 
 | Concepto | Valor base |
 |----------|------------|
-| Capital inicial (garaje) | 10.000 💰 |
+| Capital inicial (garaje) | **4.000 💰** (recalibrado en 9.6: el primer juego auto-publicado es una apuesta; firmar o prestarte, una decisión real) |
+| Publisher (9.6) | se queda el 55–75 % del bruto para siempre · adelanto no recuperable (coste dev × 0,8–1,35 × rep) + arranque a su cargo · distribución +15–45 % de demanda · bolsa de marketing 3k–200k × perfil · a veces IP / exclusividad |
+| Early Access (9.6, E5+) | solo auto-publicados en Pulido · precio ×0,7 · demanda ×0,2 con decaída · feedback +QA/−bugs semanal · paciencia 52 sem y quema en rampa · la 1.0 recorta el pico por compradores EA; floja (< 60) = traición |
 | Precio por juego | 20–60 💰 según tamaño/era |
 | Coste base por tamaño | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
 | Requisito por tamaño | plantilla mín. 1 / 3 / 8 / 15 / 40 · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** (AAA) |

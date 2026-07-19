@@ -16,11 +16,13 @@ import {
   monetizationFlagAvailable,
   platformAvailable,
   priceRevealed,
+  publisherOffersFor,
   resolveEngine,
   sizeBlockReason,
   type Audience,
   type MonetizationModel,
   type ProjectSize,
+  type PublisherOffer,
 } from '../../core';
 import { defaultMonetization, getMonetizationModel } from '../../data/monetization';
 import { audienceLabels, sizeLabels } from '../../data/reviewTexts';
@@ -87,6 +89,61 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">{label}</span>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
+  );
+}
+
+/**
+ * Tarjeta de oferta del paso "¿Quién publica?" (Fase 9.6, docs/19 §9.6): los
+ * términos completos de un trato — adelanto, reparto, IP, exclusividad,
+ * bolsa y distribución — comparables de un vistazo con auto-publicarse.
+ * El núcleo calcula la oferta (publisherOffersFor); aquí solo se enseña.
+ */
+function PublisherCard({
+  selected,
+  disabled,
+  disabledReason,
+  onClick,
+  title,
+  blurb,
+  terms,
+  warnings,
+}: {
+  selected: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
+  onClick: () => void;
+  title: string;
+  blurb: string;
+  terms: string[];
+  warnings?: string[];
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      disabled={disabled}
+      title={disabled ? disabledReason : undefined}
+      onClick={onClick}
+      className={`flex flex-col gap-1.5 rounded-md border p-3 text-left text-sm transition-colors ${
+        selected
+          ? 'border-action-hi bg-action-hi/10'
+          : 'border-line-hi bg-raised hover:bg-control'
+      } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+    >
+      <span className="font-bold text-ink-hi">
+        {selected ? '✓ ' : ''}
+        {title}
+      </span>
+      <span className="text-xs text-ink-mute">{blurb}</span>
+      <ul className="text-xs text-ink">
+        {terms.map((t) => (
+          <li key={t}>· {t}</li>
+        ))}
+      </ul>
+      {warnings && warnings.length > 0 && (
+        <span className="text-xs font-medium text-warn">{warnings.join(' · ')}</span>
+      )}
+    </button>
   );
 }
 
@@ -207,6 +264,17 @@ function ConceptionForm() {
   const estimate = estimateProject(size, platformIds, engine.upfrontFee);
   const canStart = name.trim() !== '';
 
+  // ¿Quién publica? (9.6, docs/19 §9.6): las ofertas las calcula el núcleo
+  // (deterministas, sin PRNG) y dependen del tamaño y tu reputación. La
+  // exclusividad de plataforma invalida la oferta si el lanzamiento es
+  // multiplataforma — derivado, sin estados imposibles.
+  const [publisherId, setPublisherId] = useState<string | null>(null);
+  const offers = publisherOffersFor(game, size);
+  const selectedOffer: PublisherOffer | null =
+    offers.find(
+      (o) => o.publisherId === publisherId && !(o.exclusivePlatform && platformIds.length > 1),
+    ) ?? null;
+
   // Conocimiento de mercado (docs/17 P2): el atajo PREDICTIVO se paga y TODO
   // empieza oculto. Sin investigar, el Fit sale "oculto" y el precio recomendado
   // no se muestra; aun así puedes concebir el juego, y el desglose posterior
@@ -243,6 +311,7 @@ function ConceptionForm() {
       audience,
       size,
       price,
+      publisherId: selectedOffer?.publisherId ?? null,
       monetization: {
         ...defaultMonetization(),
         model,
@@ -450,6 +519,57 @@ function ConceptionForm() {
             })}
           </Field>
 
+          {/* ¿Quién publica? (9.6): la decisión de negocio del early game.
+              Auto-publicarte = pagas todo y te quedas todo; firmar = dinero
+              y tiendas HOY a cambio de la parte del león (y a veces la IP). */}
+          <div className="flex flex-col gap-2" data-tour="publisher-pick">
+            <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
+              ¿Quién publica?
+            </span>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PublisherCard
+                selected={selectedOffer === null}
+                onClick={() => setPublisherId(null)}
+                title="Auto-publicado"
+                blurb="Tu dinero, tu riesgo, tu juego. Nadie te quita nada."
+                terms={[
+                  `pagas el arranque y el desarrollo (~${formatMoney(estimate.cost)})`,
+                  'te quedas el 100 % de las ventas (menos royalties de motor)',
+                  'la IP es tuya',
+                ]}
+              />
+              {offers.map((o) => {
+                const conflict = o.exclusivePlatform && platformIds.length > 1;
+                return (
+                  <PublisherCard
+                    key={o.publisherId}
+                    selected={selectedOffer?.publisherId === o.publisherId}
+                    disabled={conflict}
+                    disabledReason={`${o.publisherName} exige una sola plataforma de lanzamiento`}
+                    onClick={() => setPublisherId(o.publisherId)}
+                    title={o.publisherName}
+                    blurb={o.blurb}
+                    terms={[
+                      `adelanto de ${formatMoney(o.advance)} + arranque a su cargo`,
+                      `se queda el ${Math.round(o.revShare * 100)} % de las ventas, para siempre`,
+                      `su distribución llega a más tiendas (+${Math.round(o.distributionBoost * 100)} % de alcance)`,
+                      `bolsa de marketing de ${formatMoney(o.marketingBudget)}`,
+                    ]}
+                    warnings={[
+                      ...(o.keepsIp ? ['⚠ Se queda la IP del juego'] : []),
+                      ...(o.exclusivePlatform ? ['🔒 Exclusiva: una sola plataforma'] : []),
+                    ]}
+                  />
+                );
+              })}
+            </div>
+            {offers.length === 0 && (
+              <p className="text-xs text-ink-faint">
+                Ningún publisher financia un proyecto así (tamaño o reputación): esta vez, solo.
+              </p>
+            )}
+          </div>
+
           {/* Precio: palanca moral (docs/06 §2) */}
           <div className="flex flex-col gap-2">
             <span className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
@@ -584,8 +704,13 @@ function ConceptionForm() {
             <FitMeter band={fitKnown ? fitBand(fit) : 'oculto'} />
           </div>
           <div className="text-sm text-ink-mute">
-            ~{estimate.weeks} semanas · ~{formatMoney(estimate.cost)} + features ·{' '}
-            {isF2p ? 'gratis (MTX)' : `precio ${formatMoney(price)}`}
+            ~{estimate.weeks} semanas ·{' '}
+            {selectedOffer
+              ? `${selectedOffer.publisherName}: +${formatMoney(selectedOffer.advance)} ya, te quedas el ${Math.round(
+                  (1 - selectedOffer.revShare) * 100,
+                )} %`
+              : `~${formatMoney(estimate.cost)} + features`}{' '}
+            · {isF2p ? 'gratis (MTX)' : `precio ${formatMoney(price)}`}
           </div>
           <button
             type="button"

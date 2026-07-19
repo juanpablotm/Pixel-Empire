@@ -100,6 +100,25 @@ function GamesModalBody() {
           <span className="text-sm text-ink-mute">
             {game.totalUnits.toLocaleString('es-ES')} uds · {formatMoney(game.totalRevenue)}
           </span>
+          {/* El trato del publisher, siempre a la vista (9.6): quién publica,
+              cuánto se ha llevado ya y si la IP es suya (Pilar 2). */}
+          {game.publisherName !== undefined && (
+            <span
+              className="text-xs text-capital"
+              title={`${game.publisherName} se queda el ${Math.round((game.publisherShare ?? 0) * 100)} % de las ventas; lleva ${formatMoney(game.publisherPaid ?? 0)}`}
+            >
+              📜 {game.publisherName}
+              {game.ipOwner === 'publisher' && ' (IP suya)'}
+            </span>
+          )}
+          {game.earlyAccessInfo !== undefined && (
+            <span
+              className="text-xs text-ink-faint"
+              title={`${game.earlyAccessInfo.weeks} semanas en acceso anticipado: ${game.earlyAccessInfo.units.toLocaleString('es-ES')} uds y ${formatMoney(game.earlyAccessInfo.revenue)} antes de la 1.0`}
+            >
+              🚧 pasó por EA
+            </span>
+          )}
           <span className={`text-xs ${game.salesActive ? 'text-ok' : 'text-ink-faint'}`}>
             {game.salesActive ? 'a la venta' : 'fuera de tiendas'}
           </span>

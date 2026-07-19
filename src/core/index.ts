@@ -22,10 +22,12 @@ export type { Employee, SalaryTier, Specialty, TeamFactorResult } from './model/
 export type {
   Audience,
   DevPhaseNumber,
+  EarlyAccessState,
   FocusAllocation,
   PendingRelease,
   Project,
   ProjectSize,
+  PublisherDeal,
 } from './model/project';
 export type {
   FactorTone,
@@ -246,6 +248,24 @@ export {
 export type { ContestedWindow, PoachResolution } from './systems/rivals';
 export { buildReviewLines, reviewVerdict } from './systems/review';
 export { advanceSales, weeklyRevenue } from './systems/sales';
+export {
+  buildPublisherOffer,
+  dealFromOffer,
+  getPublisher,
+  publisherAdvance,
+  publisherBlockReason,
+  publisherDefs,
+  publisherMarketingBudget,
+  publisherOffersFor,
+} from './systems/publishers';
+export type { PublisherDef, PublisherOffer } from './systems/publishers';
+export {
+  advanceEarlyAccess,
+  earlyAccessAvailable,
+  earlyAccessBlockReason,
+  expectedEarlyAccessUnits,
+  launchEarlyAccess,
+} from './systems/earlyAccess';
 export {
   activeFeverFor,
   activeFevers,

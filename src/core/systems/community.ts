@@ -82,7 +82,9 @@ export function sentimentSalesModifier(sentiment: number): number {
   return 1 + balance.community.sentiment.salesCoef * ((sentiment - 50) / 50);
 }
 
-function addSentiment(community: CommunityState, amount: number): CommunityState {
+/** Suma (o resta) sentimiento con clamp 0..100. Exportada desde 9.6: la quema
+ * del Early Access (systems/earlyAccess.ts) pasa por el MISMO punto único. */
+export function addSentiment(community: CommunityState, amount: number): CommunityState {
   if (amount === 0) return community;
   return { ...community, sentiment: round2(clamp(community.sentiment + amount, 0, 100)) };
 }

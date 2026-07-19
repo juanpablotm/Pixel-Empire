@@ -24,7 +24,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -339,6 +339,14 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
         createInitialRivals(file.state.seed, file.state.week, file.state.era),
     },
   }),
+  // v16 (Fase 9.5) → v17 (Fase 9.6): publishers + early access. No destructiva
+  // y sin trabajo: TODOS los campos nuevos son opcionales (publisherDeal/
+  // earlyAccess en el proyecto; publisher*/ipOwner/earlyAccessInfo en el juego;
+  // publisherDeals/publisherPaidTotal/independenceWeek en stats) y su ausencia
+  // significa "auto-publicado, sin EA" — que es exactamente lo que eran las
+  // partidas anteriores a 9.6. Los juegos ya lanzados conservan su IP
+  // (ipOwner undefined = 'estudio').
+  16: (file) => ({ saveVersion: 17, state: file.state }),
 };
 
 /**

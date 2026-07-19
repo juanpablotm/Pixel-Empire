@@ -220,14 +220,33 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
 
       {act >= FINAL_ACT && (
         <section className="review-line flex flex-wrap items-center justify-between gap-4 card">
-          <div className="text-sm text-ink-mute">
-            {game.totalUnits > 0 ? (
-              <>
-                {game.totalUnits.toLocaleString('es-ES')} unidades ·{' '}
-                {formatMoney(game.totalRevenue)} hasta hoy
-              </>
-            ) : (
-              'A la venta desde esta semana: deja correr el tiempo para ver las ventas.'
+          <div className="flex flex-col gap-1 text-sm text-ink-mute">
+            <span>
+              {game.totalUnits > 0 ? (
+                <>
+                  {game.totalUnits.toLocaleString('es-ES')} unidades ·{' '}
+                  {formatMoney(game.totalRevenue)} hasta hoy
+                </>
+              ) : (
+                'A la venta desde esta semana: deja correr el tiempo para ver las ventas.'
+              )}
+            </span>
+            {/* El precio de la muleta, en la ficha (9.6): quién publica, su
+                tajada acumulada y de quién es la IP — trazable para siempre. */}
+            {game.publisherName !== undefined && (
+              <span className="text-xs text-capital">
+                📜 Publica {game.publisherName}: se lleva el{' '}
+                {Math.round((game.publisherShare ?? 0) * 100)} % (
+                {formatMoney(game.publisherPaid ?? 0)} hasta hoy)
+                {game.ipOwner === 'publisher' && ' · la IP es suya'}
+              </span>
+            )}
+            {game.earlyAccessInfo !== undefined && (
+              <span className="text-xs text-ink-faint">
+                🚧 Acceso anticipado: {game.earlyAccessInfo.weeks} semanas,{' '}
+                {game.earlyAccessInfo.units.toLocaleString('es-ES')} compradores y{' '}
+                {formatMoney(game.earlyAccessInfo.revenue)} antes de la 1.0
+              </span>
             )}
           </div>
           <button

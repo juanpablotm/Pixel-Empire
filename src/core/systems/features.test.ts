@@ -29,7 +29,14 @@ const PUZZLE: ProjectConcept = {
 };
 
 function withProject(concept: ProjectConcept): GameState {
-  return startProject(createInitialState(SEED), concept);
+  // Caja explícita: el garaje de 9.6 arranca con 4.000 💰 y el apilador de
+  // features alarga el proyecto hasta quebrar antes de lanzar. Aquí se mide
+  // la CALIDAD del criterio, no la supervivencia — se dota al estudio.
+  const base = createInitialState(SEED);
+  return startProject(
+    { ...base, studio: { ...base.studio, capital: 60_000 } },
+    concept,
+  );
 }
 
 /** Avanza ticks hasta acumular `count` lanzamientos (con tope de seguridad). */

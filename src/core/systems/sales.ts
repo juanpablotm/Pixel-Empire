@@ -40,6 +40,7 @@ export function weeklyRevenue(
 export function advanceSales(state: GameState, rng: Rng): GameState {
   let capital = state.studio.capital;
   let income = 0;
+  let publisherPaid = 0;
   let next = state;
 
   // Modificadores del estudio, comunes a todo el catálogo esta semana. El boca
@@ -73,9 +74,15 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
     // los ingresos BRUTOS, para siempre. Lo que entra en caja (y lo que el
     // P&L cuenta como "generó") es el neto; lo pagado se acumula aparte.
     const royalty = Math.round(gross * (game.royaltyPct ?? 0));
-    const total = gross - royalty;
+    // El publisher cobra su parte del BRUTO (9.6, docs/19 §9.6): el trato
+    // leonino que firmaste al concebir, para siempre. Mismo patrón que la
+    // royalty: tu caja ve el neto; lo suyo se acumula aparte (publisherPaid),
+    // para que el P&L y la ficha te enseñen el precio de la muleta.
+    const publisherCut = Math.round(gross * (game.publisherShare ?? 0));
+    const total = gross - royalty - publisherCut;
     capital += total;
     income += total;
+    publisherPaid += publisherCut;
     return {
       ...game,
       weeklySales: [...game.weeklySales, units],
@@ -83,6 +90,8 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
       totalRevenue: game.totalRevenue + total,
       mtxRevenue: game.mtxRevenue + revenue.mtx,
       royaltyPaid: (game.royaltyPaid ?? 0) + royalty,
+      publisherPaid:
+        game.publisherShare !== undefined ? (game.publisherPaid ?? 0) + publisherCut : game.publisherPaid,
     };
   });
 
@@ -90,7 +99,14 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
     ...next,
     studio: { ...next.studio, capital },
     releasedGames: games,
-    stats: { ...next.stats, totalRevenue: next.stats.totalRevenue + income },
+    stats: {
+      ...next.stats,
+      totalRevenue: next.stats.totalRevenue + income,
+      publisherPaidTotal:
+        publisherPaid > 0
+          ? (next.stats.publisherPaidTotal ?? 0) + publisherPaid
+          : next.stats.publisherPaidTotal,
+    },
   };
   return recordIncome(next, income);
 }

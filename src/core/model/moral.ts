@@ -66,6 +66,21 @@ export interface LegacyTrackedStats {
   earlyTrendReleases: number;
   /** Empleados despedidos (Ética/empleador). */
   firedCount: number;
+  /**
+   * El arco del negocio (Fase 9.6, docs/19 §9.6). Opcionales: los saves
+   * previos los leen con `?? 0` / `?? undefined` (mismo patrón que
+   * recentFireWeeks) — sin migración destructiva.
+   */
+  /** Tratos firmados con publishers a lo largo de la partida. */
+  publisherDeals?: number;
+  /** Lo que los publishers se han llevado de tus ventas (el precio de la muleta). */
+  publisherPaidTotal?: number;
+  /**
+   * Semana del primer lanzamiento auto-publicado ≥ independenceMinSize tras
+   * haber firmado con publishers: el momento "Te has independizado". El
+   * núcleo lo fija una sola vez; el store lo detecta por diff y lo celebra.
+   */
+  independenceWeek?: number;
 }
 
 /** Una semana del libro de caja (docs/10 §10.9): flujos recurrentes del tick. */
