@@ -183,6 +183,13 @@ La etapa también **gatea el tamaño de proyecto** (docs/17 E1 + docs/18 V4-b): 
 Estudio grande; el AAA solo está al alcance de una **Corporación** con 40 en plantilla. Así la escala
 del estudio importa de verdad a la hora de decidir qué juego construir.
 
+**La macro-gestión de la escala grande es real desde 9.7 (docs/19 §9.7).** El Estudio grande abre
+las **adquisiciones** (comprar rivales que pasan a ser filiales autónomas, con su **directiva** por
+filial: exprimir/autónomo/invertir) y los **servicios en vivo** ocupan equipo en exclusiva — los
+"platos girando" que compiten con el pipeline. A las políticas de empresa se suma la **Dotación de
+servicios** (`autoLiveOps`): el estudio asigna solo empleados libres a los servicios faltos de
+gente. El Magnate de la etapa 5 decide carteras, directivas y sumideros, no sliders.
+
 ## 5. Las Eras históricas `[DECIDIDO · baseline v1]`
 
 Las eras dan el "de la nada a megacorporación" del Pilar 5. Cada era introduce nuevas plataformas,
@@ -196,7 +203,7 @@ automático por el avance del tiempo, con un evento de transición que resume qu
 | **E3 — El salto 3D** | ~1993–2000 | CD-ROM, consolas 32/64-bit ("Playsystem") | Presupuestos mayores; marketing masivo |
 | **E4 — La red** | ~2001–2008 | Online, PC dominante, portátiles | Parches post-venta; primer DLC |
 | **E5 — Digital y móvil** | ~2009–2015 | Tiendas digitales, smartphones, indies | Free-to-play, microtransacciones, app stores, **early access** (9.6) |
-| **E6 — Servicios y streamers** | ~2016–2023 | Streaming, cloud | Loot boxes, pases de batalla, games-as-a-service |
+| **E6 — Servicios y streamers** | ~2016–2023 | Streaming, cloud | Loot boxes, pases de batalla, games-as-a-service (operables de verdad desde 9.7, vía la investigación «Juegos como servicio») |
 | **E7 — El futuro cercano** | ~2024+ | Realidad mixta, IA generativa, nubes | Modelos emergentes (satíricos/especulativos) |
 
 Cada era también **mueve las modas** (ver `04`): géneros y temas que triunfan en E2 pueden estar

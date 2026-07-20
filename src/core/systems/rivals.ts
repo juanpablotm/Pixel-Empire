@@ -15,6 +15,7 @@ import type {
   RivalsState,
   RivalTier,
 } from '../model/rivals';
+import { dropFromLiveServices } from './liveService';
 import { activeFeverFor, activeFevers, buildFever, registerReleaseSaturation } from './market';
 import { withReputationDeltas } from './reputation';
 import { dropFromSquads } from './squads';
@@ -79,13 +80,14 @@ export function createInitialRivals(seed: number, week: number, era: EraId): Riv
 
 /** Géneros/temas ya aparecidos en la era: el catálogo de la industria. La
  * investigación NO gatea a los rivales (es TU conocimiento, docs/02 §3): si
- * la era lo trae, algún estudio lo estará haciendo ya. */
-function availableGenreIds(era: EraId): string[] {
+ * la era lo trae, algún estudio lo estará haciendo ya. Los usan también las
+ * filiales (9.7): estudios comprados A la industria, con su mismo catálogo. */
+export function availableGenreIds(era: EraId): string[] {
   const idx = eraIndex(era);
   return genres.filter((g) => eraIndex(g.appearsInEra) <= idx).map((g) => g.id);
 }
 
-function availableThemeIds(era: EraId): string[] {
+export function availableThemeIds(era: EraId): string[] {
   const idx = eraIndex(era);
   return themes.filter((t) => eraIndex(t.appearsInEra) <= idx).map((t) => t.id);
 }
@@ -105,7 +107,7 @@ function titleBase(name: string): string {
 }
 
 /** «Neón Roto» → «Neón Roto 2» → «Neón Roto 3»: numeración determinista. */
-function sequelName(name: string, games: readonly RivalGame[]): string {
+function sequelName(name: string, games: readonly { name: string }[]): string {
   const base = titleBase(name);
   let maxN = 1;
   for (const g of games) {
@@ -116,8 +118,9 @@ function sequelName(name: string, games: readonly RivalGame[]): string {
   return `${base} ${maxN + 1}`;
 }
 
-/** Título nuevo del pool (evitando repetir los suyos); agotado el pool, secuela. */
-function pickTitle(games: readonly RivalGame[], rng: Rng): string {
+/** Título nuevo del pool (evitando repetir los suyos); agotado el pool, secuela.
+ * Compartido con las filiales (9.7), que también publican del mismo pool. */
+export function pickTitle(games: readonly { name: string }[], rng: Rng): string {
   const used = new Set(games.map((g) => titleBase(g.name)));
   const fresh = rivalGameTitles.filter((t) => !used.has(t));
   if (fresh.length > 0) return rng.pick(fresh);
@@ -229,7 +232,9 @@ export function advanceRivals(state: GameState, rng: Rng): GameState {
   }
 
   studios = studios.map((runtime) => {
-    if (runtime.closed) return runtime;
+    // Un estudio adquirido (9.7) ya no compite: vive como filial tuya en
+    // GameState.subsidiaries y aquí solo queda su historia.
+    if (runtime.closed || runtime.acquiredWeek !== undefined) return runtime;
     const def = getRivalDef(runtime.id);
     let r = runtime;
 
@@ -356,7 +361,7 @@ export function advanceRivals(state: GameState, rng: Rng): GameState {
   }
   if (poachOffer === null) {
     const p = balance.rivals.poach;
-    const hunters = studios.filter((r) => !r.closed);
+    const hunters = studios.filter((r) => !r.closed && r.acquiredWeek === undefined);
     const repFactor = p.employerRepBase - state.studio.reputation.empleador / 100;
     const vulnerable = state.staff.filter((e) => !e.founder && e.loyalty < p.loyaltyThreshold);
     for (const employee of vulnerable) {
@@ -414,7 +419,8 @@ function strengthenRival(
   );
 }
 
-/** Saca al empleado de plantilla, proyectos, I+D y subequipos (como una renuncia). */
+/** Saca al empleado de plantilla, proyectos, I+D, subequipos y servicios en
+ * vivo (como una renuncia). */
 function removeEmployee(state: GameState, employeeId: string): GameState {
   const next: GameState = {
     ...state,
@@ -429,7 +435,7 @@ function removeEmployee(state: GameState, employeeId: string): GameState {
       rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
     },
   };
-  return dropFromSquads(next, [employeeId]);
+  return dropFromLiveServices(dropFromSquads(next, [employeeId]), [employeeId]);
 }
 
 export type PoachResolution = 'igualar' | 'dejar';
@@ -505,7 +511,7 @@ export function signQuitterWithRival(
 ): { state: GameState; text: string } {
   const rivals = state.rivals;
   const p = balance.rivals.poach;
-  const open = (rivals?.studios ?? []).filter((r) => !r.closed);
+  const open = (rivals?.studios ?? []).filter((r) => !r.closed && r.acquiredWeek === undefined);
   if (!rivals || open.length === 0 || !rng.chance(p.quitSignChance)) {
     return { state, text: `${quitter.name} renuncia, harto del trato recibido.` };
   }
@@ -524,9 +530,12 @@ export function signQuitterWithRival(
 // Lecturas para la UI y otros sistemas (selectores puros)
 // ---------------------------------------------------------------------------
 
-/** Estudios vivos (el panel de Industria enseña también los cerrados aparte). */
+/** Estudios vivos e independientes (el panel enseña aparte cerrados y
+ * adquiridos): los únicos que anuncian, lanzan, disputan ventanas y cazan. */
 export function activeRivalStudios(state: GameState): RivalRuntime[] {
-  return (state.rivals?.studios ?? []).filter((r) => !r.closed);
+  return (state.rivals?.studios ?? []).filter(
+    (r) => !r.closed && r.acquiredWeek === undefined,
+  );
 }
 
 /**

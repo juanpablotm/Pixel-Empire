@@ -81,6 +81,37 @@ export interface QualityBreakdown {
   alcanceFactor?: number;
 }
 
+/**
+ * Estado de un juego operado como SERVICIO en vivo (Fase 9.7, docs/19 §9.7):
+ * base de jugadores, equipo asignado en exclusiva y monetización propia del
+ * servicio (independiente de la de caja, que sigue congelada al lanzar).
+ * Serializable; lo avanza core/systems/liveService.ts cada semana.
+ */
+export interface LiveServiceState {
+  startWeek: number;
+  /** Base de jugadores activos del servicio. */
+  players: number;
+  peakPlayers: number;
+  /**
+   * Empleados dedicados al servicio (ids). Ocupados en exclusiva: no pueden
+   * estar a la vez en un proyecto ni en I+D (mismo patrón que rdStaff).
+   */
+  assignedStaff: string[];
+  /** Monetización del servicio, elegida al convertir (docs/06 §2). */
+  aggressiveness: number;
+  hasBattlePass: boolean;
+  /** Semanas seguidas con el cuidado bajo la barra (avisos y estallido). */
+  weeksNeglected: number;
+  /** true si la racha de descuido ya estalló en crisis (una por racha). */
+  neglectCrashed: boolean;
+  /** Acumulados para la ficha y el P&L (netos de royalty/publisher). */
+  revenue: number;
+  upkeepPaid: number;
+  /** Si el jugador lo cerró (o murió solo): semana y por qué, para la ficha. */
+  closedWeek?: number;
+  closedReason?: 'cerrado' | 'apagado';
+}
+
 export interface ReleasedGame {
   /** Igual al id del proyecto de origen. */
   id: string;
@@ -196,6 +227,13 @@ export interface ReleasedGame {
    * undefined = 'estudio' (todo lo anterior a 9.6 es tuyo).
    */
   ipOwner?: 'estudio' | 'publisher';
+  /**
+   * Servicio en vivo (Fase 9.7, docs/19 §9.7): presente si el juego se opera
+   * (u operó) como servicio. Opcional: juegos previos y no convertidos no lo
+   * llevan. Mientras esté abierto (sin closedWeek), el juego no sale de
+   * tiendas por el cutoff normal.
+   */
+  liveService?: LiveServiceState;
   /**
    * Historia del acceso anticipado (Fase 9.6), congelada al lanzar la 1.0:
    * cuánto duró, cuántos compraron la promesa y qué ingresó (aparte de

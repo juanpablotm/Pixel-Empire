@@ -22,7 +22,7 @@ import {
   type ReleasedGame,
   type ReviewLine,
 } from '../core';
-import type { RivalGame, RivalRuntime, RivalsState } from '../core';
+import type { LiveServiceState, RivalGame, RivalRuntime, RivalsState, Subsidiary } from '../core';
 import { researchNodes } from '../data/research';
 import { eraOrder, getEra } from '../data/eras';
 import { useGameStore, type ImportantNotice, type Screen } from '../state/store';
@@ -877,6 +877,150 @@ function earlyAccessDemo(): GameState {
 }
 
 /**
+ * Escaparate 9.7 (`?demo=gaas`): la ficha de un juego OPERADO como servicio
+ * en vivo en E6 — parroquia, dotación al completo, neto semanal y el botón de
+ * cierre. Atrezzo de presentación sobre tipos del núcleo, como todo el arnés.
+ */
+function gaasDemo(): GameState {
+  const base = withEra(createInitialState(DEMO_SEED), 'E6');
+  const staff = demoStaff(base, 9);
+  const crew = staff.slice(1, 6).map((e) => e.id); // 5 = dotación de un grande
+  const svc: LiveServiceState = {
+    startWeek: base.week - 38,
+    players: 27_400,
+    peakPlayers: 31_900,
+    assignedStaff: crew,
+    aggressiveness: 0.4,
+    hasBattlePass: true,
+    weeksNeglected: 0,
+    neglectCrashed: false,
+    revenue: 486_000,
+    upkeepPaid: 132_000,
+  };
+  const game: ReleasedGame = {
+    ...makeReleasedGame(82, base.week - 60),
+    name: 'Órbita Rota Online',
+    size: 'grande',
+    totalUnits: 118_000,
+    totalRevenue: 3_640_000,
+    weeklySales: [420, 385, 411, 397, 402, 388, 379, 391],
+    liveService: svc,
+  };
+  return {
+    ...base,
+    staff,
+    releasedGames: [game],
+    research: {
+      ...base.research,
+      unlocked: [...base.research.unlocked, 'tecnologiaOnline', 'serviciosOnline'],
+    },
+    studio: { ...base.studio, capital: 2_450_000, scaleStage: 4 },
+  };
+}
+
+/**
+ * Escaparate 9.7 (`?demo=filiales`): el panel de Industria de una Corporación
+ * — botones de compra en el ranking (con gigantes que no se venden y un indie
+ * en racha que rechaza) y la cartera de filiales: una invertida floreciendo y
+ * una exprimida camino del cascarón.
+ */
+function filialesDemo(): GameState {
+  const base = withEra(createInitialState(DEMO_SEED), 'E6');
+  const week = base.week;
+  const runtime = (
+    id: string,
+    tier: RivalRuntime['tier'],
+    strength: number,
+    partial: Partial<RivalRuntime> = {},
+  ): RivalRuntime => ({
+    id,
+    tier,
+    strength,
+    weeksHigh: 0,
+    weeksLow: 0,
+    nextAnnounceWeek: week + 20,
+    nextRelease: null,
+    games: [],
+    closed: false,
+    ...partial,
+  });
+  const rivals: RivalsState = {
+    studios: [
+      runtime('mango', 'gigante', 82),
+      runtime('aurora', 'gigante', 76),
+      runtime('ironKraken', 'medio', 51),
+      runtime('lumen', 'medio', 58),
+      runtime('cincoPixeles', 'indie', 68), // en racha: se niega a vender
+      runtime('nimbus', 'indie', 27),
+      runtime('tortuga', 'indie', 44, { acquiredWeek: week - 130 }),
+      runtime('badRobot', 'indie', 33, { acquiredWeek: week - 64 }),
+    ],
+    poachOffer: null,
+  };
+  const subsidiaries: Subsidiary[] = [
+    {
+      id: 'tortuga',
+      name: 'Tortuga Bros.',
+      tier: 'indie',
+      acquiredWeek: week - 130,
+      price: 268_000,
+      talent: 71,
+      morale: 84,
+      directive: 'invertir',
+      nextReleaseWeek: week + 9,
+      weeksMoraleLow: 0,
+      pendingIncome: 236_000,
+      revenue: 512_000,
+      upkeepPaid: 361_000,
+      games: [
+        {
+          name: 'Cazadores de Ecos',
+          genreId: 'puzzle',
+          themeId: 'fantasia',
+          size: 'mediano',
+          review: 79,
+          releaseWeek: week - 12,
+          bounty: 182_000,
+        },
+      ],
+    },
+    {
+      id: 'badRobot',
+      name: 'Bad Robot Bytes',
+      tier: 'indie',
+      acquiredWeek: week - 64,
+      price: 231_000,
+      talent: 19,
+      morale: 11,
+      directive: 'exprimir',
+      nextReleaseWeek: week + 4,
+      weeksMoraleLow: 6,
+      pendingIncome: 9_000,
+      revenue: 168_000,
+      upkeepPaid: 160_000,
+      games: [
+        {
+          name: 'Zafiro Hueco 3',
+          genreId: 'puzzle',
+          themeId: 'espacio',
+          size: 'mediano',
+          review: 42,
+          releaseWeek: week - 7,
+          bounty: 4_000,
+        },
+      ],
+    },
+  ];
+  return {
+    ...base,
+    rivals,
+    subsidiaries,
+    staff: demoStaff(base, 12),
+    studio: { ...base.studio, capital: 5_800_000, scaleStage: 5 },
+  };
+}
+
+/**
  * Aplica el escaparate pedido por la query string. Devuelve true si sembró algo.
  *
  * De paso expone el store en `window` para la verificación por CDP (docs/08 §8:
@@ -992,6 +1136,18 @@ export function applyDemoFromQuery(): boolean {
     } else {
       seed(state, 'mercado', null);
     }
+    return true;
+  }
+  // GaaS (Fase 9.7, docs/19 §9.7): la ficha de un juego operado como
+  // servicio en vivo — parroquia, dotación, neto y cierre.
+  if (demo === 'gaas') {
+    seed(gaasDemo(), 'resena', 'demo-game');
+    return true;
+  }
+  // Adquisiciones (Fase 9.7): el panel de Industria de una Corporación con
+  // botones de compra y la cartera de filiales (invertida vs exprimida).
+  if (demo === 'filiales') {
+    seed(filialesDemo(), 'industria', null);
     return true;
   }
   // La industria viva (Fase 9.5, docs/19 §9.5): el panel de Industria con

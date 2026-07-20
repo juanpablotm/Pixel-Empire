@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react';
-import { insightKnown, type FactorTone, type ReleasedGame } from '../../core';
+import {
+  insightKnown,
+  liveServiceBlockReason,
+  liveServiceCareRatio,
+  liveServiceUnlocked,
+  liveServiceWeeklyNet,
+  monetizationFlagAvailable,
+  requiredLiveStaff,
+  serviceOpen,
+  type FactorTone,
+  type ReleasedGame,
+} from '../../core';
 import { balance } from '../../data/balance';
 import { reviewSegments } from '../../data/segments';
 import { useGameStore } from '../../state/store';
@@ -216,6 +227,8 @@ function GalaCeremony({ game }: { game: ReleasedGame }) {
         </section>
       )}
 
+      {act >= FINAL_ACT && <LiveServicePanel game={game} />}
+
       {act >= FINAL_ACT && <InsightCard game={game} />}
 
       {act >= FINAL_ACT && (
@@ -292,6 +305,203 @@ function TrajectoryChip({ game }: { game: ReleasedGame }) {
     );
   }
   return null;
+}
+
+/** Niveles legibles de la tienda del servicio (docs/06 §2: la palanca). */
+const SERVICE_STORE_LEVELS = [
+  { label: 'Honesto', aggressiveness: 0 },
+  { label: 'Tienda moderada', aggressiveness: 0.4 },
+  { label: 'Tienda agresiva', aggressiveness: 0.8 },
+] as const;
+
+/**
+ * Servicio en vivo (Fase 9.7, docs/19 §9.7): operar el juego como GaaS desde
+ * su ficha. Presentación pura: elegibilidad (liveServiceBlockReason), estado
+ * del servicio (jugadores, dotación, neto) y acciones del store. El panel
+ * solo existe cuando la investigación está comprada o el juego ya tiene
+ * historia de servicio — antes de E6 no mete ruido.
+ */
+function LiveServicePanel({ game }: { game: ReleasedGame }) {
+  const state = useGameStore((s) => s.game);
+  const launch = useGameStore((s) => s.launchLiveService);
+  const toggleStaff = useGameStore((s) => s.toggleLiveServiceAssignment);
+  const sunset = useGameStore((s) => s.sunsetLiveService);
+  const [pass, setPass] = useState(false);
+  const [storeLevel, setStoreLevel] = useState(0);
+
+  const svc = game.liveService;
+  if (!liveServiceUnlocked(state) && svc === undefined) return null;
+
+  // Historia de un servicio ya cerrado: la lápida con sus números.
+  if (svc && svc.closedWeek !== undefined) {
+    return (
+      <section className="review-line card text-sm text-ink-mute" data-tour="live-service">
+        <h3 className="card-title">Servicio en vivo (cerrado)</h3>
+        <p>
+          {svc.closedReason === 'apagado' ? '🔌 Se apagó solo' : '🌅 Lo cerraste'} en la semana{' '}
+          {svc.closedWeek}: pico de {svc.peakPlayers.toLocaleString('es-ES')} jugadores,{' '}
+          {formatMoney(svc.revenue)} ingresados y {formatMoney(svc.upkeepPaid)} en servidores.
+          La comunidad no vuelve dos veces.
+        </p>
+      </section>
+    );
+  }
+
+  // Servicio ABIERTO: el plato girando, con su dotación y su neto.
+  if (svc && serviceOpen(game)) {
+    const required = requiredLiveStaff(game);
+    const care = liveServiceCareRatio(game);
+    const net = liveServiceWeeklyNet(game);
+    const neglected = care < balance.liveOps.neglect.bar;
+    return (
+      <section className="review-line card flex flex-col gap-3" data-tour="live-service">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="card-title mb-0">📡 Servicio en vivo</h3>
+          <span className="text-xs text-ink-faint">
+            desde la semana {svc.startWeek}
+            {svc.hasBattlePass && ' · pase de batalla'}
+            {svc.aggressiveness > 0 &&
+              ` · tienda ${svc.aggressiveness >= balance.liveOps.squeezeBar ? 'agresiva' : 'moderada'}`}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <span>
+            Jugadores{' '}
+            <span className="font-semibold tabular-nums text-ink-hi">
+              {svc.players.toLocaleString('es-ES')}
+            </span>{' '}
+            <span className="text-xs text-ink-faint">
+              (pico {svc.peakPlayers.toLocaleString('es-ES')})
+            </span>
+          </span>
+          <span>
+            Neto semanal{' '}
+            <span className={`font-semibold tabular-nums ${net >= 0 ? 'text-ok' : 'text-danger'}`}>
+              {net >= 0 ? '+' : ''}
+              {formatMoney(net)}
+            </span>
+          </span>
+          <span>
+            Acumulado <span className="font-semibold tabular-nums">{formatMoney(svc.revenue)}</span>
+          </span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <p className={`text-sm ${neglected ? 'text-warn' : 'text-ink-mute'}`}>
+            Equipo del servicio: {svc.assignedStaff.length}/{required}
+            {neglected &&
+              ' — DESCUIDADO: sin contenido, los jugadores se van y la comunidad se enfría'}
+          </p>
+          <ul className="flex flex-wrap gap-1.5">
+            {state.staff.map((e) => {
+              const assigned = svc.assignedStaff.includes(e.id);
+              return (
+                <li key={e.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleStaff(game.id, e.id)}
+                    className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
+                      assigned
+                        ? 'bg-action text-white'
+                        : 'bg-raised text-ink-mute hover:bg-control'
+                    }`}
+                    title={assigned ? 'Retirar del servicio' : 'Dedicar al servicio (deja lo demás)'}
+                  >
+                    {assigned ? '● ' : ''}
+                    {e.name.split(' ')[0]}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="flex justify-end">
+          <button type="button" onClick={() => sunset(game.id)} className="btn btn-quiet px-3 py-1.5">
+            🌅 Cerrar el servicio
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  // Sin servicio: la puerta de entrada (o su razón de bloqueo, atenuada).
+  const blocked = liveServiceBlockReason(state, game);
+  const cfg = balance.liveOps;
+  const seed = Math.round(game.totalUnits * cfg.seedShare * (game.review / 100));
+  const aggressiveness = SERVICE_STORE_LEVELS[storeLevel].aggressiveness;
+  const arpu =
+    cfg.arpuPerPlayerWeek *
+    (1 + (pass ? cfg.battlePassArpuBoost : 0) + cfg.aggressivenessArpuCoef * aggressiveness);
+  const estimate = Math.round(
+    seed * arpu * (1 - (game.royaltyPct ?? 0) - (game.publisherShare ?? 0)) -
+      (cfg.upkeepBaseBySize[game.size] + seed * cfg.upkeepPerPlayer),
+  );
+  const passAvailable = monetizationFlagAvailable(state, 'battlePass');
+
+  return (
+    <section className="review-line card flex flex-col gap-3" data-tour="live-service">
+      <h3 className="card-title mb-0">📡 Operar como servicio en vivo</h3>
+      {blocked !== null ? (
+        <p className="text-sm text-ink-faint">{blocked}.</p>
+      ) : (
+        <>
+          <p className="text-sm text-ink-mute">
+            Ingresos continuos de ~{seed.toLocaleString('es-ES')} jugadores (≈{' '}
+            <span className={estimate >= 0 ? 'text-ok' : 'text-danger'}>
+              {estimate >= 0 ? '+' : ''}
+              {formatMoney(estimate)}/sem
+            </span>{' '}
+            al abrir) a cambio de {requiredLiveStaff(game)} personas EN EXCLUSIVA y servidores.
+            Si lo descuidas, la parroquia se va.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            {SERVICE_STORE_LEVELS.map((level, i) => (
+              <button
+                key={level.label}
+                type="button"
+                onClick={() => setStoreLevel(i)}
+                className={`rounded-full px-3 py-1 text-xs ${
+                  storeLevel === i ? 'bg-action text-white' : 'bg-raised text-ink-mute hover:bg-control'
+                }`}
+              >
+                {level.label}
+              </button>
+            ))}
+            <label
+              className={`flex items-center gap-1.5 text-xs ${
+                passAvailable ? 'text-ink-mute' : 'cursor-not-allowed text-ink-faint opacity-60'
+              }`}
+              title={passAvailable ? undefined : 'El pase de batalla llega con la era de los servicios'}
+            >
+              <input
+                type="checkbox"
+                checked={pass && passAvailable}
+                disabled={!passAvailable}
+                onChange={(e) => setPass(e.target.checked)}
+              />
+              Pase de batalla
+            </label>
+          </div>
+          {(pass || aggressiveness >= balance.liveOps.squeezeBar) && (
+            <p className="text-xs text-warn">
+              ⚠ Abrir tienda a un juego ya vendido enfada a los hardcore y acumula pólvora
+              (docs/06): más caja, más riesgo.
+            </p>
+          )}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() =>
+                launch(game.id, { hasBattlePass: pass && passAvailable, aggressiveness })
+              }
+              className="btn btn-primary px-4 py-2"
+            >
+              📡 Operar como servicio
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
 }
 
 /**

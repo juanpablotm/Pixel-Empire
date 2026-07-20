@@ -18,6 +18,7 @@ import type { ResearchState } from './research';
 import type { RivalsState } from './rivals';
 import type { Squad } from './squad';
 import type { Employee } from './staff';
+import type { Subsidiary } from './subsidiary';
 
 export type { EraId };
 
@@ -151,6 +152,12 @@ export interface GameState {
    * previos lo estrenan en la migración v16 y el tick lo trata con `??`.
    */
   rivals?: RivalsState;
+  /**
+   * Filiales adquiridas (Fase 9.7, docs/19 §9.7): estudios comprados a la
+   * industria que hacen juegos solos. Opcional: los saves previos arrancan
+   * con `?? []` (la migración v18 lo rellena, mismo patrón que engines).
+   */
+  subsidiaries?: Subsidiary[];
   /** Gestión por políticas en la escala grande (docs/02 §4 y docs/10 §14). */
   policies: StudioPolicies;
   /** Contadores históricos para el Legado (docs/06 §6). */

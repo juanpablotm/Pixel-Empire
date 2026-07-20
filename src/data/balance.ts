@@ -251,6 +251,110 @@ export const balance = {
     },
   },
 
+  /**
+   * Servicios en vivo / GaaS (Fase 9.7, docs/19 §9.7): operar un juego YA
+   * lanzado como servicio. Ingreso continuo jugoso PERO con obligación real:
+   * exige equipo asignado en exclusiva (el "plato girando") y dinero de
+   * servidores, y si lo descuidas la base de jugadores se desangra y la
+   * comunidad se enfría (o estalla, si además lo exprimes — docs/07 §5).
+   * Determinista: el tick del servicio no usa PRNG (solo el sabor de la
+   * crisis, si estalla, tira de él). Lógica en core/systems/liveService.ts.
+   */
+  liveOps: {
+    /**
+     * Nodo de I+D que desbloquea operar servicios (docs/02 §3): el nodo
+     * "Juegos como servicio" de E6, que ya exige tecnologiaOnline. La era la
+     * pone el nodo — GaaS llega con los servicios (docs/02 §5).
+     */
+    requiresResearch: 'serviciosOnline',
+    /** Tamaño mínimo del juego: un pequeño no sostiene un servicio. */
+    minSize: 'mediano' as ProjectSize,
+    /**
+     * Jugadores iniciales al convertir: totalUnits × seedShare × (reseña/100).
+     * Un juego querido arranca con más parroquia dispuesta a quedarse.
+     */
+    seedShare: 0.25,
+    /** Fracción de las ventas semanales (cajas) que se une al servicio. */
+    joinRate: 0.5,
+    /** Churn semanal base: hasta el servicio perfecto pierde gente despacio. */
+    baseChurn: 0.02,
+    /** Churn EXTRA a cuidado cero (careRatio 0): descuidar desangra rápido. */
+    neglectChurn: 0.08,
+    /**
+     * Crecimiento por contenido nuevo: careRatio 1 × (reseña/100) × esto.
+     * Con equipo completo y un buen juego casi compensa el churn base: el
+     * servicio bien llevado se sostiene mientras el juego siga vendiendo.
+     */
+    contentGrowth: 0.025,
+    /** Plantilla requerida por tamaño para careRatio 1 (ocupada en exclusiva).
+     * Calibrada para que un Estudio grande (aforo 25) pueda sostener UN
+     * servicio muy grande dedicándole un tercio de la oficina — apretado a
+     * propósito: el plato girando compite con el pipeline de verdad. */
+    requiredStaffBySize: {
+      pequeno: 2,
+      mediano: 3,
+      grande: 5,
+      muyGrande: 8,
+      aaa: 16,
+    } satisfies Record<ProjectSize, number>,
+    /** ARPU: 💰 por jugador y semana, antes de pase/agresividad. */
+    arpuPerPlayerWeek: 0.5,
+    /** El pase de batalla y la tienda agresiva multiplican el ARPU (codicia). */
+    battlePassArpuBoost: 0.5,
+    aggressivenessArpuCoef: 0.8,
+    /** Upkeep de servidores: fijo por tamaño + variable por jugador. */
+    upkeepBaseBySize: {
+      pequeno: 200,
+      mediano: 400,
+      grande: 1_500,
+      muyGrande: 4_000,
+      aaa: 9_000,
+    } satisfies Record<ProjectSize, number>,
+    upkeepPerPlayer: 0.1,
+    /**
+     * Convertir un juego vendido en servicio con pase/tienda es media palanca
+     * de codicia: aplica las levers de monetización (battlePass /
+     * mtxPerAggression) y su deuda a este factor de la escala del lanzamiento.
+     */
+    convertLeverFactor: 0.5,
+    /** Agresividad desde la que el servicio cuenta como "exprimido". */
+    squeezeBar: 0.5,
+    /**
+     * Goteo semanal de deuda de reputación (mtxAgresivas) del servicio
+     * exprimido, escalado por su tamaño de parroquia (players/refPlayers,
+     * tope 1): exprimir a mucha gente acumula más pólvora (docs/06 §5).
+     */
+    squeezeDebtPerWeek: 0.15,
+    /** Jugadores de referencia para escalar deuda y golpes de cierre. */
+    refPlayers: 20_000,
+    /**
+     * Descuido (docs/19 §9.7): careRatio bajo la barra acumula semanas.
+     * Aviso a las noticeWeeks (y recordatorio periódico), sentimiento que se
+     * enfría cada semana… y si ADEMÁS el servicio está exprimido, a las
+     * crashWeeks estalla una crisis con review bombing (docs/07 §5), una vez
+     * por racha de descuido.
+     */
+    neglect: {
+      bar: 0.6,
+      noticeWeeks: 4,
+      logEveryWeeks: 8,
+      sentimentPerWeek: 0.5,
+      crashWeeks: 8,
+      crashSeverity: 0.7,
+    },
+    /**
+     * Cierre del servicio (sunset): golpe a comunidad/hardcore y sentimiento
+     * proporcional a los jugadores que dejas tirados (× players/refPlayers,
+     * con tope 1). Cerrar un servicio moribundo apenas duele.
+     */
+    sunset: {
+      repHitMax: { comunidad: 3, hardcore: 2 },
+      sentimentHitMax: 6,
+    },
+    /** Bajo este nº de jugadores el servicio se apaga solo, sin pena. */
+    minPlayers: 500,
+  },
+
   /** factorMonetización v1 [DECIDIDO, docs/12 §6] y sus consecuencias. */
   monetization: {
     /** Multiplicador de los ingresos por venta: unidades × precio × factor. */
@@ -1254,6 +1358,133 @@ export const balance = {
     },
   },
 
+  /**
+   * Adquisiciones de estudios (Fase 9.7, docs/19 §9.7): comprar un rival vivo
+   * (indie o medio; los gigantes no se venden) lo SACA de la competencia y lo
+   * convierte en FILIAL autónoma: lanza juegos sola (ingreso pasivo, cobrado
+   * como flujo) a cambio de un desembolso grande + overhead continuo. La
+   * directiva por filial es la palanca macro del dilema (docs/02 §4): exprimir
+   * rinde más hoy y hunde moral→talento→reseñas mañana. Precios deterministas
+   * sin PRNG (patrón publisherOffersFor). Lógica en core/systems/subsidiaries.ts.
+   */
+  acquisitions: {
+    /** Etapa de escala mínima para comprar estudios (docs/02 §4: macro-gestión). */
+    minStage: 4 as ScaleStage,
+    /** Tiers comprables: los gigantes no están en venta (no te compras la industria). */
+    buyableTiers: ['indie', 'medio'] as readonly RivalTier[],
+    /** Precio: base del tier × (strengthBase + fuerza/100 × strengthSpan). */
+    priceByTier: { indie: 250_000, medio: 1_600_000 } as Partial<Record<RivalTier, number>>,
+    priceStrengthBase: 0.6,
+    priceStrengthSpan: 1.2,
+    /**
+     * En racha no venden: con la fuerza en zona de promoción (≥ la barra de
+     * tierShift) el estudio huele su salto y rechaza la oferta. No compras
+     * barata a la estrella emergente.
+     */
+    refuseAboveStrength: 66,
+    /** Overhead semanal continuo de la filial (el sumidero permanente). */
+    upkeepByTier: { indie: 2_500, medio: 9_000 } as Partial<Record<RivalTier, number>>,
+    /** Semanas entre lanzamientos de la filial ([min, max], como los rivales). */
+    releaseGapByTier: {
+      indie: [16, 28],
+      medio: [26, 44],
+    } as Partial<Record<RivalTier, [number, number]>>,
+    /**
+     * Bote del lanzamiento: base por tamaño × calidad^exponente, con la
+     * calidad normalizada sobre un SUELO de reseña — por debajo del suelo el
+     * juego no genera nada (un flop no es ingreso pasivo). Se cobra como
+     * FLUJO (payoutRate del bote pendiente cada semana, cola de ~1,5 años).
+     * Calibrado con bots (9.7): sin el suelo, la filial exprimida hasta el
+     * cascarón seguía imprimiendo dinero — justo el "gratis" que no puede ser.
+     */
+    bountyBySize: {
+      pequeno: 90_000,
+      mediano: 500_000,
+      grande: 1_100_000,
+      muyGrande: 1_500_000,
+      aaa: 3_000_000,
+    } satisfies Record<ProjectSize, number>,
+    bountyReviewFloor: 45,
+    bountyReviewSpan: 55,
+    bountyExponent: 1.75,
+    payoutRate: 0.06,
+    /**
+     * La reseña de la filial sigue a su TALENTO con un span mayor que el de
+     * los rivales (strengthReviewSpan 10): la fuerza de un rival vive cerca
+     * de su baseline, pero el talento de una filial puede hundirse hasta el
+     * suelo o construirse hasta el techo — y sus juegos lo GRITAN.
+     */
+    talentReviewSpan: 22,
+    /** Techo del talento: ni la mejor gestión fabrica genios infinitos. */
+    talentCap: 85,
+    /** Moral inicial de la filial y baseline al que revierte en autónomo. */
+    initialMorale: 55,
+    moraleBaseline: 55,
+    moraleRevertRate: 0.02,
+    /** El talento sigue a la moral: deriva semanal = (moral − 50) × esto
+     * (moral 100 → +0,2/sem ≈ +10/año; moral 0 → −0,2/sem, más los éxodos). */
+    talentDriftPerMoralePoint: 0.004,
+    /** Suelo del talento (ni la peor gestión lo deja en 0 absoluto). */
+    talentFloor: 5,
+    /**
+     * Directivas de gestión (docs/02 §4, la política macro por filial):
+     * exprimir = más juegos y más caja HOY, moral/talento en caída, tu fama
+     * de Empleador sangra y acumula deuda de crunch; invertir = cuesta un 30 %
+     * más y construye moral/talento (y algo de Empleador). reviewBias refleja
+     * el juego apresurado vs el mimado.
+     */
+    directives: {
+      exprimir: {
+        incomeMult: 1.7,
+        gapFactor: 0.75,
+        upkeepFactor: 1,
+        moralePerWeek: -1.2,
+        talentPerWeek: 0,
+        reviewBias: -4,
+        // El precio corporativo del exprimir es un GOTEO, no una condena: la
+        // filial ya paga el grueso con moral → talento → flops. Con −0,04 y
+        // deuda 0,1 sem a sem, tres filiales exprimidas a la vez hundían la
+        // reputación a 0 y quebraban a la fábrica entera (bots, 9.7).
+        employerRepPerWeek: -0.02,
+        debtPerWeek: 0.05,
+      },
+      autonomo: {
+        incomeMult: 1,
+        gapFactor: 1,
+        upkeepFactor: 1,
+        moralePerWeek: 0,
+        talentPerWeek: 0,
+        reviewBias: 0,
+        employerRepPerWeek: 0,
+        debtPerWeek: 0,
+      },
+      invertir: {
+        incomeMult: 1,
+        gapFactor: 1,
+        upkeepFactor: 1.5,
+        moralePerWeek: 1,
+        talentPerWeek: 0.15,
+        reviewBias: 2,
+        employerRepPerWeek: 0.02,
+        debtPerWeek: 0,
+      },
+    },
+    /**
+     * Fuga de talento (docs/05 §7 a escala de filial): moral bajo la barra
+     * durante `weeks` seguidas → golpe al talento, noticia, y el talento
+     * vuelve a la industria (un rival vivo se refuerza). Se repite mientras
+     * la moral siga hundida: exprimir sin freno vacía la casa.
+     */
+    exodus: { moraleBar: 25, weeks: 10, talentHit: 8, rivalStrengthGain: 4 },
+    /**
+     * Vender la filial: la fórmula de compra sobre su TALENTO actual × este
+     * factor. Solo recuperas de sobra lo pagado si la hiciste crecer.
+     */
+    sellFactor: 0.55,
+    /** Historial de lanzamientos retenido por filial (panel de Industria). */
+    maxGamesKept: 8,
+  },
+
   /** Gestión por políticas en la escala grande (docs/02 §4 y docs/10 §14). */
   policies: {
     /**
@@ -1275,6 +1506,14 @@ export const balance = {
     autoTraining: { intervalWeeks: 4 },
     /** Bonus automático a quien tenga la moral bajo el umbral (máx. K/semana). */
     autoBonus: { moraleThreshold: 40, maxPerWeek: 2 },
+    /**
+     * Dotación automática de servicios (Fase 9.7, docs/19 §9.7): cada semana
+     * asigna empleados LIBRES (sin proyecto, sin I+D, sin otro servicio) a los
+     * servicios en vivo por debajo de su plantilla requerida. La Corporación
+     * mantiene los platos girando por política; retirar gente sigue siendo
+     * decisión manual. maxPerWeek acota el trasvase (nada de teletransportes).
+     */
+    autoLiveOps: { maxPerWeek: 3 },
   },
 
   market: {

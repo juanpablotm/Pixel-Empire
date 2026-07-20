@@ -260,6 +260,8 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
       antiCrunch: false,
       autoTraining: false,
       autoBonus: false,
+      // La migración v18 (9.7) estrena la política de dotación apagada.
+      autoLiveOps: false,
     });
     expect(state.studio.awards).toEqual([]);
     expect(state.studio.awardHype).toBe(0);

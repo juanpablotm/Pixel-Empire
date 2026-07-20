@@ -31,11 +31,14 @@ export type {
 } from './model/project';
 export type {
   FactorTone,
+  LiveServiceState,
   QualityBreakdown,
   QualityFactor,
   ReleasedGame,
   ReviewLine,
 } from './model/release';
+export type { Subsidiary, SubsidiaryDirective, SubsidiaryGame } from './model/subsidiary';
+export { sizeAtLeast, SIZE_ORDER } from './model/project';
 export type {
   DevAspect,
   DevPhaseSpec,
@@ -297,11 +300,42 @@ export {
   creditLimit,
   estimateRunwayWeeks,
   launchMarketingCampaign,
+  recordExpense,
   recordIncome,
   repayLoan,
   takeLoan,
   weeklyFixedCosts,
 } from './systems/economy';
+export {
+  activeLiveServices,
+  advanceLiveServices,
+  dropFromLiveServices,
+  launchLiveService,
+  liveServiceArpu,
+  liveServiceBlockReason,
+  liveServiceCareRatio,
+  liveServiceStaffIds,
+  liveServiceUnlocked,
+  liveServiceUpkeep,
+  liveServiceWeeklyNet,
+  requiredLiveStaff,
+  serviceOpen,
+  sunsetLiveService,
+  toggleLiveServiceAssignment,
+} from './systems/liveService';
+export type { LiveServiceConfig } from './systems/liveService';
+export {
+  acquireStudio,
+  acquisitionBlockReason,
+  acquisitionPriceFor,
+  advanceSubsidiaries,
+  sellSubsidiary,
+  setSubsidiaryDirective,
+  subsidiaryList,
+  subsidiarySellPrice,
+  subsidiaryUpkeep,
+  SUBSIDIARIES_STREAM,
+} from './systems/subsidiaries';
 export {
   addReputationDebt,
   advanceMoral,

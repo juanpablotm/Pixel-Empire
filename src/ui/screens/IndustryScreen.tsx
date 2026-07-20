@@ -1,9 +1,16 @@
 import {
+  acquisitionBlockReason,
+  acquisitionPriceFor,
   aggregateReputation,
   announcedReleases,
   projectTotalWeeks,
   recentRivalGames,
+  subsidiaryList,
+  subsidiarySellPrice,
+  subsidiaryUpkeep,
   type RivalRuntime,
+  type Subsidiary,
+  type SubsidiaryDirective,
 } from '../../core';
 import { balance } from '../../data/balance';
 import { getGenre } from '../../data/genres';
@@ -11,6 +18,7 @@ import { getRivalDef, rivalTierLabels } from '../../data/rivals';
 import { sizeLabels } from '../../data/reviewTexts';
 import { playerStudioLabel } from '../../data/awards';
 import { useGameStore } from '../../state/store';
+import { formatMoney } from '../format';
 import { StaggerGroup, StaggerItem } from '../components/Motion';
 
 /**
@@ -30,16 +38,17 @@ function momentum(r: RivalRuntime): { icon: string; label: string } {
 }
 
 function RankingCard() {
-  const rivals = useGameStore((s) => s.game.rivals?.studios ?? []);
-  const reputation = useGameStore((s) => s.game.studio.reputation);
-  const scaleStage = useGameStore((s) => s.game.studio.scaleStage);
+  const game = useGameStore((s) => s.game);
+  const acquire = useGameStore((s) => s.acquireStudio);
+  const rivals = game.rivals?.studios ?? [];
 
   // Ranking presentacional: los rivales por su fuerza; tú entras con tu
   // reputación media como peso comparable (es fama, no simulación — y se dice).
-  const playerWeight = aggregateReputation(reputation);
+  // Los adquiridos (9.7) no compiten: viven abajo, en "Tus filiales".
+  const playerWeight = aggregateReputation(game.studio.reputation);
   const rows = [
     ...rivals
-      .filter((r) => !r.closed)
+      .filter((r) => !r.closed && r.acquiredWeek === undefined)
       .map((r) => ({
         key: r.id,
         name: getRivalDef(r.id).name,
@@ -48,22 +57,32 @@ function RankingCard() {
         momentum: momentum(r),
         isPlayer: false,
         lastReviews: r.games.slice(-3).map((g) => g.review),
+        buyable: balance.acquisitions.buyableTiers.includes(r.tier),
+        blocked: acquisitionBlockReason(game, r.id),
+        price: acquisitionPriceFor(game, r.id),
       })),
     {
       key: 'player',
       name: playerStudioLabel,
-      tier: ['', 'Garaje', 'Estudio pequeño', 'Estudio', 'Estudio grande', 'Corporación'][scaleStage],
+      tier: ['', 'Garaje', 'Estudio pequeño', 'Estudio', 'Estudio grande', 'Corporación'][game.studio.scaleStage],
       weight: playerWeight,
       momentum: { icon: '·', label: 'tu reputación' },
       isPlayer: true,
       lastReviews: [] as number[],
+      buyable: false,
+      blocked: null as string | null,
+      price: null as number | null,
     },
   ].sort((a, b) => b.weight - a.weight);
 
   const closed = rivals.filter((r) => r.closed);
+  const acquired = rivals.filter((r) => r.acquiredWeek !== undefined);
+  // El botón de compra solo asoma cuando las adquisiciones existen para ti
+  // (etapa mínima): antes, la industria no está en venta — menos ruido.
+  const shopping = game.studio.scaleStage >= balance.acquisitions.minStage;
 
   return (
-    <section className="card">
+    <section className="card" data-tour="adquisiciones">
       <h3 className="card-title">Ranking de la industria</h3>
       <StaggerGroup tag="ul" className="flex flex-col gap-1.5 text-sm">
         {rows.map((row, i) => (
@@ -93,13 +112,132 @@ function RankingCard() {
             >
               {row.momentum.icon} {row.momentum.label}
             </span>
+            {shopping && !row.isPlayer && row.buyable && (
+              <button
+                type="button"
+                disabled={row.blocked !== null}
+                title={row.blocked ?? `Adquirir ${row.name}: sale de la competencia y pasa a ser tu filial`}
+                onClick={() => acquire(row.key)}
+                className="btn btn-quiet shrink-0 px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                🏢 {row.price !== null ? formatMoney(row.price) : 'Adquirir'}
+              </button>
+            )}
           </StaggerItem>
         ))}
       </StaggerGroup>
-      {closed.length > 0 && (
+      {(closed.length > 0 || acquired.length > 0) && (
         <p className="mt-3 border-t border-line pt-2 text-xs text-ink-faint">
-          Cerraron: {closed.map((r) => getRivalDef(r.id).name).join(' · ')}
+          {acquired.length > 0 &&
+            `Adquiridos por ti: ${acquired.map((r) => getRivalDef(r.id).name).join(' · ')}. `}
+          {closed.length > 0 && `Cerraron: ${closed.map((r) => getRivalDef(r.id).name).join(' · ')}`}
         </p>
+      )}
+    </section>
+  );
+}
+
+/** Etiquetas y ayuda de las directivas de filial (docs/02 §4, macro-dilema). */
+const DIRECTIVES: { id: SubsidiaryDirective; label: string; hint: string }[] = [
+  { id: 'exprimir', label: 'Exprimir', hint: 'Más juegos y más caja hoy; moral y talento en caída, tu fama de Empleador sangra' },
+  { id: 'autonomo', label: 'Autónomo', hint: 'Su ritmo, su gente: sin extras ni castigos' },
+  { id: 'invertir', label: 'Invertir', hint: 'Overhead +50 %: moral y talento crecen, mejores juegos mañana' },
+];
+
+function SubsidiaryRow({ sub }: { sub: Subsidiary }) {
+  const week = useGameStore((s) => s.game.week);
+  const setDirective = useGameStore((s) => s.setSubsidiaryDirective);
+  const sell = useGameStore((s) => s.sellSubsidiary);
+  const last = sub.games[sub.games.length - 1];
+  const flow = Math.round(sub.pendingIncome * balance.acquisitions.payoutRate);
+  const upkeep = subsidiaryUpkeep(sub);
+  const net = flow - upkeep;
+
+  return (
+    <li className="flex flex-col gap-2 rounded-md border border-line bg-raised/40 p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-semibold text-ink-hi">
+          {sub.name}
+          <span className="ml-2 text-xs font-normal text-ink-faint">
+            {rivalTierLabels[sub.tier]} · comprada sem. {sub.acquiredWeek} por {formatMoney(sub.price)}
+          </span>
+        </span>
+        <span className={`text-sm font-semibold tabular-nums ${net >= 0 ? 'text-ok' : 'text-danger'}`}>
+          {net >= 0 ? '+' : ''}
+          {formatMoney(net)}/sem
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink-mute">
+        <span>
+          Talento <span className="font-semibold tabular-nums text-ink">{Math.round(sub.talent)}</span>
+        </span>
+        <span>
+          Moral <span className="font-semibold tabular-nums text-ink">{Math.round(sub.morale)}</span>
+        </span>
+        <span>
+          Próximo juego en ~{Math.max(0, sub.nextReleaseWeek - week)} sem.
+        </span>
+        <span>
+          P&L {formatMoney(sub.revenue)} − {formatMoney(sub.upkeepPaid)}
+        </span>
+        {last && (
+          <span title={`Su último lanzamiento (semana ${last.releaseWeek})`}>
+            Último: «{last.name}» r{last.review}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1.5">
+          {DIRECTIVES.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              title={d.hint}
+              onClick={() => setDirective(sub.id, d.id)}
+              className={`rounded-full px-2.5 py-1 text-xs ${
+                sub.directive === d.id
+                  ? 'bg-action text-white'
+                  : 'bg-raised text-ink-mute hover:bg-control'
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => sell(sub.id)}
+          className="btn btn-quiet px-2.5 py-1 text-xs"
+          title="Vender a un holding sin cara: recuperas parte del valor actual (el talento manda)"
+        >
+          Vender ({formatMoney(subsidiarySellPrice(sub))})
+        </button>
+      </div>
+    </li>
+  );
+}
+
+/** Tus filiales (Fase 9.7, docs/19 §9.7): la cartera de estudios comprados. */
+function SubsidiariesCard() {
+  const subs = useGameStore((s) => subsidiaryList(s.game));
+  const scaleStage = useGameStore((s) => s.game.studio.scaleStage);
+  if (subs.length === 0 && scaleStage < balance.acquisitions.minStage) return null;
+
+  return (
+    <section className="card" data-tour="filiales">
+      <h3 className="card-title">Tus filiales</h3>
+      {subs.length === 0 ? (
+        <p className="text-sm text-ink-faint">
+          Ninguna todavía. Compra un estudio del ranking (los gigantes no se venden): sale de la
+          competencia y hace juegos para ti — a cambio de un desembolso grande y su overhead
+          semanal. Cómo lo gestiones decide si es una mina o un pozo.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {subs.map((sub) => (
+            <SubsidiaryRow key={sub.id} sub={sub} />
+          ))}
+        </ul>
       )}
     </section>
   );
@@ -212,6 +350,7 @@ export function IndustryScreen() {
         </button>
       </div>
       <RankingCard />
+      <SubsidiariesCard />
       <CalendarCard />
       <RecentCard />
     </main>

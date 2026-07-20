@@ -259,12 +259,64 @@ filosofías siguen viables y el arco de independencia existe (bots: firman en E1
 **Tocó:** `02` §5 (EA nace en E5), `06` §4/§4.1 (contratos + capital inicial), `07` §4.1 (EA),
 `12` §6, `16`; nuevos `data/publishers.ts`, `balance.publishers`, `balance.earlyAccess`.
 
-## 9.7 — GaaS + adquisiciones `[dirección]`
+## 9.7 — GaaS + adquisiciones `[IMPLEMENTADO · commit "Fase 9.7: GaaS y adquisiciones"]`
 
-**Meta:** arreglar el piloto automático del late-game (macro-gestión).
-- **Live-service** (franquicias/MMO) con **mantenimiento** continuo (sumidero + riesgo si lo descuidas).
-- **Adquirir estudios** para ingresos pasivos (sumidero de compra + gestión; pérdidas si los gestionas mal).
-**Toca:** `06` (economía), `05`/`02` (multi-estudio), `16`.
+> Baseline actualizada en `02` §4/§5, `05` §7–8, `06` §2/§4, `07` §4.2, `12` §6 y `16`. Números en
+> `balance.liveOps` y `balance.acquisitions`; lógica pura en `core/systems/liveService.ts` y
+> `core/systems/subsidiaries.ts` + ganchos en `sales`/`staff`/`policies`/`rivals`; save v18
+> (campos opcionales, migración de relleno). CA verificados con tests (`liveService.test.ts`,
+> `subsidiaries.test.ts`, `fullGame.test.ts` CA 9.7a–c) y bots. Capturas: `capturas/9-7-gaas.png`
+> y `capturas/9-7-adquisiciones.png` (script `scripts/verify97.mjs`, escaparates `?demo=gaas` y
+> `?demo=filiales`).
+
+**Meta:** arreglar el piloto automático del late-game (macro-gestión, sumideros y platos girando).
+
+- **Servicio en vivo (GaaS):** un juego lanzado (≥ mediano, IP tuya, aún en tiendas) se puede
+  **operar como servicio** desde su ficha, con la investigación **«Juegos como servicio»** (E6).
+  La parroquia inicial sale de sus unidades × reseña; cada semana `churn` (base + descuido)
+  contra `crecimiento` (equipo × reseña) más los compradores nuevos que se unen. Ingresos =
+  jugadores × ARPU × (1 + pase + tienda agresiva), con el motor y el publisher cobrando su parte
+  del bruto como siempre; upkeep = servidores fijos por tamaño + variable por jugador. Exige
+  **equipo EN EXCLUSIVA** (mediano 3 · grande 5 · muy grande 8 · AAA 16): el plato girando compite
+  con el pipeline. **Descuidarlo** (dotación < 60 %) desangra jugadores y enfría el sentimiento con
+  avisos; **exprimido Y descuidado** (~8 semanas), estalla en crisis + review bombing (docs/07 §5).
+  La tienda agresiva gotea deuda `mtxAgresivas` mientras viva. Cierre (sunset) con golpe
+  proporcional a la parroquia abandonada; bajo 500 jugadores se apaga solo. El juego con servicio
+  abierto no sale de tiendas por el cutoff. La IP del publisher (9.6) por fin muerde: **su juego
+  no se puede operar**.
+- **Adquisiciones:** desde el **Estudio grande**, los rivales de 9.5 (indie/medio; los **gigantes
+  no se venden**, y **en racha** — fuerza ≥ 66 — se niegan) se compran a precio determinista
+  (base del tier × fuerza, sin PRNG). El comprado **sale de la competencia para siempre** (no
+  anuncia, lanza, satura, caza ni nomina) y nace la **FILIAL**: overhead semanal continuo,
+  lanzamientos autónomos cuya reseña sigue a su **talento** (rango del tier ± talentReviewSpan) y
+  cuyo bote — base por tamaño × calidad^1,75 sobre un **suelo de reseña 45** (un flop no genera
+  nada) — se cobra como **flujo** (6 %/semana). Sus lanzamientos **saturan tu mercado** (tu filial
+  también pisa géneros). La **directiva** por filial es el dilema a escala macro: **exprimir**
+  (ingreso ×1,7 y cadencia ×0,75 HOY; moral −1,2/sem → talento → flops, tu Empleador sangra y
+  gotea deuda de crunch), **autónomo** o **invertir** (+50 % de overhead; moral/talento crecen
+  hasta el techo 85). Moral hundida sostenida → **éxodo**: talento −8 y un rival vivo se refuerza.
+  **Vender** devuelve la fórmula de compra sobre el talento actual × 0,55 — solo recuperas de
+  sobra si la construiste.
+- **Políticas de Corporación (docs/02 §4):** directiva por filial + política **«Dotación de
+  servicios»** (autoLiveOps): asigna empleados libres a los servicios faltos de gente, hasta 3
+  por semana. El equipo del servicio trabaja (desgaste y XP como I+D) y está en un solo sitio a
+  la vez; renuncias/despidos/fichajes lo sanean como siempre.
+- **Los bots lo jugaron antes que tú (docs/08 §8):** la fábrica compra-exprime-VENDE cascarones
+  (7 filiales en una partida: el ciclo cínico completo, sin dinero gratis — el suelo del bote nació
+  de que el cascarón a talento 5 seguía imprimiendo) y opera su AAA como servicio exprimido
+  (+3,1M netos… y lo cierra cuando no puede sostener la dotación); el equilibrado construye 3
+  filiales `invertir` hasta talento 85; el indie ni lo toca (identidad). Lecciones que quedaron en
+  las reglas del bot: la nómina del GaaS se contrata cuando el plato EXISTE (16 asientos "por si
+  acaso" quebraron a la fábrica), la hucha del salto de tamaño es sagrada (sin re-firmar tras la
+  independencia, CA 9.6b intacto), y el laboratorio prioritario solo en la Corporación (dotarlo
+  antes en todas las etapas multiplicó ×20 la economía de 💡 y desplazó todas las trayectorias).
+
+**CA:** un GaaS descuidado pierde jugadores e ingresos (y enfría la comunidad; exprimido, estalla);
+una adquisición cuesta (desembolso + overhead) y da ingreso pasivo CON riesgo (la exprimida colapsa,
+la invertida construye); absorber un rival lo elimina de la competencia; las 3 filosofías siguen
+viables y el late-game reinvierte en vez de acumular caja ociosa.
+**Tocó:** `02` §4–5, `05` §7–8, `06` §2/§4, `07` §4.2, `12` §6, `16`; nuevos `balance.liveOps`,
+`balance.acquisitions`, `core/model/subsidiary.ts`, política `autoLiveOps`, save v18.
 
 ---
 

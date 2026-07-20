@@ -1,6 +1,15 @@
 import { type ReactNode } from 'react';
-import { projectCap, projectProgress, projectTotalWeeks, visibleReview } from '../../core';
+import {
+  liveServiceCareRatio,
+  liveServiceWeeklyNet,
+  projectCap,
+  projectProgress,
+  projectTotalWeeks,
+  requiredLiveStaff,
+  visibleReview,
+} from '../../core';
 import { useGameStore } from '../../state/store';
+import { balance } from '../../data/balance';
 import { getDevPhase } from '../../data/devPhases';
 import { getGenre } from '../../data/genres';
 import { getTheme } from '../../data/themes';
@@ -88,6 +97,7 @@ export function StudioScreen() {
           </div>
         </section>
 
+        <LiveServicesShelf />
         <OnSaleShelf />
       </div>
 
@@ -112,6 +122,69 @@ export function StudioScreen() {
         </section>
       </aside>
     </main>
+  );
+}
+
+/**
+ * Los platos girando (Fase 9.7, docs/19 §9.7): cada servicio en vivo abierto,
+ * con su parroquia, su dotación y su neto — el estado del sumidero, a la
+ * vista y con un clic a su gestión (la ficha del juego). Solo aparece cuando
+ * hay servicios: antes de E6 no mete ruido.
+ */
+function LiveServicesShelf() {
+  const releasedGames = useGameStore((s) => s.game.releasedGames);
+  const openReview = useGameStore((s) => s.openReview);
+  const live = releasedGames.filter(
+    (g) => g.liveService !== undefined && g.liveService.closedWeek === undefined,
+  );
+  if (live.length === 0) return null;
+
+  return (
+    <section className="card" data-tour="servicios">
+      <h2 className="card-title">📡 Servicios en vivo</h2>
+      <StaggerGroup tag="ul" className="flex flex-col gap-2">
+        {live.map((game) => {
+          const svc = game.liveService;
+          if (!svc) return null;
+          const care = liveServiceCareRatio(game);
+          const net = liveServiceWeeklyNet(game);
+          const neglected = care < balance.liveOps.neglect.bar;
+          return (
+            <StaggerItem
+              tag="li"
+              key={game.id}
+              className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-line bg-raised/60 px-3 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-ink-hi">{game.name}</p>
+                <p className={`text-xs ${neglected ? 'text-warn' : 'text-ink-faint'}`}>
+                  Equipo {svc.assignedStaff.length}/{requiredLiveStaff(game)}
+                  {neglected && ' — DESCUIDADO: la parroquia se va'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono text-sm tabular-nums text-ink">
+                  {svc.players.toLocaleString('es-ES')} jugadores
+                </p>
+                <p
+                  className={`font-mono text-xs tabular-nums ${net >= 0 ? 'text-ok' : 'text-danger'}`}
+                >
+                  {net >= 0 ? '+' : ''}
+                  {formatMoney(net)}/sem
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openReview(game.id)}
+                className="btn btn-quiet px-2 py-1 text-xs"
+              >
+                Gestionar
+              </button>
+            </StaggerItem>
+          );
+        })}
+      </StaggerGroup>
+    </section>
   );
 }
 

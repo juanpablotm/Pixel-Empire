@@ -14,7 +14,13 @@ import { withReputationDeltas } from './reputation';
 const clampStat = (value: number): number => Math.min(100, Math.max(0, value));
 
 export function defaultPolicies(): StudioPolicies {
-  return { salary: 'mercado', antiCrunch: false, autoTraining: false, autoBonus: false };
+  return {
+    salary: 'mercado',
+    antiCrunch: false,
+    autoTraining: false,
+    autoBonus: false,
+    autoLiveOps: false,
+  };
 }
 
 /** ¿La escala actual permite gestión por políticas? */
@@ -171,6 +177,71 @@ function applyAutoBonus(state: GameState): GameState {
   );
 }
 
+/**
+ * Dotación automática de servicios (Fase 9.7, docs/19 §9.7): asigna empleados
+ * LIBRES (sin proyecto, sin I+D, sin otro servicio) a los servicios en vivo
+ * por debajo de su plantilla requerida, hasta maxPerWeek por semana. La
+ * Corporación mantiene los platos girando por política. Lógica inline sobre
+ * el estado (los helpers de liveService.ts crearían un ciclo de imports vía
+ * economy → policies).
+ */
+function applyAutoLiveOps(state: GameState): GameState {
+  const cfg = balance.policies.autoLiveOps;
+  const required = balance.liveOps.requiredStaffBySize;
+
+  const busy = new Set<string>();
+  for (const p of state.projects) for (const id of p.assignedStaff) busy.add(id);
+  for (const id of state.research.rdStaff) busy.add(id);
+  for (const g of state.releasedGames) {
+    if (g.liveService && g.liveService.closedWeek === undefined) {
+      for (const id of g.liveService.assignedStaff) busy.add(id);
+    }
+  }
+  const idle = state.staff.filter((e) => !busy.has(e.id)).map((e) => e.id);
+  if (idle.length === 0) return state;
+
+  let moved = 0;
+  let cursor = 0;
+  const assignedByGame = new Map<string, string[]>();
+  for (const g of state.releasedGames) {
+    const svc = g.liveService;
+    if (!svc || svc.closedWeek !== undefined) continue;
+    const missing = required[g.size] - svc.assignedStaff.length;
+    if (missing <= 0) continue;
+    const take: string[] = [];
+    while (take.length < missing && cursor < idle.length && moved < cfg.maxPerWeek) {
+      take.push(idle[cursor]);
+      cursor += 1;
+      moved += 1;
+    }
+    if (take.length > 0) assignedByGame.set(g.id, take);
+    if (moved >= cfg.maxPerWeek) break;
+  }
+  if (assignedByGame.size === 0) return state;
+
+  const next: GameState = {
+    ...state,
+    releasedGames: state.releasedGames.map((g) => {
+      const extra = assignedByGame.get(g.id);
+      if (!extra || !g.liveService) return g;
+      return {
+        ...g,
+        liveService: {
+          ...g.liveService,
+          assignedStaff: [...g.liveService.assignedStaff, ...extra],
+        },
+      };
+    }),
+  };
+  return appendLog(
+    next,
+    'estudio',
+    `La política de dotación refuerza los servicios en vivo con ${moved} ${
+      moved === 1 ? 'empleado libre' : 'empleados libres'
+    }.`,
+  );
+}
+
 /** Tick semanal de las políticas (solo en la escala grande; docs/02 §4). */
 export function advancePolicies(state: GameState): GameState {
   if (!policiesUnlocked(state)) return state;
@@ -178,5 +249,6 @@ export function advancePolicies(state: GameState): GameState {
   if (state.policies.antiCrunch) next = applyAntiCrunch(next);
   if (state.policies.autoTraining) next = applyAutoTraining(next);
   if (state.policies.autoBonus) next = applyAutoBonus(next);
+  if (state.policies.autoLiveOps ?? false) next = applyAutoLiveOps(next);
   return next;
 }

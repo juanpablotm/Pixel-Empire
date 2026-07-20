@@ -89,6 +89,22 @@ estudio independiente — y un reloj en marcha (`core/systems/earlyAccess.ts`, n
 Riesgo/oportunidad legible: dinero y un juego más pulido HOY, contra un estreno sin sorpresas y
 una comunidad que no perdona el enquistamiento.
 
+### 4.2 El servicio en vivo y su parroquia `[DECIDIDO · Fase 9.7, docs/19 §9.7]`
+
+Operar un juego como **servicio** (GaaS) convierte a su comunidad en **parroquia**: gente que
+vive dentro y espera contenido cada semana. La relación es la de docs/19 §9.7, con la comunidad
+como termómetro:
+
+- **Descuido** (equipo del servicio bajo el 60 % de su dotación): la parroquia se desangra y el
+  **sentimiento se enfría** semana a semana, con avisos periódicos en el feed y el historial —
+  nunca emboscada (Pilar 2).
+- **Descuido + tienda exprimidora** (agresividad alta o pase): a las ~8 semanas la promesa rota
+  del servicio **estalla como crisis con review bombing** sobre el juego (§5), una vez por racha
+  de descuido. Trazable: tú abriste la tienda y te fuiste.
+- **Cierre (sunset):** golpe a comunidad/hardcore y al sentimiento **proporcional a los jugadores
+  que dejas dentro** — cerrar un servicio moribundo apenas duele; apagar uno vivo, sí. Y la
+  comunidad no vuelve dos veces: un servicio cerrado no se reabre.
+
 ### Eventos de pre-lanzamiento (dilemas)
 - **Leak de la build alpha:** un empleado filtra una alpha por accidente en Discord. Dilema:
   - *Comunicado de disculpa y transparencia* → −sorpresa, +confianza de comunidad.

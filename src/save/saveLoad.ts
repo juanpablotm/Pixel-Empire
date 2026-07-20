@@ -24,7 +24,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -347,6 +347,19 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
   // partidas anteriores a 9.6. Los juegos ya lanzados conservan su IP
   // (ipOwner undefined = 'estudio').
   16: (file) => ({ saveVersion: 17, state: file.state }),
+  // v17 (Fase 9.6) → v18 (Fase 9.7): GaaS + adquisiciones. No destructiva:
+  // los campos nuevos son opcionales (liveService en el juego, acquiredWeek
+  // en el rival) y aquí solo se rellenan los contenedores por comodidad
+  // (subsidiaries vacío, política autoLiveOps apagada) — las partidas previas
+  // no operaban servicios ni tenían filiales, que es exactamente su estado.
+  17: (file) => ({
+    saveVersion: 18,
+    state: {
+      ...file.state,
+      subsidiaries: file.state.subsidiaries ?? [],
+      policies: { ...file.state.policies, autoLiveOps: file.state.policies.autoLiveOps ?? false },
+    },
+  }),
 };
 
 /**

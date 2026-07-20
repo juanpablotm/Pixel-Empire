@@ -119,6 +119,10 @@ grande, egos que chocan. El factor entra en el `teamFactor` de `03`.
     se resiente). La mala reputación de Empleador **atrae más buitres** (factor 1,5 − rep/100).
   - El fundador nunca se ficha; una oferta como mucho a la vez; todo con noticia y trazable
     (la caza no es azar: la puerta la abre el descontento que tú causaste).
+- **La fuga también existe a escala de FILIAL (Fase 9.7, docs/19 §9.7):** una filial con la moral
+  hundida sostenida (directiva de exprimir sin freno) sufre **éxodos** — su talento cae a golpes y
+  quien huye **refuerza a un rival vivo**. El descontento que causas en tus casas compradas también
+  vuelve a la industria.
 
 ## 8. Escala: de hacerlo tú a dirigir `[DECIDIDO · 5 etapas desde docs/18 V4]`
 
@@ -131,6 +135,12 @@ Coherente con las 5 etapas (`02` §4):
   de crunch de empresa, formación automática) más que persona a persona.
 - **Corporación:** hasta 100; la organización de 40+ que exige un AAA. El trato al personal se vuelve
   una decisión *ética a escala* (Pilar 1) — y la nómina, un incendio semanal que pagar.
+
+**El equipo de un servicio en vivo (Fase 9.7, docs/19 §9.7)** está dedicado **en exclusiva** (ni
+proyectos ni I+D a la vez, mismo patrón que el laboratorio): trabaja cada semana (desgaste y XP) y
+su tamaño requerido depende del juego (3/5/8/16 de mediano a AAA). Es capacidad que se COMPRA en
+nómina: el plato girando compite con el siguiente juego. La política **Dotación de servicios**
+(docs/02 §4) lo rellena con empleados libres; renuncias, despidos y fichajes lo sanean solos.
 
 ## 9. Interfaz con otros sistemas
 

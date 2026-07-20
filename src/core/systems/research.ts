@@ -6,6 +6,7 @@ import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
 import type { GameState } from '../model/gameState';
 import type { MarketKnowledge, ResearchState, StudioCapability } from '../model/research';
+import { dropFromLiveServices } from './liveService';
 
 /**
  * Investigación (docs/02 §3): puntos 💡 por persona·semana en I+D y por
@@ -274,10 +275,13 @@ export function toggleResearchAssignment(state: GameState, employeeId: string): 
       },
     };
   }
+  // Al pasar a I+D sale del proyecto y de cualquier servicio en vivo (9.7):
+  // nadie está en dos sitios a la vez.
+  const base = dropFromLiveServices(state, [employeeId]);
   return {
-    ...state,
-    research: { ...state.research, rdStaff: [...state.research.rdStaff, employeeId] },
-    projects: state.projects.map((p) =>
+    ...base,
+    research: { ...base.research, rdStaff: [...base.research.rdStaff, employeeId] },
+    projects: base.projects.map((p) =>
       p.assignedStaff.includes(employeeId)
         ? { ...p, assignedStaff: p.assignedStaff.filter((id) => id !== employeeId) }
         : p,

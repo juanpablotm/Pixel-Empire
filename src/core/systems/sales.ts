@@ -63,7 +63,10 @@ export function advanceSales(state: GameState, rng: Rng): GameState {
       }) * noise,
     );
 
-    if (units < balance.sales.cutoffUnits) {
+    // Un juego con servicio en vivo abierto no sale de tiendas por goteo bajo
+    // (Fase 9.7): mientras el servicio viva, el juego sigue en los escaparates.
+    const liveOpen = game.liveService !== undefined && game.liveService.closedWeek === undefined;
+    if (units < balance.sales.cutoffUnits && !liveOpen) {
       next = appendLog(next, 'ventas', `«${game.name}» sale de las tiendas.`);
       return { ...game, salesActive: false };
     }

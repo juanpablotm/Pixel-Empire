@@ -36,6 +36,7 @@ Recursos que gestionas: **Capital 💰**, **Reputación ⭐** (vector por públi
 | **Comunidad y streamers** | Sentimiento de comunidad, creadores de contenido, hype/leaks, review bombing, gestión de crisis | `07` |
 | **Estudios rivales (9.5)** | Industria simulada: 12 estudios con tier y perfil que lanzan (saturan, encienden fiebres), disputan ventanas, cazan talento y son los nominados reales de la gala | `04` §9, docs/19 §9.5 |
 | **Publishers + Early Access (9.6)** | El arco del negocio: contratos leoninos que financian el arranque (adelanto + distribución a cambio del 55–75 % y a veces la IP) hasta que reúnes capital para auto-publicarte; y el acceso anticipado (E5+) como autofinanciación con reloj de paciencia | `06` §4.1, `07` §4.1, docs/19 §9.6 |
+| **GaaS + adquisiciones (9.7)** | El late-game de macro-gestión: operar juegos como SERVICIOS en vivo (ingreso continuo a cambio de equipo en exclusiva + servidores; descuidarlo desangra, exprimirlo estalla) y comprar rivales que pasan a ser FILIALES autónomas con directiva (exprimir/autónomo/invertir) | `06` §4.2, `07` §4.2, docs/19 §9.7 |
 
 **Cómo crear un juego (el bucle):** (1) concepción (tema/género/plataforma/público/tamaño/nombre) con
 medidor de Fit → (2) equipo y presupuesto → (3) desarrollo en 3 fases con reparto de esfuerzo y
@@ -69,6 +70,18 @@ peaje acumulado a la vista). El **Early Access** (E5+, solo auto-publicados en P
 promesa: dinero antes y feedback que pule QA y bugs, con **paciencia de ~1 año** — demorarse quema
 sentimiento y reputación en rampa; en la 1.0 los compradores de EA recortan el pico day-one y una
 1.0 floja (< 60) es **traición** escalada por cuántos pagaron.
+
+**GaaS y adquisiciones (Fase 9.7, docs/19 §9.7):** el late-game deja el piloto automático. Un juego
+lanzado (≥ mediano, IP propia) se **opera como servicio** con la investigación de E6: la parroquia
+(sembrada de sus ventas) paga ARPU semanal (más con pase/tienda — media palanca de codicia) a
+cambio de **equipo en exclusiva** (3/5/8/16 por tamaño) y servidores; descuidarlo desangra
+jugadores y enfría a la comunidad, y **exprimido + descuidado estalla** en review bombing. Desde el
+Estudio grande se **compran rivales** (indie/medio; los gigantes no se venden, los que están en
+racha rechazan) a precio determinista: salen de la competencia y su **filial** lanza juegos sola —
+overhead continuo contra un flujo que sigue a su **talento**, gobernado por la **directiva**
+(exprimir ×1,7 hoy y la casa se quema, con éxodos que refuerzan a la competencia; invertir
+construye hasta el techo 85). Vender devuelve el valor actual con descuento. La política
+**Dotación de servicios** mantiene los platos girando a escala de Corporación.
 
 **La escalada (Fase 9.1, docs/19 §9.1):** el juego ya **no se resuelve**. La `Q` tiene un **techo
 dinámico** — `min(era, madurez, talento, motor)` — que en el garaje ronda 45–52 juegues como
@@ -420,6 +433,8 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 | Punto de I+D | ~1 por persona·semana en investigación |
 | Construir motor propio (9.2) | por generación 1→7: 6k…2,5M 💰 + 8…120 💡 + 6…32 semanas; **mejorar = 60 %** |
 | Licenciar motor (9.2) | cuota 15k–150k 💰 por juego + royalty 7–12 % de ingresos brutos |
+| Servicio en vivo (9.7, E6+) | ARPU 0,5 💰/jugador·sem × (1 + 0,5·pase + 0,8·tienda) · servidores 200–9k/sem + 0,1/jugador · equipo EXCLUSIVO 3/5/8/16 (mediano→AAA) · churn 2 %/sem (+8 % descuidado) |
+| Adquirir estudios (9.7, E. grande+) | indie 250k / medio 1,6M × fuerza · overhead 2,5k / 9k 💰/sem · bote por juego 90k–3M × calidad^1,75 (suelo reseña 45), cobrado al 6 %/sem · vender = valor actual × 0,55 |
 | Préstamos | hasta ~6 meses de costes fijos; interés ~1%/semana |
 
 El **tamaño** es una decisión con peso: coste base fijo + plantilla y etapa mínimas (el AAA solo como
@@ -449,6 +464,10 @@ grande sin éxitos se desangra. Bancarrota sostenida (sin poder pagar salarios) 
   pico day-one de un juego ajeno de su género en ±3 semanas — el tuyo puede **retrasarse** para
   esquivarla (la nómina corre). Todo visible en el panel de **Industria** (ranking, calendario de
   anuncios con ⚠ de choque, lanzamientos recientes): decides con información, nunca es emboscada.
+- **Comprar la competencia (Fase 9.7, docs/19 §9.7):** desde el Estudio grande, los rivales
+  indie/medio se **adquieren** desde ese mismo ranking (los gigantes no se venden; el que está en
+  racha rechaza): salen de la competencia para siempre y pasan a la sección **Tus filiales** —
+  lanzando juegos para ti, con su directiva, su P&L y su botón de venta a la vista.
 
 ---
 

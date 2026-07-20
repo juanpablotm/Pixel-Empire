@@ -96,6 +96,18 @@ function PoliciesPanel() {
           />
           Bonus automáticos
         </label>
+        <label
+          className="flex items-center gap-2"
+          title={`Asigna empleados libres a los servicios en vivo faltos de gente (máx. ${balance.policies.autoLiveOps.maxPerWeek}/semana). Los platos girando no se caen solos (Fase 9.7).`}
+        >
+          <input
+            type="checkbox"
+            checked={policies.autoLiveOps ?? false}
+            onChange={(e) => setPolicies({ autoLiveOps: e.target.checked })}
+            className="accent-action-hi"
+          />
+          Dotación de servicios
+        </label>
       </div>
       <p className="text-xs text-ink-faint">
         A esta escala ya no gestionas persona a persona: fijas la política y el estudio la ejecuta

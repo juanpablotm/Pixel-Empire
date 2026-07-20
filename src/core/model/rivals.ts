@@ -74,6 +74,13 @@ export interface RivalRuntime {
   games: RivalGame[];
   /** true si el estudio cerró (los indies hundidos mueren; docs/19 §9.5). */
   closed: boolean;
+  /**
+   * Semana en la que lo adquiriste (Fase 9.7, docs/19 §9.7), o ausente si
+   * sigue independiente. Un rival adquirido sale de la competencia (no
+   * anuncia, no lanza, no caza, no nomina) y vive como filial en
+   * GameState.subsidiaries; aquí queda su historia para el panel.
+   */
+  acquiredWeek?: number;
 }
 
 /**

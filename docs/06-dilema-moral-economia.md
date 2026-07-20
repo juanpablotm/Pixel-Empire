@@ -44,6 +44,7 @@ palanca de codicia haya una tentación real (dinero significativo) y un castigo 
 | **Crunch** (`05`) | Producción ↑ a corto | Moral/lealtad ↓, riesgo de escándalo laboral |
 | **Marketing engañoso / sobre-hype** (`07`, docs/17 E2) | Ventas day-one ↑ | Caída brutal de la **cola de ventas** + golpe a hardcore/comunidad, proporcional a la brecha hype↔calidad |
 | **Precio abusivo** | Ingreso/venta ↑ | Menos volumen, comunidad enojada |
+| **Exprimir el servicio en vivo / la filial** (9.7, docs/19 §9.7) | Ingresos continuos ↑↑ | La parroquia y la casa se queman: deuda goteando, éxodo de talento, review bombing si además lo descuidas |
 
 ### Palancas de INTEGRIDAD (⭐↑ / 💰↓ o más lento)
 | Palanca | Efecto |
@@ -114,6 +115,24 @@ La otra fuente de financiación del early game: **quien no tiene dinero, firma**
   total a la vista). El catálogo se ablanda con las eras (la boutique de E5 pide solo el 55 %):
   la industria te trata mejor justo cuando ya no la necesitas.
 
+### 4.2 Servicios en vivo y filiales `[DECIDIDO · Fase 9.7, docs/19 §9.7]`
+
+El late-game deja de ser acumular caja ociosa: el capital compra **obligaciones que rinden**.
+
+- **Operar un juego como SERVICIO (GaaS, desde la investigación de E6):** ingresos continuos
+  (`jugadores × ARPU × (1 + pase + tienda)`, con motor y publisher cobrando su parte del bruto
+  como siempre) a cambio de mantenimiento permanente: **equipo en exclusiva** por tamaño +
+  servidores (fijo + por jugador). La parroquia se desangra si lo descuidas y el pase/tienda
+  sobre un juego ya vendido es media palanca de codicia (golpe + deuda al convertir, y goteo de
+  deuda mientras la tienda agresiva viva). Cerrar el servicio golpea en proporción a los
+  jugadores abandonados. Solo juegos con **IP propia**: la letra pequeña de 9.6 por fin muerde.
+- **Comprar estudios (desde el Estudio grande):** el rival comprado sale de la competencia y su
+  filial hace juegos sola — desembolso grande + **overhead continuo** contra un **flujo** de
+  ingresos que depende de su talento. La **directiva** es el dilema a escala macro: exprimir
+  rinde ~×1,7 hoy y quema moral → talento → flops (con tu fama de Empleador goteando y deuda de
+  crunch); invertir cuesta +50 % y construye. Un flop de filial **no genera nada** (suelo de
+  reseña del bote): no existe la máquina de dinero con cascarones.
+
 ### Cifras base v1
 Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 
@@ -131,6 +150,8 @@ Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 | **Campaña de marketing** (escalonada, docs/17 E2; **re-comprable sin tope** desde 9.1) | 2k / 10k / 40k / 120k 💰 (Nota de prensa → Anuncios → Feria/Expo → Campaña masiva); cada compra vuelve a pagar y a sumar expectación |
 | Licencia de plataforma (dev-kit) | 10k–100k 💰 según generación |
 | Punto de I+D | ~1 por persona·semana en investigación |
+| **GaaS (9.7)**: parroquia / ARPU / upkeep | siembra = unidades × 0,25 × (reseña/100), churn 2 %/sem (+8 % a cuidado cero), crecimiento 2,5 % × equipo × reseña · ARPU 0,5 💰/jugador·sem × (1 + 0,5·pase + 0,8·agresividad) · servidores 200–9k/sem por tamaño + 0,1/jugador · equipo en exclusiva 3/5/8/16 (mediano→AAA) |
+| **Adquisiciones (9.7)**: precio / filial | indie 250k · medio 1,6M × (0,6 + fuerza/100 × 1,2); gigantes no se venden; en racha (≥ 66) rechazan · overhead 2,5k / 9k 💰/sem · bote = base por tamaño (90k–3M) × ((reseña−45)/55)^1,75 × directiva, cobrado al 6 %/sem · exprimir ×1,7 y cadencia ×0,75 (moral −1,2/sem) · invertir +50 % overhead (moral +1, talento hasta 85) · vender = fórmula sobre talento × 0,55 |
 
 **Coste base + tamaño como decisión con peso (docs/17 E1 + docs/18 V4-b):** cada tamaño exige, además
 del coste base fijo, una **plantilla mínima** (1/3/8/15/40) y una **etapa de escala mínima** (Garaje /

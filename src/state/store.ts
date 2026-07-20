@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import {
+  acquireStudio,
   assignCreatorKey,
   buyResearch,
   confirmContestedRelease,
@@ -12,6 +13,7 @@ import {
   fireEmployee,
   hireCandidate,
   launchEarlyAccess,
+  launchLiveService,
   launchMarketingCampaign,
   motivateEmployee,
   repayLoan,
@@ -21,6 +23,10 @@ import {
   resolvePoachOffer,
   respondToCrisis,
   retireStudio,
+  sellSubsidiary,
+  setSubsidiaryDirective,
+  sunsetLiveService,
+  toggleLiveServiceAssignment,
   assignSquadToProject,
   createSquad,
   disbandSquad,
@@ -47,6 +53,7 @@ import {
   type EraId,
   type FocusAllocation,
   type GameState,
+  type LiveServiceConfig,
   type MotivationKind,
   type PoachResolution,
   type ProjectConcept,
@@ -54,6 +61,7 @@ import {
   type Specialty,
   type Speed,
   type StudioPolicies,
+  type SubsidiaryDirective,
 } from '../core';
 import { balance } from '../data/balance';
 import { specialtyLabels, stageLabels } from '../data/staffTexts';
@@ -345,6 +353,21 @@ export interface GameStore {
   launchEarlyAccess: (projectId: string) => void;
   /** Caza de talento (Fase 9.5): igualar la oferta del rival o dejarle ir. */
   resolvePoachOffer: (resolution: PoachResolution) => void;
+  /**
+   * Servicios en vivo (Fase 9.7, docs/19 §9.7; delegan en
+   * core/systems/liveService.ts): operar un juego lanzado como servicio,
+   * dotarlo de equipo y cerrarlo.
+   */
+  launchLiveService: (gameId: string, config: LiveServiceConfig) => void;
+  toggleLiveServiceAssignment: (gameId: string, employeeId: string) => void;
+  sunsetLiveService: (gameId: string) => void;
+  /**
+   * Adquisiciones (Fase 9.7; delegan en core/systems/subsidiaries.ts):
+   * comprar un rival, dirigir la filial y venderla.
+   */
+  acquireStudio: (rivalId: string) => void;
+  setSubsidiaryDirective: (subsidiaryId: string, directive: SubsidiaryDirective) => void;
+  sellSubsidiary: (subsidiaryId: string) => void;
   /** Cierra el estudio para contemplar el Legado (docs/06 §6). */
   retire: () => void;
   /** Entra a la partida desde el título (Fase 7F). */
@@ -946,6 +969,30 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   resolvePoachOffer: (resolution) => {
     set((s) => ({ game: resolvePoachOffer(s.game, resolution) }));
+  },
+
+  launchLiveService: (gameId, config) => {
+    set((s) => ({ game: launchLiveService(s.game, gameId, config) }));
+  },
+
+  toggleLiveServiceAssignment: (gameId, employeeId) => {
+    set((s) => ({ game: toggleLiveServiceAssignment(s.game, gameId, employeeId) }));
+  },
+
+  sunsetLiveService: (gameId) => {
+    set((s) => ({ game: sunsetLiveService(s.game, gameId) }));
+  },
+
+  acquireStudio: (rivalId) => {
+    set((s) => ({ game: acquireStudio(s.game, rivalId) }));
+  },
+
+  setSubsidiaryDirective: (subsidiaryId, directive) => {
+    set((s) => ({ game: setSubsidiaryDirective(s.game, subsidiaryId, directive) }));
+  },
+
+  sellSubsidiary: (subsidiaryId) => {
+    set((s) => ({ game: sellSubsidiary(s.game, subsidiaryId) }));
   },
 
   retire: () => {

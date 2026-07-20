@@ -16,4 +16,10 @@ export interface StudioPolicies {
   autoTraining: boolean;
   /** Paga bonus automáticos a quien tenga la moral por los suelos. */
   autoBonus: boolean;
+  /**
+   * Dota automáticamente los servicios en vivo faltos de gente con empleados
+   * libres (Fase 9.7, docs/19 §9.7). Opcional: los saves previos no lo llevan
+   * y se lee con `?? false` (la migración v18 lo rellena).
+   */
+  autoLiveOps?: boolean;
 }

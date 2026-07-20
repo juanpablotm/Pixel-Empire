@@ -13,6 +13,7 @@ import { appendLog } from '../engine/log';
 import { makeRng, type Rng } from '../engine/rng';
 import type { GameState, ScaleStage } from '../model/gameState';
 import type { Employee, SalaryTier, Specialty, TeamFactorResult } from '../model/staff';
+import { dropFromLiveServices, liveServiceStaffIds } from './liveService';
 import { nudgeMoralDrift } from './morale';
 import { employerPoolModifiers, withReputationDeltas } from './reputation';
 import { signQuitterWithRival } from './rivals';
@@ -441,9 +442,10 @@ export function fireEmployee(state: GameState, employeeId: string): GameState {
       rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
     },
   };
-  // Quien se va sale también de su subequipo (docs/18 V5): mismo saneado que
-  // assignedStaff y rdStaff, para no dejar ids muertos.
+  // Quien se va sale también de su subequipo (docs/18 V5) y de los servicios
+  // en vivo (9.7): mismo saneado que assignedStaff y rdStaff, sin ids muertos.
   next = dropFromSquads(next, [employeeId]);
+  next = dropFromLiveServices(next, [employeeId]);
   next = appendLog(
     next,
     'staff',
@@ -563,9 +565,12 @@ export function toggleAssignment(
   requireEmployee(state, employeeId);
 
   const assigned = project.assignedStaff.includes(employeeId);
+  // Al asignarlo, sale también de cualquier servicio en vivo (9.7): nadie
+  // está en dos sitios a la vez.
+  const base = assigned ? state : dropFromLiveServices(state, [employeeId]);
   return {
-    ...state,
-    projects: state.projects.map((p) => {
+    ...base,
+    projects: base.projects.map((p) => {
       if (p.id === project.id) {
         return {
           ...p,
@@ -579,10 +584,10 @@ export function toggleAssignment(
         : p;
     }),
     research: assigned
-      ? state.research
+      ? base.research
       : {
-          ...state.research,
-          rdStaff: state.research.rdStaff.filter((id) => id !== employeeId),
+          ...base.research,
+          rdStaff: base.research.rdStaff.filter((id) => id !== employeeId),
         },
   };
 }
@@ -678,13 +683,17 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
     }
   }
   const inResearch = new Set(state.research.rdStaff);
+  // El equipo de un servicio en vivo (9.7) también trabaja: se desgasta y
+  // gana XP como el de I+D (sin mentoría de proyecto).
+  const inLiveOps = liveServiceStaffIds(state);
   const events: string[] = [];
 
   const worked = state.staff.map((employee) => {
     let { morale, energy, loyalty, xp, level, salary } = employee;
     let skills = employee.skills;
     const project = projectOf.get(employee.id);
-    const working = project !== undefined || inResearch.has(employee.id);
+    const working =
+      project !== undefined || inResearch.has(employee.id) || inLiveOps.has(employee.id);
 
     if (working) {
       const sens = crunchSensitivity(employee);
@@ -783,12 +792,12 @@ export function advanceStaff(state: GameState, rng: Rng): GameState {
   }
 
   let next: GameState = { ...state, staff, projects, research, studio };
-  // Quien renuncia sale también de su subequipo (docs/18 V5).
+  // Quien renuncia sale también de su subequipo (docs/18 V5) y de los
+  // servicios en vivo (9.7).
   if (quitters.length > 0) {
-    next = dropFromSquads(
-      next,
-      quitters.map((e) => e.id),
-    );
+    const quitterIds = quitters.map((e) => e.id);
+    next = dropFromSquads(next, quitterIds);
+    next = dropFromLiveServices(next, quitterIds);
   }
   for (const text of events) {
     next = appendLog(next, 'staff', text);

@@ -88,6 +88,7 @@ export function createInitialState(seed: number): GameState {
     research: initialResearchState(),
     engines: [],
     engineBuild: null,
+    subsidiaries: [],
     policies: defaultPolicies(),
     stats: initialLegacyStats(),
     cashflow: [],

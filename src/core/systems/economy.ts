@@ -169,6 +169,12 @@ export function recordIncome(state: GameState, amount: number): GameState {
   return withCashflowEntry(state, (entry) => ({ ...entry, income: entry.income + amount }));
 }
 
+/** Anota gastos del tick en el libro de caja (simétrico de recordIncome). */
+export function recordExpense(state: GameState, amount: number): GameState {
+  if (amount === 0) return state;
+  return withCashflowEntry(state, (entry) => ({ ...entry, expenses: entry.expenses + amount }));
+}
+
 function withCashflowEntry(
   state: GameState,
   update: (entry: { week: number; income: number; expenses: number }) => {

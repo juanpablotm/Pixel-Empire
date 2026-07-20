@@ -63,6 +63,33 @@ function eraOfWeek(week: number): string {
   return eraForWeek(week);
 }
 
+/**
+ * El late-game de 9.7 (docs/19 §9.7): cuánto del final de partida vive en
+ * macro-gestión — servicios operados y su P&L, filiales en cartera y el suyo.
+ * El objetivo del rebalanceo: ingreso jugoso PERO con obligación (el upkeep y
+ * la nómina de los platos pesan), y ninguna máquina de dinero gratis.
+ */
+function lateGameCurve(s: GameState): string {
+  const k = (n: number) => `${Math.round(n / 1000)}k`;
+  const services = s.releasedGames.filter((g) => g.liveService !== undefined);
+  const open = services.filter((g) => g.liveService?.closedWeek === undefined);
+  const players = open.reduce((a, g) => a + (g.liveService?.players ?? 0), 0);
+  const svcRevenue = services.reduce((a, g) => a + (g.liveService?.revenue ?? 0), 0);
+  const svcUpkeep = services.reduce((a, g) => a + (g.liveService?.upkeepPaid ?? 0), 0);
+  const subs = s.subsidiaries ?? [];
+  const subRevenue = subs.reduce((a, x) => a + x.revenue, 0);
+  const subUpkeep = subs.reduce((a, x) => a + x.upkeepPaid, 0);
+  const subPrice = subs.reduce((a, x) => a + x.price, 0);
+  const subGames = subs.reduce((a, x) => a + x.games.length, 0);
+  return (
+    `GaaS: ${s.stats.liveServicesOpened ?? 0} abiertos (${open.length} vivos, ${players.toLocaleString('es-ES')} jugadores) · ` +
+    `ingresó ${k(svcRevenue)} − servidores ${k(svcUpkeep)}\n` +
+    `  filiales: ${s.stats.subsidiariesBought ?? 0} compradas, ${subs.length} en cartera (invertidos ${k(subPrice)}) · ` +
+    `ingresó ${k(subRevenue)} − overhead ${k(subUpkeep)} · ${subGames} juegos propios · ` +
+    `talento ${subs.map((x) => `${x.name} ${Math.round(x.talent)}(${x.directive})`).join(', ') || '—'}`
+  );
+}
+
 for (const phil of [INDIE, FACTORY, STUDIO]) {
   console.log(`\n=== ${phil.name} ===`);
   const snaps: string[] = [];
@@ -73,6 +100,7 @@ for (const phil of [INDIE, FACTORY, STUDIO]) {
   if (end.gameOver) console.log('GAME OVER:', JSON.stringify(end.gameOver));
   console.log('legado:', JSON.stringify(computeLegacy(end)));
   console.log(publisherCurve(end));
+  console.log(lateGameCurve(end));
   console.log('reseñas:', end.releasedGames.map((g) => Math.round(g.review)).join(','));
   const last = end.releasedGames[end.releasedGames.length - 1];
   if (last) {

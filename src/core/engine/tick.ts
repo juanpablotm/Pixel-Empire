@@ -6,6 +6,7 @@ import { advanceEarlyAccess } from '../systems/earlyAccess';
 import { advanceEconomy } from '../systems/economy';
 import { advanceEngineBuild } from '../systems/engines';
 import { advanceEras } from '../systems/eras';
+import { advanceLiveServices } from '../systems/liveService';
 import { advanceMarket } from '../systems/market';
 import { advanceMoral } from '../systems/morale';
 import { advancePolicies } from '../systems/policies';
@@ -14,6 +15,7 @@ import { advanceResearch } from '../systems/research';
 import { advanceRivals, RIVALS_STREAM } from '../systems/rivals';
 import { advanceSales } from '../systems/sales';
 import { advanceStaff, refreshCandidatePool } from '../systems/staff';
+import { advanceSubsidiaries, SUBSIDIARIES_STREAM } from '../systems/subsidiaries';
 
 /**
  * Streams del PRNG separados por sistema, para que un sistema no altere la
@@ -26,7 +28,9 @@ const MORAL_STREAM = 4 << 20;
 const COMMUNITY_STREAM = 5 << 20;
 const AWARDS_STREAM = 7 << 20;
 // 6 << 20 y 8 << 20 los usan community (sabor) y projects (banda de reseña);
-// RIVALS_STREAM (9 << 20) vive en systems/rivals.ts (lo comparte la migración).
+// RIVALS_STREAM (9 << 20) vive en systems/rivals.ts (lo comparte la migración)
+// y SUBSIDIARIES_STREAM (10 << 20) en systems/subsidiaries.ts (9.7).
+const LIVEOPS_STREAM = 11 << 20;
 
 /**
  * Avanza el mundo 1 tick (= 1 semana). Función pura: no muta `state`,
@@ -49,11 +53,16 @@ export function tick(state: GameState): GameState {
   const communityRng = makeRng(state.seed, COMMUNITY_STREAM + state.week);
   const awardsRng = makeRng(state.seed, AWARDS_STREAM + state.week);
   const rivalsRng = makeRng(state.seed, RIVALS_STREAM + state.week);
+  const subsidiariesRng = makeRng(state.seed, SUBSIDIARIES_STREAM + state.week);
+  const liveOpsRng = makeRng(state.seed, LIVEOPS_STREAM + state.week);
 
   let s = advanceMarket(state, marketRng);
   // La industria mueve ficha tras el mercado (9.5): sus lanzamientos suman
   // saturación y fiebres ANTES de que los proyectos del jugador se lancen.
   s = advanceRivals(s, rivalsRng);
+  // Las filiales (9.7) publican con la industria: su saturación también llega
+  // antes que tus lanzamientos de la semana.
+  s = advanceSubsidiaries(s, subsidiariesRng);
   s = advanceProjects(s);
   // El goteo del acceso anticipado (9.6) va tras los proyectos: si uno lanzó
   // su 1.0 esta misma semana, ya no vende EA (sus ventas reales empiezan hoy).
@@ -61,6 +70,9 @@ export function tick(state: GameState): GameState {
   s = advanceStaff(s, staffRng);
   s = advancePolicies(s);
   s = advanceSales(s, rng);
+  // Los servicios en vivo (9.7) van tras las ventas: quien compra esta semana
+  // puede unirse al servicio. Su PRNG solo pone el sabor si algo estalla.
+  s = advanceLiveServices(s, liveOpsRng);
   s = advanceMoral(s, moralRng);
   s = advanceCommunity(s, communityRng);
   s = advanceEconomy(s);

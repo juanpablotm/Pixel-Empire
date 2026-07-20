@@ -81,6 +81,14 @@ export interface LegacyTrackedStats {
    * núcleo lo fija una sola vez; el store lo detecta por diff y lo celebra.
    */
   independenceWeek?: number;
+  /**
+   * El late-game de macro-gestión (Fase 9.7, docs/19 §9.7). Opcionales con
+   * `?? 0`, como el resto: cuántos servicios en vivo se abrieron y cuántos
+   * estudios se compraron a lo largo de la partida (las filiales vendidas
+   * desaparecen de la cartera; la historia queda aquí).
+   */
+  liveServicesOpened?: number;
+  subsidiariesBought?: number;
 }
 
 /** Una semana del libro de caja (docs/10 §10.9): flujos recurrentes del tick. */

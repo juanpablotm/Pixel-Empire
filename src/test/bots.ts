@@ -25,6 +25,25 @@ import {
   earlyAccessBlockReason,
   launchEarlyAccess,
 } from '../core/systems/earlyAccess';
+import {
+  activeLiveServices,
+  launchLiveService,
+  liveServiceBlockReason,
+  liveServiceStaffIds,
+  liveServiceWeeklyNet,
+  requiredLiveStaff,
+  sunsetLiveService,
+  toggleLiveServiceAssignment,
+} from '../core/systems/liveService';
+import {
+  acquireStudio,
+  acquisitionBlockReason,
+  acquisitionPriceFor,
+  sellSubsidiary,
+  setSubsidiaryDirective,
+  subsidiaryList,
+  subsidiaryUpkeep,
+} from '../core/systems/subsidiaries';
 import { publisherOffersFor } from '../core/systems/publishers';
 import {
   confirmContestedRelease,
@@ -53,6 +72,7 @@ import {
   hireCandidate,
   hiringCost,
   motivateEmployee,
+  staffCap,
   toggleAssignment,
   trainEmployee,
 } from '../core/systems/staff';
@@ -103,6 +123,17 @@ export interface Philosophy {
   publisherStance: 'sinIp' | 'siempre';
   /** Abre acceso anticipado en sus auto-publicados cuando existe (9.6). */
   useEarlyAccess: boolean;
+  /**
+   * Servicios en vivo (9.7, docs/19 §9.7): 'no' ni los toca; 'cuidado' opera
+   * honesto (sin pase ni tienda) y mantiene la dotación; 'exprimido' les mete
+   * pase + tienda agresiva — más caja, más pólvora.
+   */
+  liveOps: 'no' | 'cuidado' | 'exprimido';
+  /**
+   * Adquisiciones (9.7): 'no' no compra; si compra, la directiva de sus
+   * filiales ('invertir' las construye, 'exprimir' las quema por caja).
+   */
+  acquisitions: 'no' | 'invertir' | 'exprimir';
   crisisResponse: CrisisResponseId;
   dilemma: Record<DilemmaKind, DilemmaChoice>;
 }
@@ -127,6 +158,10 @@ export const INDIE: Philosophy = {
   // comunidad — la 1.0 llega sola a tiempo (el calendario del tamaño manda).
   publisherStance: 'sinIp',
   useEarlyAccess: true,
+  // El indie ni opera servicios ni compra estudios: su identidad es el taller
+  // pequeño (y su etapa 3 ni siquiera abre las adquisiciones).
+  liveOps: 'no',
+  acquisitions: 'no',
   crisisResponse: 'disculpa',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
@@ -149,12 +184,18 @@ export const FACTORY: Philosophy = {
   // Holgura sobre los mínimos (40 del AAA): un proyecto de 120 semanas exige
   // rotar gente para no fundirla (docs/05 §4) — ir con la plantilla justa
   // convierte el tramo final en bugs y burnout (lección de bots de 9.1).
+  // La nómina del GaaS no va aquí: maybeHire suma la dotación de los
+  // servicios ABIERTOS (contratar 16 extra "por si acaso" quebró a la
+  // fábrica en E6 — lección de bots de 9.7).
   teamTargetByEra: [1, 4, 8, 12, 20, 46, 48],
   sizeAmbition: 'aaa',
   stageAmbition: 5,
   // El cheque más gordo, la IP da igual: los juegos son producto, no obra.
   publisherStance: 'siempre',
   useEarlyAccess: false,
+  // El GaaS exprimido y las filiales quemadas: la codicia a escala macro.
+  liveOps: 'exprimido',
+  acquisitions: 'exprimir',
   crisisResponse: 'silencio',
   dilemma: { leakAlpha: 'capitalizar', sobreHype: 'prometer' },
 };
@@ -169,12 +210,16 @@ export const STUDIO: Philosophy = {
   care: true,
   // Holgura sobre el mínimo del muy grande (15): sin manos de sobra para
   // rotar, los proyectos de 72 semanas acaban en burnout y bugs (9.1).
+  // La dotación de sus servicios abiertos la suma maybeHire (9.7).
   teamTargetByEra: [1, 4, 5, 8, 12, 18, 20],
   sizeAmbition: 'media',
   stageAmbition: 4,
   // Firma con cabeza (sin ceder la IP) y lanza a la antigua: sin EA.
   publisherStance: 'sinIp',
   useEarlyAccess: false,
+  // Opera servicios HONESTOS (sin pase ni tienda) y construye sus filiales.
+  liveOps: 'cuidado',
+  acquisitions: 'invertir',
   crisisResponse: 'corporativo',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
 };
@@ -232,6 +277,12 @@ function pickProject(
   // calendario COMPLETOS: quedarse sin caja a mitad es la trampa mortal.
   const selfCushion = (estimate: { cost: number; weeks: number }) =>
     estimate.cost + estimate.weeks * fixed;
+  // La liberación GANADA no se devuelve (CA 9.6b): tras independizarse, nadie
+  // se re-hipoteca por un salto de tamaño — se baja de tamaño y punto. Firmar
+  // queda solo como tabla de salvación del pequeño (mejor pobre que muerto).
+  // Sin esta regla, los sumideros de 9.7 (obras, filiales) rozaban la caja en
+  // los saltos y el bot volvía al publisher en E3+ — el arco se rompía.
+  const independent = state.stats.independenceWeek !== undefined;
   const ceiling = SIZE_ORDER.indexOf(SIZE_CEILING[phil.sizeAmbition]);
   for (let i = ceiling; i > 0; i--) {
     const size = SIZE_ORDER[i];
@@ -240,6 +291,7 @@ function pickProject(
     if (state.studio.capital > selfCushion(estimate)) {
       return { size, publisherId: null };
     }
+    if (independent) continue;
     const offer = bestOffer(size);
     if (
       offer !== null &&
@@ -549,28 +601,41 @@ function manageLoans(state: GameState): GameState {
   return state;
 }
 
-/** Contrata del pool si el arquetipo quiere crecer y la caja lo sostiene. */
+/** Contrata del pool si el arquetipo quiere crecer y la caja lo sostiene.
+ * Desde 9.7 el objetivo suma la dotación de los servicios ABIERTOS: la
+ * nómina del GaaS se contrata cuando el plato existe, no por si acaso. */
 function maybeHire(state: GameState, phil: Philosophy): GameState {
-  const target = phil.teamTargetByEra[eraIndex(state.era)];
+  const liveNeeds = activeLiveServices(state).reduce(
+    (sum, g) => sum + requiredLiveStaff(g),
+    0,
+  );
+  const target = phil.teamTargetByEra[eraIndex(state.era)] + liveNeeds;
   if (state.studio.scaleStage < 2 || state.staff.length >= target) return state;
-  // El aforo de la etapa manda (docs/17 B1): sin hueco, no se intenta.
-  if (hireBlockReason(state) !== null) return state;
-  if (state.candidates.length === 0) return state;
-  // El más hábil en su especialidad, prefiriendo especialidades que faltan.
-  const staffBySpec = new Map<string, number>();
-  for (const e of state.staff) {
-    staffBySpec.set(e.specialty, (staffBySpec.get(e.specialty) ?? 0) + 1);
+  // Con un servicio recién abierto el hueco es grande y el reloj corre (el
+  // descuido quema): la corporación contrata en tandas, hasta 3 por semana.
+  let next = state;
+  const rounds = target - next.staff.length > 4 ? 3 : 1;
+  for (let round = 0; round < rounds && next.staff.length < target; round += 1) {
+    // El aforo de la etapa manda (docs/17 B1): sin hueco, no se intenta.
+    if (hireBlockReason(next) !== null) return next;
+    if (next.candidates.length === 0) return next;
+    // El más hábil en su especialidad, prefiriendo especialidades que faltan.
+    const staffBySpec = new Map<string, number>();
+    for (const e of next.staff) {
+      staffBySpec.set(e.specialty, (staffBySpec.get(e.specialty) ?? 0) + 1);
+    }
+    const rank = (c: Employee) =>
+      (staffBySpec.get(c.specialty) ?? 0) * 1000 - c.skills[c.specialty];
+    const candidate = [...next.candidates].sort((a, b) => rank(a) - rank(b))[0];
+    // Regla de prudencia compartida: contratar solo con ~medio año de nómina.
+    const runwayAfter =
+      next.studio.capital -
+      hiringCost(candidate) -
+      26 * (weeklyFixedCosts(next) + candidate.salary);
+    if (runwayAfter < 0) return next;
+    next = hireCandidate(next, candidate.id);
   }
-  const rank = (c: Employee) =>
-    (staffBySpec.get(c.specialty) ?? 0) * 1000 - c.skills[c.specialty];
-  const candidate = [...state.candidates].sort((a, b) => rank(a) - rank(b))[0];
-  // Regla de prudencia compartida: contratar solo con ~medio año de nómina.
-  const runwayAfter =
-    state.studio.capital -
-    hiringCost(candidate) -
-    26 * (weeklyFixedCosts(state) + candidate.salary);
-  if (runwayAfter < 0) return state;
-  return hireCandidate(state, candidate.id);
+  return next;
 }
 
 /** Cuidado del equipo (formar/motivar): la palanca de integridad (docs/05 §6). */
@@ -618,7 +683,12 @@ function manageEnergy(state: GameState): GameState {
   if (!project) return state;
   let next = state;
   const finale = projectTotalWeeks(project) - project.weeksSpent <= FINALE_WEEKS;
+  // Los del servicio en vivo (9.7) no se tocan: su rotación va aparte
+  // (manageLiveOps) y robárselos al plato girando es la negligencia que
+  // el descuido castiga.
+  const inLive = liveServiceStaffIds(next);
   for (const employee of next.staff) {
+    if (inLive.has(employee.id)) continue;
     const assigned = next.projects[0].assignedStaff.includes(employee.id);
     const inRd = next.research.rdStaff.includes(employee.id);
     if (assigned && !finale && employee.energy < ROTATE_OUT_ENERGY) {
@@ -660,6 +730,9 @@ function manageEnergy(state: GameState): GameState {
 /**
  * Nodos al servicio del MOTOR (9.2): arquitectura, capacidades y su cadena.
  * Están exentos de la reserva de obra — comprarlos ES trabajar para el motor.
+ * Desde 9.7, `serviciosOnline` entra en la lista: es la infraestructura del
+ * negocio GaaS (sin ella no hay servicios) y esperar a que sobren 220 💡
+ * tras la reserva de la obra gen-7 la dejaba sin comprar toda la partida.
  */
 const MOTOR_NODE_IDS = new Set([
   'motorPropio1',
@@ -669,6 +742,7 @@ const MOTOR_NODE_IDS = new Set([
   'kitBiplataforma',
   'pipelineMultiplataforma',
   'tecnologiaOnline',
+  'serviciosOnline',
 ]);
 
 function maybeResearch(state: GameState): GameState {
@@ -735,14 +809,20 @@ function manageResearchStaff(state: GameState): GameState {
   }
 
   const assignedToProject = new Set(next.projects.flatMap((p) => p.assignedStaff));
+  const inLiveService = liveServiceStaffIds(next);
   // El laboratorio solo se lleva manos que SOBREN: dejar un proyecto grande
   // por debajo de su plantilla esperada hunde el QA y el alcance (docs/02
   // §6.1 crewRatio + docs/19 §9.1 encaje) — nadie investigaría a ese precio.
+  // Los platos girando (9.7) también cuentan como ocupación comprometida.
   const neededByProjects = next.projects.reduce(
     (sum, p) => sum + balance.development.sizeGate[p.size].minStaff,
     0,
   );
-  const spare = Math.max(0, next.staff.length - neededByProjects);
+  const neededByServices = activeLiveServices(next).reduce(
+    (sum, g) => sum + requiredLiveStaff(g),
+    0,
+  );
+  const spare = Math.max(0, next.staff.length - neededByProjects - neededByServices);
   const rdTarget = Math.min(spare, next.staff.length >= 10 ? 2 : next.staff.length >= 4 ? 1 : 0);
   while (next.research.rdStaff.filter((id) => id !== 'fundador').length < rdTarget) {
     const candidate = next.staff
@@ -750,6 +830,7 @@ function manageResearchStaff(state: GameState): GameState {
         (e) =>
           !e.founder &&
           !assignedToProject.has(e.id) &&
+          !inLiveService.has(e.id) &&
           !next.research.rdStaff.includes(e.id) &&
           e.energy >= ROTATE_IN_ENERGY,
       )
@@ -766,6 +847,152 @@ function manageResearchStaff(state: GameState): GameState {
     (next.staff.find((e) => e.id === 'fundador')?.energy ?? 0) >= ROTATE_IN_ENERGY
   ) {
     next = toggleResearchAssignment(next, 'fundador');
+  }
+  return next;
+}
+
+/** Tope de platos girando a la vez: obligación sí, malabarismo suicida no. */
+const MAX_LIVE_SERVICES = 2;
+/** Solo se opera un juego que la gente quiera habitar (reseña mínima). */
+const LIVE_REVIEW_BAR = 60;
+/** Tope de filiales: comprarse la industria entera mataría la competencia. */
+const MAX_SUBSIDIARIES = 3;
+
+/**
+ * Servicios en vivo del bot (9.7, docs/19 §9.7), como un jugador que asume la
+ * obligación: cierra el que sangra dinero, rota la dotación (el agotado sale,
+ * el descansado entra hasta la plantilla requerida) y abre uno nuevo SOLO si
+ * la plantilla tiene holgura para sostenerlo sin robarle manos al pipeline.
+ * Va antes de manageEnergy: los platos comprometidos se dotan primero y el
+ * proyecto se queda el resto (sobredotar un proyecto rinde poco; descuidar
+ * un servicio desangra).
+ */
+/** Semanas de infradotación crónica tras las que el bot cierra el servicio. */
+const LIVE_UNDERSTAFFED_SUNSET = 12;
+
+function manageLiveOps(state: GameState, phil: Philosophy): GameState {
+  if (phil.liveOps === 'no') return state;
+  let next = state;
+
+  // 1) El que sangra dinero se cierra; y el infradotado CRÓNICO también —
+  //    un jugador sensato corta antes de que el descuido pudra a la comunidad
+  //    (mantener un plato que no puedes girar es la peor opción).
+  for (const game of activeLiveServices(next)) {
+    const chronic = (game.liveService?.weeksNeglected ?? 0) >= LIVE_UNDERSTAFFED_SUNSET;
+    if (liveServiceWeeklyNet(game) < 0 || chronic) {
+      next = sunsetLiveService(next, game.id);
+    }
+  }
+
+  // 2) Dotación: sale el fundido, entra el descansado hasta la requerida.
+  for (const game of activeLiveServices(next)) {
+    const svc = game.liveService;
+    if (!svc) continue;
+    for (const id of [...svc.assignedStaff]) {
+      const employee = next.staff.find((e) => e.id === id);
+      if (!employee || employee.energy < ROTATE_OUT_ENERGY) {
+        next = toggleLiveServiceAssignment(next, game.id, id);
+      }
+    }
+    const required = requiredLiveStaff(game);
+    const current = () =>
+      next.releasedGames.find((g) => g.id === game.id)?.liveService?.assignedStaff.length ?? 0;
+    if (current() >= required) continue;
+    const busy = new Set([
+      ...next.projects.flatMap((p) => p.assignedStaff),
+      ...next.research.rdStaff,
+      ...liveServiceStaffIds(next),
+    ]);
+    const rested = next.staff
+      .filter((e) => !e.founder && !busy.has(e.id) && e.energy >= ROTATE_IN_ENERGY)
+      .sort((a, b) => b.energy - a.energy || a.id.localeCompare(b.id));
+    for (const candidate of rested) {
+      if (current() >= required) break;
+      next = toggleLiveServiceAssignment(next, game.id, candidate.id);
+    }
+  }
+
+  // 3) Abrir un servicio nuevo: el mejor juego elegible (la parroquia sigue a
+  //    la reseña) y SOLO si la dotación es sostenible contra el pipeline
+  //    TÍPICO del arquetipo — con la holgura actual O contratando (queda
+  //    aforo y la caja aguanta la nómina nueva): la capacidad del GaaS se
+  //    compra en nómina cuando el plato EXISTE, no por si acaso.
+  const services = activeLiveServices(next);
+  if (services.length >= MAX_LIVE_SERVICES) return next;
+  const pipelineNeeds = Math.max(
+    next.projects.reduce((sum, p) => sum + balance.development.sizeGate[p.size].minStaff, 0),
+    balance.development.sizeGate[SIZE_CEILING[phil.sizeAmbition]].minStaff,
+  );
+  const neededByServices = services.reduce((sum, g) => sum + requiredLiveStaff(g), 0);
+  const spare =
+    next.staff.length - pipelineNeeds - neededByServices - next.research.rdStaff.length;
+  const hireRoom = Math.max(0, staffCap(next) - next.staff.length);
+  const candidate = [...next.releasedGames]
+    .filter((g) => g.review >= LIVE_REVIEW_BAR && liveServiceBlockReason(next, g) === null)
+    .sort((a, b) => b.review - a.review || b.releaseWeek - a.releaseWeek)[0];
+  if (candidate) {
+    const required = requiredLiveStaff(candidate);
+    const missing = Math.max(0, required - Math.max(0, spare));
+    const payrollOk =
+      next.studio.capital > 26 * (weeklyFixedCosts(next) + missing * 800);
+    if (spare >= required || (missing <= hireRoom && payrollOk)) {
+      next = launchLiveService(next, candidate.id, {
+        hasBattlePass:
+          phil.liveOps === 'exprimido' && monetizationFlagAvailable(next, 'battlePass'),
+        aggressiveness: phil.liveOps === 'exprimido' ? Math.max(0.6, phil.aggressiveness) : 0,
+      });
+    }
+  }
+  return next;
+}
+
+/**
+ * Adquisiciones del bot (9.7): compra el estudio en venta más barato cuando
+ * la caja SOBRA (colchón de un año de fijos tras pagar), le fija su directiva
+ * de arquetipo y vende los cascarones (talento hundido cuyo flujo ya no paga
+ * ni el overhead). La fábrica compra-exprime-vende; el equilibrado construye.
+ */
+/**
+ * La hucha del salto: mientras el tamaño-ambición del arquetipo esté
+ * desbloqueado pero AÚN no autofinanciado, el bot ahorra para él — los
+ * caprichos (filiales) no pueden comerse la hucha. Sin esto, la fábrica se
+ * gastaba el colchón del AAA en comprar estudios y, con la regla de no
+ * re-firmar (CA 9.6b), moría sin lanzar un AAA jamás.
+ */
+function ambitionSavings(state: GameState, phil: Philosophy): number {
+  const size = SIZE_CEILING[phil.sizeAmbition];
+  if (state.projects.some((p) => p.size === size)) return 0; // ya está en vuelo
+  if (sizeBlockReason(state, size) !== null) return 0;
+  const estimate = estimateProject(size, 'pcCasero');
+  return estimate.cost + estimate.weeks * weeklyFixedCosts(state);
+}
+
+function manageAcquisitions(state: GameState, phil: Philosophy): GameState {
+  if (phil.acquisitions === 'no') return state;
+  let next = state;
+  for (const sub of subsidiaryList(next)) {
+    if (sub.directive !== phil.acquisitions) {
+      next = setSubsidiaryDirective(next, sub.id, phil.acquisitions);
+    }
+  }
+  for (const sub of subsidiaryList(next)) {
+    const flow = sub.pendingIncome * balance.acquisitions.payoutRate;
+    if (sub.talent <= 22 && flow < subsidiaryUpkeep(sub)) {
+      next = sellSubsidiary(next, sub.id);
+    }
+  }
+  if (subsidiaryList(next).length >= MAX_SUBSIDIARIES) return next;
+  const fixed = weeklyFixedCosts(next);
+  const target = (next.rivals?.studios ?? [])
+    .filter((r) => acquisitionBlockReason(next, r.id) === null)
+    .map((r) => ({ id: r.id, price: acquisitionPriceFor(next, r.id) ?? Infinity }))
+    .sort((a, b) => a.price - b.price)[0];
+  if (
+    target &&
+    next.studio.capital > target.price + 52 * fixed + ambitionSavings(next, phil)
+  ) {
+    next = acquireStudio(next, target.id);
+    next = setSubsidiaryDirective(next, target.id, phil.acquisitions);
   }
   return next;
 }
@@ -819,23 +1046,48 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
   }
   // 2. Estudio: ampliación (se compra, docs/18 V4-c), crédito, taller de
   // motores (9.2), investigación, plantilla, cuidado y rotación de energía.
+  // Los platos girando (9.7) se dotan ANTES que el proyecto: son obligación.
   state = maybeExpand(state, phil);
   state = manageLoans(state);
-  state = manageEngines(state, phil);
+  // Investigar ANTES de encargar obra de motor (9.7): los nodos pendientes
+  // (serviciosOnline incluido) se compran con prioridad — sin el orden, la
+  // obra gen-7 se comía los 💡 cada vez que rozaban los 120 y el nodo del
+  // GaaS se quedaba sin comprar la partida entera.
   state = maybeResearch(state);
+  state = manageEngines(state, phil);
   state = maybeHire(state, phil);
   state = maybeCare(state, phil);
-  state = manageEnergy(state);
-  state = manageResearchStaff(state);
+  state = manageLiveOps(state, phil);
+  // En la CORPORACIÓN el laboratorio se dota antes que el proyecto (9.7):
+  // manageEnergy enchufa al proyecto a todo descansado libre, y con un AAA en
+  // marcha la fábrica se quedaba SIN I+D años enteros (0 💡/semana) — el nodo
+  // del GaaS llegaba en 2022 con sus hits ya fuera de tiendas. Dos plazas de
+  // 40+ no le duelen al AAA. En etapas menores el orden clásico se mantiene:
+  // dotar el laboratorio primero disparó la economía de 💡 de TODA la partida
+  // (×20) y desplazó las trayectorias calibradas de 9.1–9.6.
+  if (state.studio.scaleStage >= 5) {
+    state = manageResearchStaff(state);
+    state = manageEnergy(state);
+  } else {
+    state = manageEnergy(state);
+    state = manageResearchStaff(state);
+  }
+  state = manageAcquisitions(state, phil);
   // 3. Un juego en marcha casi siempre (docs/02 §2), pero entre juego y
   // juego el estudio respira (energía + semanas de respiro post-lanzamiento):
   // sin descanso, el burnout hunde la calidad — y eso es diseño. Los del
   // laboratorio quedan fuera del corte de energía: su rotación es aparte.
+  const inLiveOps = liveServiceStaffIds(state);
   if (
     state.projects.length === 0 &&
     !onBreather(state) &&
     state.staff.every(
-      (e) => e.energy >= REST_TO_START || state.research.rdStaff.includes(e.id),
+      (e) =>
+        e.energy >= REST_TO_START ||
+        state.research.rdStaff.includes(e.id) ||
+        // El equipo del servicio trabaja aparte: su cansancio no frena el
+        // siguiente juego (su rotación vive en manageLiveOps).
+        inLiveOps.has(e.id),
     )
   ) {
     // El laboratorio no retiene al fundador cuando toca arrancar: vuelve al

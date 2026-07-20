@@ -5,6 +5,7 @@ import { FACTORY, FINAL_WEEK, INDIE, STUDIO, runFullGame, type Philosophy } from
 import type { GameState, ScaleStage } from '../model/gameState';
 import { computeLegacy } from './legacy';
 import { aggregateReputation } from './reputation';
+import { activeRivalStudios } from './rivals';
 
 /**
  * CA de cierre de Fase 7G (docs/13 7G y docs/00 §9) + criterios de la Fase
@@ -246,6 +247,70 @@ describe('Bots de partida completa: las tres filosofías de docs/01 §5 (docs/00
     }
     // Los que no usan EA no tienen historia EA: el trade-off es una elección.
     expect(factory.releasedGames.every((g) => g.earlyAccessInfo === undefined)).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // CA de la Fase 9.7 (docs/19 §9.7): GaaS + adquisiciones — el late-game
+  // deja el piloto automático: macro-gestión, sumideros y platos girando.
+  // -------------------------------------------------------------------------
+
+  it('CA 9.7(a): el GaaS es ingreso jugoso CON obligación — la fábrica opera su AAA y gana; el indie ni lo toca', () => {
+    // La fábrica convierte un AAA en servicio exprimido: rinde bastante MÁS
+    // de lo que cuestan sus servidores (jugoso)… y acaba cerrándolo cuando la
+    // dotación deja de salir a cuenta (obligación real: el bot corta antes de
+    // que el descuido pudra a la comunidad). El castigo del descuido en sí lo
+    // cubre liveService.test.ts (CA 9.7a quirúrgico, con semilla fija).
+    expect(factory.stats.liveServicesOpened ?? 0).toBeGreaterThanOrEqual(1);
+    const services = factory.releasedGames.filter((g) => g.liveService !== undefined);
+    const revenue = services.reduce((a, g) => a + (g.liveService?.revenue ?? 0), 0);
+    const upkeep = services.reduce((a, g) => a + (g.liveService?.upkeepPaid ?? 0), 0);
+    expect(revenue, 'el servicio rinde sobre sus servidores').toBeGreaterThan(upkeep * 1.5);
+    // El indie ni lo toca (identidad); el equilibrado tampoco llegó a operar:
+    // sus lanzamientos tardíos no pasan el listón de reseña que exige una
+    // parroquia (su historia de 9.7 son las filiales, CA 9.7b) — divergencia
+    // de filosofías, no un fallo.
+    expect(indie.stats.liveServicesOpened ?? 0).toBe(0);
+    expect(indie.releasedGames.every((g) => g.liveService === undefined)).toBe(true);
+  });
+
+  it('CA 9.7(b): las adquisiciones son sumidero e ingreso pasivo CON riesgo — la exprimida colapsa, la invertida construye', () => {
+    // La fábrica compra, exprime y VENDE cascarones: ninguna filial sobrevive
+    // en su cartera al final — el ciclo cínico completo (talento hundido →
+    // flujo que no paga el overhead → venta a pérdida). No hay dinero gratis.
+    expect(factory.stats.subsidiariesBought ?? 0).toBeGreaterThanOrEqual(3);
+    expect((factory.subsidiaries ?? []).length).toBe(0);
+    // El equilibrado invierte y sus filiales viven: talento por encima del de
+    // compra (construir paga a largo) con ingreso real y overhead real.
+    expect(studio.stats.subsidiariesBought ?? 0).toBeGreaterThanOrEqual(1);
+    const studioSubs = studio.subsidiaries ?? [];
+    expect(studioSubs.length).toBeGreaterThanOrEqual(1);
+    for (const sub of studioSubs) {
+      expect(sub.revenue, `${sub.name}: ingreso pasivo`).toBeGreaterThan(0);
+      expect(sub.upkeepPaid, `${sub.name}: overhead continuo`).toBeGreaterThan(0);
+      expect(sub.directive, sub.name).toBe('invertir');
+      expect(sub.talent, `${sub.name}: talento construido`).toBeGreaterThan(
+        balance.acquisitions.initialMorale,
+      );
+    }
+    // El indie no compra nada: su etapa (3) ni siquiera abre la ventanilla.
+    expect(indie.stats.subsidiariesBought ?? 0).toBe(0);
+  });
+
+  it('CA 9.7(c): absorber un rival lo elimina de la competencia — para siempre', () => {
+    // La fábrica absorbió estudios de verdad en su partida…
+    const absorbed = (factory.rivals?.studios ?? []).filter((r) => r.acquiredWeek !== undefined);
+    expect(absorbed.length).toBeGreaterThanOrEqual(3);
+    // …y ninguno vuelve al censo activo (ni anuncia, ni lanza, ni caza),
+    // aunque la filial se haya vendido después: salió de la competencia.
+    for (const { state } of bots) {
+      for (const r of (state.rivals?.studios ?? []).filter((x) => x.acquiredWeek !== undefined)) {
+        expect(
+          activeRivalStudios(state).some((a) => a.id === r.id),
+          `${r.id} sigue compitiendo`,
+        ).toBe(false);
+        expect(r.nextRelease, `${r.id} tiene lanzamiento pendiente`).toBeNull();
+      }
+    }
   });
 
   it('los legados cuentan tres historias distintas (docs/06 §6)', () => {

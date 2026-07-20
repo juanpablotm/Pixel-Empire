@@ -12,6 +12,19 @@ export type Audience = 'hardcore' | 'amplio' | 'casual' | 'infantil';
 /** Tamaño del proyecto: escala tiempo, coste y potencial (docs/02 §2; 5 desde 8.8). */
 export type ProjectSize = 'pequeno' | 'mediano' | 'grande' | 'muyGrande' | 'aaa';
 
+/** Orden canónico de tamaños, para comparar "al menos X" (docs/17 E1). */
+export const SIZE_ORDER: readonly ProjectSize[] = [
+  'pequeno',
+  'mediano',
+  'grande',
+  'muyGrande',
+  'aaa',
+];
+
+export function sizeAtLeast(size: ProjectSize, min: ProjectSize): boolean {
+  return SIZE_ORDER.indexOf(size) >= SIZE_ORDER.indexOf(min);
+}
+
 /** Fase interna de desarrollo: 1 Concepto · 2 Producción · 3 Pulido (docs/02 §2 paso 3). */
 export type DevPhaseNumber = 1 | 2 | 3;
 

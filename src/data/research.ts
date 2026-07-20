@@ -190,7 +190,8 @@ export const researchNodes: readonly ResearchNodeDef[] = [
   {
     id: 'serviciosOnline',
     name: 'Juegos como servicio',
-    description: 'Infraestructura para cientos de jugadores a la vez: desbloquea el Battle Royale.',
+    description:
+      'Infraestructura para cientos de jugadores a la vez: desbloquea el Battle Royale y OPERAR tus juegos como servicio en vivo (Fase 9.7).',
     cost: 100,
     era: 'E6',
     requiresNodes: ['tecnologiaOnline'],

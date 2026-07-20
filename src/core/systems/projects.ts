@@ -10,12 +10,13 @@ import { makeRng, type Rng } from '../engine/rng';
 import type { Feature } from '../model/content';
 import type { GameState } from '../model/gameState';
 import type { MonetizationConfig } from '../model/moral';
-import type {
-  Audience,
-  DevPhaseNumber,
-  FocusAllocation,
-  Project,
-  ProjectSize,
+import {
+  sizeAtLeast,
+  type Audience,
+  type DevPhaseNumber,
+  type FocusAllocation,
+  type Project,
+  type ProjectSize,
 } from '../model/project';
 import type { ReleasedGame } from '../model/release';
 import { addSentiment, applyReleaseCommunityEffects } from './community';
@@ -577,11 +578,6 @@ function assignedTeam(state: GameState, project: Project): Employee[] {
 }
 
 /** Orden canónico de tamaños, para comparar "≥ mediano" (9.6). */
-const SIZE_ORDER: readonly ProjectSize[] = ['pequeno', 'mediano', 'grande', 'muyGrande', 'aaa'];
-
-function sizeAtLeast(size: ProjectSize, min: ProjectSize): boolean {
-  return SIZE_ORDER.indexOf(size) >= SIZE_ORDER.indexOf(min);
-}
 
 /**
  * Fiebre del oro (docs/19 §9.4): un lanzamiento con reseña ≥ hitFeverBar puede
