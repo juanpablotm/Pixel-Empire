@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup Timeline - Pixel Empire</title>
+    <style>
+        /* Estilos base simulando el juego */
+        body {
+            background-color: #061109;
+            background-image: linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #50C878;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Overlay oscuro */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(4, 12, 7, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+
+        /* Ventana Modal */
+        .modal {
+            background: #091a10;
+            border: 2px solid #1c4728;
+            border-radius: 12px;
+            width: 800px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(80, 200, 120, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #1c4728;
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #fbbf24; /* Dorado del juego */
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            background: #1c4728;
+            color: #50C878;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        .close-btn:hover { background: #50C878; color: #091a10; }
+
+        /* Contenedor del Timeline */
+        .timeline-container {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        /* Línea conectora */
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 40px;
+            right: 40px;
+            height: 4px;
+            background: #1c4728;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .timeline-line-fill {
+            height: 100%;
+            background: #50C878;
+            width: 0%; /* Se llena por JS */
+            transition: width 0.3s ease;
+        }
+
+        /* Nodos (Eras) */
+        .node {
+            position: relative;
+            z-index: 2;
+            width: 50px;
+            height: 50px;
+            background: #091a10;
+            border: 3px solid #1c4728;
+            border-radius: 50%; /* Se puede cambiar a polígono para hexágonos */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .node.locked {
+            border-style: dashed;
+            color: #1c4728;
+        }
+
+        .node.completed {
+            border-color: #50C878;
+            color: #50C878;
+            background: #10331d;
+        }
+
+        .node.current {
+            border-color: #fbbf24;
+            color: #fbbf24;
+            background: #2b2308;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .node:hover { transform: scale(1.15); }
+
+        .node-label {
+            position: absolute;
+            top: 60px;
+            font-size: 12px;
+            white-space: nowrap;
+            color: #1c4728;
+        }
+        .node.completed .node-label { color: #50C878; }
+        .node.current .node-label { color: #fbbf24; }
+
+        /* Panel de Información */
+        .info-panel {
+            background: #0c2114;
+            border: 1px solid #1c4728;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 120px;
+        }
+
+        .info-title {
+            color: #fbbf24;
+            font-size: 18px;
+            margin: 0 0 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-years { color: #50C878; font-size: 14px; }
+        .info-desc { margin: 10px 0; font-size: 14px; line-height: 1.5; color: #a3d9b4; }
+        
+        .tags-container { display: flex; gap: 10px; margin-top: 15px; }
+        .tag {
+            background: #143620;
+            border: 1px solid #1c4728;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #50C878;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Cronología de la Industria</h2>
+                <button class="close-btn">CERRAR [X]</button>
+            </div>
+
+            <div class="timeline-container">
+                <div class="timeline-line">
+                    <div class="timeline-line-fill" id="progress-line"></div>
+                </div>
+                <div id="nodes-container" style="display: contents;"></div>
+            </div>
+
+            <div class="info-panel" id="info-panel">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de tus eras
+        const eras = [
+            { id: "E1", name: "La chispa", years: "~1980–1985", platform: "Micro-ordenadores", business: "Venta física", unlocked: true, current: true },
+            { id: "E2", name: "Las consolas", years: "~1985–1992", platform: "1ª gen de consolas", business: "Cartuchos", unlocked: false, current: false },
+            { id: "E3", name: "El salto 3D", years: "~1993–2000", platform: "CD-ROM / 32-bit", business: "Marketing masivo", unlocked: false, current: false },
+            { id: "E4", name: "La red", years: "~2001–2008", platform: "Online / Portátiles", business: "Parches / Primer DLC", unlocked: false, current: false },
+            { id: "E5", name: "Digital y móvil", years: "~2009–2015", platform: "Tiendas digitales", business: "Free-to-play / MTX", unlocked: false, current: false },
+            { id: "E6", name: "Servicios", years: "~2016–2023", platform: "Streaming / Nube", business: "Loot boxes / Pases", unlocked: false, current: false },
+            { id: "E7", name: "El futuro", years: "~2024+", platform: "Realidad Mixta / IA", business: "Modelos emergentes", unlocked: false, current: false }
+        ];
+
+        const nodesContainer = document.getElementById('nodes-container');
+        const infoPanel = document.getElementById('info-panel');
+        const progressLine = document.getElementById('progress-line');
+
+        // Renderizar nodos
+        eras.forEach((era, index) => {
+            const node = document.createElement('div');
+            
+            let statusClass = 'locked';
+            let icon = '?';
+            
+            if (era.current) {
+                statusClass = 'current';
+                icon = era.id;
+                progressLine.style.width = `${(index / (eras.length - 1)) * 100}%`;
+                showInfo(era); // Mostrar info inicial
+            } else if (era.unlocked) {
+                statusClass = 'completed';
+                icon = era.id;
+            }
+
+            node.className = `node ${statusClass}`;
+            node.innerHTML = `
+                ${icon}
+                <div class="node-label">${statusClass === 'locked' ? '???' : era.name}</div>
+            `;
+
+            // Interacción
+            node.addEventListener('mouseenter', () => showInfo(era));
+            
+            nodesContainer.appendChild(node);
+        });
+
+        function showInfo(era) {
+            if (era.unlocked || era.current) {
+                infoPanel.innerHTML = `
+                    <div class="info-title">
+                        <span>${era.id} - ${era.name}</span>
+                        <span class="info-years">${era.years}</span>
+                    </div>
+                    <div class="info-desc">La industria ha evolucionado. Cada nueva era trae consigo nuevas oportunidades y eleva el listón de calidad exigido por el público.</div>
+                    <div class="tags-container">
+                        <div class="tag">💻 Novedad: ${era.platform}</div>
+                        <div class="tag">💰 Negocio: ${era.business}</div>
+                    </div>
+                `;
+            } else {
+                infoPanel.innerHTML = `
+                    <div class="info-title">
+                        <span style="color:#1c4728">ERA DESCONOCIDA</span>
+                        <span class="info-years" style="color:#1c4728">???? - ????</span>
+                    </div>
+                    <div class="info-desc" style="color:#1c4728">Sobrevive en la industria y sigue avanzando en el tiempo para descubrir las nuevas plataformas y modelos de negocio que revolucionarán el mercado.</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { balance } from '../../data/balance';
 import { segments } from '../../data/segments';
-import type { Studio } from '../model/gameState';
+import type { GameState, Studio } from '../model/gameState';
 import type { Segment } from '../model/market';
 import type { ReputationVector } from '../model/moral';
 import type { ReleasedGame } from '../model/release';
@@ -113,6 +113,31 @@ export function employerPoolModifiers(employerRep: number): {
     tierFactor: e.tierFactorMin + (e.tierFactorMax - e.tierFactorMin) * t,
     salaryPremium,
   };
+}
+
+/**
+ * La MEJOR reputación de segmento ahora mismo (docs/06 §1: la reputación es un
+ * VECTOR, nunca un escalar). El gate de trayectoria de 10.2-B mira el mejor
+ * segmento y no el agregado a propósito: para crecer basta con ser bueno para
+ * ALGUIEN.
+ */
+export function topSegmentReputation(reputation: ReputationVector): number {
+  return Math.max(...Object.values(reputation));
+}
+
+/**
+ * Récord histórico de reputación (Fase 10.2-B, docs/20 W3): el tick actualiza
+ * la cima de la mejor reputación de segmento, igual que `peakCapital` guarda la
+ * cima de caja. Es un dato de TRAYECTORIA —lo respetado que llegaste a ser—, no
+ * de estado: por eso el gate de ampliación lo usa a él y no la reputación
+ * actual. Con la reputación actual, la fábrica cínica quedaba encerrada para
+ * siempre en la etapa 3 (su codicia hunde el vector a ~20 justo cuando junta el
+ * capital), y eso rompía "las 3 filosofías siguen viables".
+ */
+export function trackPeakReputation(state: GameState): GameState {
+  const top = topSegmentReputation(state.studio.reputation);
+  if (top <= (state.stats.peakReputation ?? 0)) return state;
+  return { ...state, stats: { ...state.stats, peakReputation: top } };
 }
 
 /** Aplica deltas de reputación a un Studio (azúcar para las acciones/sistemas). */

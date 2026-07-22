@@ -11,6 +11,15 @@ import type { Platform } from '../core/model/content';
  * en unidades de demanda semanal potencial. La escala crece era a era: el
  * mercado del videojuego se multiplica (docs/02 §5). Afinidades no listadas
  * = 0.5 (neutro).
+ *
+ * Fase 10.3 (docs/20 W5): las eras tempranas tenían 2 plataformas y ninguna
+ * DECISIÓN — sobre ese eje entran Atarix VCS (E1), Amigo 500 (E2) y Gameling
+ * Color (E3). Ninguna es un clon numérico: cada una mueve a la vez el ciclo de
+ * vida, el sesgo de público, la afinidad de género y el dev-kit, así que
+ * elegirla cambia qué juego conviene hacer, no solo cuánto vende. El "techo de
+ * calidad percibida" de las máquinas masivas es EMERGENTE, no una regla nueva:
+ * su audienceBias empuja hacia públicos Casual/Infantil, y esos públicos pagan
+ * peaje en la reseña del segmento Hardcore (data/segments.ts).
  */
 export const platforms: readonly Platform[] = [
   {
@@ -70,6 +79,44 @@ export const platforms: readonly Platform[] = [
     licenseCost: 0,
   },
   {
+    // La consola de cartuchos del boom (10.3, docs/20 W5). Su decisión: base
+    // instalada enorme YA, público familiar y cero prestigio — pero la crisis
+    // del 83 se la lleva por delante antes de que acabe la era. Ordeñar un
+    // mercado que se va a evaporar vs construir en el PC, que dura siempre.
+    id: 'atarixVcs',
+    name: 'Atarix VCS',
+    manufacturer: 'Atarix Inc.',
+    appearsInEra: 'E1',
+    releaseWeek: 0,
+    endWeek: 240,
+    lifecycleCurve: [
+      { week: 0, value: 380 },
+      { week: 60, value: 640 },
+      { week: 100, value: 700 },
+      { week: 150, value: 540 },
+      { week: 190, value: 220 },
+      { week: 240, value: 0 },
+    ],
+    genreAffinity: {
+      plataformas: 1.0,
+      carreras: 1.0,
+      deportivo: 1.0,
+      shooter: 0.75,
+      puzzle: 0.75,
+      ritmo: 0.5,
+      aventura: 0.5,
+      terror: 0.5,
+      rpg: 0.25,
+      estrategia: 0.25,
+      simulacion: 0.25,
+      gestion: 0.25,
+      sandbox: 0.25,
+    },
+    audienceBias: { hardcore: 0.5, amplio: 0.95, casual: 1.3, infantil: 1.35 },
+    // El cartucho hay que fabricarlo: el único coste de entrada de E1.
+    licenseCost: 3_000,
+  },
+  {
     id: 'masterV',
     name: 'Master V',
     manufacturer: 'Vexa Corp.',
@@ -121,6 +168,44 @@ export const platforms: readonly Platform[] = [
     },
     audienceBias: { hardcore: 0.7, amplio: 1.0, casual: 1.2, infantil: 1.3 },
     licenseCost: 8_000,
+  },
+  {
+    // El micro de 16 bits de E2 (10.3, docs/20 W5): la contra exacta de las
+    // consolas de su generación. Plataforma ABIERTA (dev-kit 0) y público
+    // hardcore que premia los géneros de sistemas —estrategia, gestión,
+    // simulación, aventura— a cambio de una base instalada mucho menor. Y
+    // aguanta hasta bien entrada E3: la apuesta lenta.
+    id: 'amigo500',
+    name: 'Amigo 500',
+    manufacturer: 'Commo Ltd.',
+    appearsInEra: 'E2',
+    releaseWeek: 340,
+    endWeek: 1_000,
+    lifecycleCurve: [
+      { week: 340, value: 200 },
+      { week: 450, value: 560 },
+      { week: 600, value: 820 },
+      { week: 800, value: 620 },
+      { week: 950, value: 180 },
+      { week: 1_000, value: 0 },
+    ],
+    genreAffinity: {
+      estrategia: 1.0,
+      simulacion: 1.0,
+      gestion: 1.0,
+      aventura: 1.0,
+      rpg: 0.75,
+      puzzle: 0.75,
+      sandbox: 0.75,
+      terror: 0.75,
+      shooter: 0.5,
+      plataformas: 0.5,
+      carreras: 0.5,
+      deportivo: 0.25,
+      ritmo: 0.25,
+    },
+    audienceBias: { hardcore: 1.25, amplio: 1.0, casual: 0.75, infantil: 0.6 },
+    licenseCost: 0,
   },
   {
     id: 'playsystem',
@@ -204,6 +289,43 @@ export const platforms: readonly Platform[] = [
     },
     audienceBias: { hardcore: 1.1, amplio: 1.05, casual: 0.9, infantil: 0.85 },
     licenseCost: 22_000,
+  },
+  {
+    // El portátil que se queda FUERA de la carrera 3D (10.3, docs/20 W5).
+    // Toda la generación de E3 son cajas de 32/64 bits con dev-kit de 20-25k;
+    // esta cuesta la mitad, tiene la base instalada más grande de las baratas
+    // y releva al Gameling justo cuando muere (s950). Su peaje: público
+    // familiar y afinidad pobre con los géneros que la crítica premia.
+    id: 'gamelingColor',
+    name: 'Gameling Color',
+    manufacturer: 'Ninten-Go',
+    appearsInEra: 'E3',
+    releaseWeek: 900,
+    endWeek: 1_400,
+    lifecycleCurve: [
+      { week: 900, value: 400 },
+      { week: 1_000, value: 1_200 },
+      { week: 1_120, value: 1_600 },
+      { week: 1_280, value: 1_000 },
+      { week: 1_400, value: 0 },
+    ],
+    genreAffinity: {
+      puzzle: 1.0,
+      plataformas: 1.0,
+      rpg: 0.75,
+      ritmo: 0.75,
+      aventura: 0.75,
+      estrategia: 0.5,
+      gestion: 0.5,
+      deportivo: 0.5,
+      carreras: 0.5,
+      shooter: 0.25,
+      terror: 0.25,
+      simulacion: 0.25,
+      sandbox: 0.25,
+    },
+    audienceBias: { hardcore: 0.65, amplio: 1.0, casual: 1.25, infantil: 1.35 },
+    licenseCost: 10_000,
   },
   {
     id: 'playsystem2',

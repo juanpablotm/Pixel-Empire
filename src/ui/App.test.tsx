@@ -2,12 +2,14 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createInitialState,
+  createMarketState,
   generateCandidates,
   startProject,
   type Employee,
   type ReleasedGame,
 } from '../core';
 import { balance } from '../data/balance';
+import { getEra } from '../data/eras';
 import { defaultMonetization } from '../data/monetization';
 import { platforms } from '../data/platforms';
 import { useGameStore } from '../state/store';
@@ -583,6 +585,56 @@ describe('App — la UI solo muestra estado y despacha acciones (docs/08 §6)', 
       expect(useGameStore.getState().game.releasedGames).toHaveLength(1);
       expect(useGameStore.getState().devProjectId).toBeNull();
       expect(screen.getByText('Reseña media')).toBeInTheDocument();
+    });
+  });
+  // -------------------------------------------------------------------------
+  // W7 (Fase 10.3, docs/20): la pantalla de I+D deja de ser una lista de ruido
+  // -------------------------------------------------------------------------
+  describe('Fase 10.3 — la investigación solo enseña lo que ya llegó (docs/20 W7)', () => {
+    /** Coloca la partida en una era concreta y abre la pantalla de I+D. */
+    function researchAtEra(era: 'E1' | 'E4' | 'E7') {
+      const week = getEra(era).startWeek;
+      useGameStore.setState({
+        game: {
+          ...createInitialState(SEED),
+          week,
+          era,
+          market: createMarketState(week),
+          research: { ...createInitialState(SEED).research, points: 500 },
+        },
+        screen: 'investigacion',
+      });
+      render(<App />);
+    }
+
+    it('en E1 no aparecen los ítems de eras futuras, pero sí el teaser', () => {
+      researchAtEra('E1');
+      // Lo de su era, sí.
+      expect(screen.getByText(/Análisis de mercado/)).toBeInTheDocument();
+      // Lo que aún no existe, no: ni la era ni sus nodos.
+      expect(screen.queryByText(/Tecnología online/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/IA generativa/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/El futuro cercano/)).not.toBeInTheDocument();
+      // Pero la aspiración se conserva.
+      expect(screen.getByText(/La próxima era traerá nuevas tecnologías/)).toBeInTheDocument();
+    });
+
+    it('al entrar en una era nueva, sus ítems aparecen', () => {
+      researchAtEra('E4');
+      expect(screen.getByText(/Tecnología online/)).toBeInTheDocument();
+      expect(screen.getByText(/Producción de audio/)).toBeInTheDocument();
+      // Y lo anterior sigue estando (el árbol no se poda hacia atrás).
+      expect(screen.getByText(/Análisis de mercado/)).toBeInTheDocument();
+      // Lo de E7 sigue sin verse.
+      expect(screen.queryByText(/IA generativa/)).not.toBeInTheDocument();
+    });
+
+    it('en la última era ya no hay teaser: no queda nada por llegar', () => {
+      researchAtEra('E7');
+      expect(screen.getByText(/IA generativa/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/La próxima era traerá nuevas tecnologías/),
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -326,6 +326,21 @@ Flujo de caja, ingresos por juego (curvas Recharts), costes desglosados, alertas
 ### 10.10 Pantalla de Legado (cierre)
 El **Museo del Legado** (§7.7).
 
+### 10.12 Investigación / I+D (doc `02` §3) `[DECIDIDO · Fase 10.3, docs/20 W7]`
+Cuatro bloques en este orden: **personal en I+D** (quién investiga), el **taller de motores** (9.2),
+los **temas por investigar** (8.4) y el **árbol de nodos agrupado por era**.
+
+**Solo se muestran las eras que ya han llegado.** Antes, el árbol dibujaba las siete de golpe y el
+jugador leía veinte filas bloqueadas para encontrar la única que podía pagar. Ahora la lista se corta
+en la era actual y se cierra con un **teaser discreto** —"🔮 La próxima era traerá nuevas tecnologías.
+Todavía no existen: nadie del sector sabe aún cómo se llamarán"— que desaparece en E7, cuando ya no
+queda nada por venir. Sin nombres ni cuentas: el misterio concreto lo cuenta la **cronología de eras**
+(§10.11) con sus "???", y aquí basta con desatascar la lista sin perder el gancho.
+
+Es **presentación pura**: qué se puede investigar y cuándo no cambia (lo sigue diciendo
+`researchNodeStatus`). La UI no decide nada — pregunta al núcleo con `visibleResearchEras(state)` y
+`hasFutureResearch(state)`, dos selectores puros de `core/systems/research.ts`.
+
 ### 10.11 Cronologías de era y de escala (overlay) `[DECIDIDO · Fase 8.6, docs/17 U1]`
 Los **dos ejes de progreso** de `16` §3 —el mundo cambia, tu estudio crece—, cada uno con su overlay
 sobre el estudio (telón semitransparente: la partida sigue ahí detrás). Se abren desde **su chip de la

@@ -1,9 +1,10 @@
 import { balance } from '../../data/balance';
-import { eraAtLeast } from '../../data/eras';
+import { eraAtLeast, eraOrder } from '../../data/eras';
 import { getGenre } from '../../data/genres';
 import { getResearchNode, researchNodes, researchNodeUnlocks } from '../../data/research';
 import { getTheme } from '../../data/themes';
 import { appendLog } from '../engine/log';
+import type { EraId } from '../model/era';
 import type { GameState } from '../model/gameState';
 import type { MarketKnowledge, ResearchState, StudioCapability } from '../model/research';
 import { dropFromLiveServices } from './liveService';
@@ -332,4 +333,28 @@ export function advanceResearch(state: GameState): GameState {
 /** Nodos visibles en el árbol para la UI (todos; el estado dice cuáles se pueden). */
 export function allResearchNodes(): typeof researchNodes {
   return researchNodes;
+}
+
+// --- W7: la pantalla de I+D no enseña las eras que no han llegado (docs/20) --
+
+/**
+ * Eras cuyos ítems de investigación se MUESTRAN (docs/20 W7): solo las ya
+ * alcanzadas y que tengan nodos. Los de eras futuras llenaban la lista de
+ * ruido —el jugador leía veinte cosas bloqueadas para encontrar la única que
+ * podía pagar—. Es PRESENTACIÓN pura: no cambia qué se puede investigar ni
+ * cuándo (eso lo sigue diciendo `researchNodeStatus`, que no se toca).
+ */
+export function visibleResearchEras(state: GameState): EraId[] {
+  return eraOrder.filter(
+    (era) => eraAtLeast(state.era, era) && researchNodes.some((n) => n.era === era),
+  );
+}
+
+/**
+ * ¿Queda tecnología por llegar en eras futuras? El teaser de la pantalla de
+ * I+D: ocultar los ítems desatasca la lista, pero ocultarlo TODO mataría la
+ * aspiración. El misterio concreto ya lo cubre la cronología de eras (8.6).
+ */
+export function hasFutureResearch(state: GameState): boolean {
+  return researchNodes.some((n) => !eraAtLeast(state.era, n.era));
 }

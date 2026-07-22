@@ -5,17 +5,19 @@ import {
   engineBuildBlockReason,
   engineBuildCost,
   engineReferenceAdequacy01,
+  hasFutureResearch,
   maxBuildableGeneration,
   researchableThemes,
   researchNodeStatus,
   themeResearchCost,
   themeResearchStatus,
+  visibleResearchEras,
   type EngineCapabilityId,
   type GameState,
   type MarketKnowledge,
   type OwnedEngine,
 } from '../../core';
-import { eraOrder, getEra } from '../../data/eras';
+import { getEra } from '../../data/eras';
 import { engineCapabilities, getEngineCapability } from '../../data/engines';
 import { researchNodes, researchNodeUnlocks } from '../../data/research';
 import { features } from '../../data/features';
@@ -361,9 +363,11 @@ export function ResearchScreen() {
         )}
       </section>
 
-      {eraOrder.map((eraId) => {
+      {/* Solo las eras que YA llegaron (docs/20 W7): los ítems de las futuras
+          llenaban la lista de ruido. Qué se puede investigar no cambia — solo
+          qué se muestra; el teaser de abajo conserva la aspiración. */}
+      {visibleResearchEras(game).map((eraId) => {
         const nodes = researchNodes.filter((n) => n.era === eraId);
-        if (nodes.length === 0) return null;
         const era = getEra(eraId);
         return (
           <section key={eraId} className="card">
@@ -432,6 +436,18 @@ export function ResearchScreen() {
           </section>
         );
       })}
+
+      {/* Teaser (docs/20 W7): ocultar los ítems desatasca la lista, pero
+          ocultarlo todo mataría la aspiración. Sin nombres ni números — el
+          misterio concreto ya lo cuenta la cronología de eras (8.6). */}
+      {hasFutureResearch(game) && (
+        <section className="card border-dashed" data-testid="research-teaser">
+          <p className="text-sm text-ink-mute">
+            🔮 <span className="font-medium text-ink">La próxima era traerá nuevas tecnologías.</span>{' '}
+            Todavía no existen: nadie del sector sabe aún cómo se llamarán.
+          </p>
+        </section>
+      )}
     </main>
   );
 }

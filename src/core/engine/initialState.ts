@@ -22,6 +22,7 @@ export function initialLegacyStats(): LegacyTrackedStats {
     scandalCount: 0,
     earlyTrendReleases: 0,
     firedCount: 0,
+    peakReputation: balance.reputation.initial,
   };
 }
 
@@ -82,6 +83,8 @@ export function createInitialState(seed: number): GameState {
     // La industria establecida de 1980 (9.5): tú eres el garaje, no el mundo.
     rivals: createInitialRivals(seed, balance.time.startWeek, balance.time.startEra),
     loanPrincipal: 0,
+    loanInterest: 0,
+    debtSpiral: false,
     scandals: [],
     community: initialCommunityState(),
     regulation: { pressure: {}, enacted: [] },

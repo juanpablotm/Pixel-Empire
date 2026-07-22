@@ -67,6 +67,15 @@ export interface LegacyTrackedStats {
   /** Empleados despedidos (Ética/empleador). */
   firedCount: number;
   /**
+   * Cima histórica de la MEJOR reputación de segmento (Fase 10.2-B, docs/20
+   * W3): el récord de "lo respetado que llegaste a ser", no lo que eres hoy.
+   * Es la mitad reputacional del gate de trayectoria para ampliar de etapa.
+   * Se mide sobre el máximo del vector (docs/06 §1) porque para crecer basta
+   * con haber sido bueno para ALGUIEN. Opcional: los saves previos lo estrenan
+   * en la migración v20 con la reputación actual como punto de partida.
+   */
+  peakReputation?: number;
+  /**
    * El arco del negocio (Fase 9.6, docs/19 §9.6). Opcionales: los saves
    * previos los leen con `?? 0` / `?? undefined` (mismo patrón que
    * recentFireWeeks) — sin migración destructiva.
@@ -96,8 +105,23 @@ export interface CashflowEntry {
   week: number;
   /** Ingresos del tick: ventas + MTX. */
   income: number;
-  /** Costes recurrentes del tick: fijos + desarrollo + salarios + intereses. */
+  /** Costes recurrentes del tick: fijos + desarrollo + salarios. */
   expenses: number;
+  /**
+   * Interés de deuda acumulado este tick (Fase 10.1, docs/20 W1): línea propia
+   * del P&L. NO forma parte de `expenses` porque desde 10.1 el interés no se
+   * paga en caja: CAPITALIZA en la deuda (`loanInterest`). Es un apunte de
+   * memoria para que el flujo de caja muestre el coste de la deuda semana a
+   * semana sin falsear el neto de caja. Opcional/ausente = 0.
+   */
+  interest?: number;
+  /**
+   * Cuota obligatoria de deuda pagada este tick (Fase 10.2-B, docs/20
+   * §Préstamos). A diferencia de `interest`, esto SÍ sale de caja: va INCLUIDA
+   * en `expenses` y se guarda aquí solo desglosada, para que Finanzas pueda
+   * nombrar qué parte del gasto semanal se lleva el banco. Opcional = 0.
+   */
+  debtPayment?: number;
 }
 
 /** Perfil de Legado multi-dimensional (docs/06 §6), cada eje 0..100. */

@@ -12,6 +12,7 @@ import {
   initialResearchState,
   insightKey,
   isStarterTheme,
+  topSegmentReputation,
   type EngineCapabilityId,
   type GameState,
 } from '../core';
@@ -24,7 +25,7 @@ import { researchNodes } from '../data/research';
  * con `saveVersion` y migraciones para cambios futuros de esquema.
  */
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 20;
 export const SAVE_STORAGE_KEY = 'pixel-empire:save';
 
 /** Formato del guardado: el GameState envuelto con metadatos de versión. */
@@ -358,6 +359,42 @@ const migrations: Record<number, (file: SaveFile) => SaveFile> = {
       ...file.state,
       subsidiaries: file.state.subsidiaries ?? [],
       policies: { ...file.state.policies, autoLiveOps: file.state.policies.autoLiveOps ?? false },
+    },
+  }),
+  // v18 (Fase 9.7) → v19 (Fase 10.1): el interés de deuda capitaliza (docs/20
+  // W1). No destructiva: el interés acumulado arranca en 0 (la deuda vieja no
+  // se retro-capitaliza — sería castigar por un bug pasado) y el flag de
+  // espiral en false; el principal existente se conserva y desde ya crece con
+  // su interés. Los libros de caja previos no llevan la línea `interest`
+  // (opcional = 0) y siguen siendo válidos tal cual.
+  18: (file) => ({
+    saveVersion: 19,
+    state: {
+      ...file.state,
+      loanInterest: file.state.loanInterest ?? 0,
+      debtSpiral: file.state.debtSpiral ?? false,
+    },
+  }),
+  // v19 (Fase 10.1) → v20 (Fase 10.2-B): pase económico. GRACIOSA y sin
+  // pérdidas. El único campo nuevo es `stats.peakReputation`, el récord de
+  // reputación que usa el gate de trayectoria para ampliar (docs/20 W3): como
+  // no se guardaba, se siembra con la MEJOR reputación de segmento ACTUAL —
+  // lo más favorable que se puede afirmar con honestidad sobre una partida de
+  // la que no tenemos historial, y nunca peor que empezar de cero.
+  // Todo lo demás son números de balance (costes por tamaño, requisitos de
+  // etapa, cuota de préstamo): aplican desde ya sin tocar el guardado. En
+  // particular NO se re-cobra retroactivamente ninguna cuota de deuda, y una
+  // partida guardada por encima de los aforos nuevos no se recorta (patrón
+  // docs/17 B1: los topes bloquean CRECER, no destruyen lo que ya existe).
+  19: (file) => ({
+    saveVersion: 20,
+    state: {
+      ...file.state,
+      stats: {
+        ...file.state.stats,
+        peakReputation:
+          file.state.stats.peakReputation ?? topSegmentReputation(file.state.studio.reputation),
+      },
     },
   }),
 };

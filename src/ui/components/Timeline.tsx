@@ -163,6 +163,12 @@ function useScaleNodes(): TimelineNode[] {
                 : [
                     formatMoney(info.requires.capital),
                     info.requires.staff > 0 ? `${info.requires.staff} en plantilla` : null,
+                    // Gate de trayectoria (docs/20 W3): crecer se gana jugando,
+                    // no solo ahorrando — así que se anuncia junto al capital.
+                    `${info.requires.gamesReleased} juegos`,
+                    info.requires.topReputation > 0
+                      ? `${info.requires.topReputation} de reputación en algún segmento`
+                      : null,
                   ]
                     .filter((r) => r !== null)
                     .join(' + ')}

@@ -119,23 +119,27 @@ el "listón de calidad" esperado y desbloquea plataformas, géneros, features y 
 ### 3.2 Etapas de escala del estudio `[baseline v1 · rediseñado en Fase 8.8]` (doc `02` §4, doc `18` V4)
 
 Transversal a las eras. Cada etapa cambia *qué decisiones tomas*. Desde la Fase 8.8 son **5 etapas**
-y el avance **SE COMPRA**: cumplir el requisito (capital + plantilla) solo **habilita** el botón
-"Ampliar estudio" de la cronología de escala; la ampliación se paga.
+y el avance **SE COMPRA**: cumplir el requisito solo **habilita** el botón "Ampliar estudio" de la
+cronología de escala; la ampliación se paga. Desde la Fase 10.2-B (docs/20 W3) el requisito es
+**mixto**: capital + plantilla + **trayectoria** (juegos lanzados y cima histórica de reputación en
+algún segmento), porque el capital solo no regula el ritmo de las etapas grandes.
 
-| Etapa | Aforo | Eres... | Requisito (habilita) | Coste de ampliar | Overhead/sem | Proyectos a la vez |
-|-------|:---:|---------|----------------------|:---:|:---:|:---:|
-| **1. Garaje** | 1 (tú) | Creador | Inicio de la partida | — | +0 | 1 |
-| **2. Estudio pequeño** | 4 | Líder de equipo | 25k 💰 | 10k 💰 | +300 | 1 |
-| **3. Estudio** | 10 | Director | 200k 💰 + 4 en plantilla | 100k 💰 | +1.500 | 2 |
-| **4. Estudio grande** | 25 | Ejecutivo | 1,5M 💰 + 8 en plantilla | 750k 💰 | +7.000 | 4 |
-| **5. Corporación** | 100 | Magnate | 8M 💰 + 20 en plantilla | 4M 💰 | +30.000 | 8 |
+| Etapa | Aforo | Eres... | Requisito: caja + plantilla | …+ trayectoria | Coste de ampliar | Overhead/sem | Proyectos |
+|-------|:---:|---------|----------------------|:---:|:---:|:---:|:---:|
+| **1. Garaje** | 1 (tú) | Creador | Inicio de la partida | — | — | +0 | 1 |
+| **2. Estudio pequeño** | 4 | Líder de equipo | 25k 💰 | 3 juegos | 12k 💰 | +300 | 1 |
+| **3. Estudio** | 10 | Director | 500k 💰 + 4 | 8 juegos · rep 55 | 250k 💰 | +1.500 | 2 |
+| **4. Estudio grande** | 25 | Ejecutivo | 5M 💰 + 8 | 18 juegos · rep 60 | 2,5M 💰 | +7.000 | 4 |
+| **5. Corporación** | 100 | Magnate | 25M 💰 + 20 | 32 juegos · rep 65 | 12,5M 💰 | +22.000 | 8 |
 
 Umbrales, costes y aforos **viven en `data/balance.ts`** (`staff.scale`, `economy.upkeepExtraByStage`)
 y son los que valida `expandStudio`; la **cronología de escala** (docs/10 §10.11) los lee de ahí, así
 que lo que se enseña es lo que se aplica. El **overhead creciente** (docs/18 V4-d) mata el "punto
-dulce": una Corporación quema ~1,5M 💰/año solo en infraestructura — sostenerla exige seguir sacando
+dulce": una Corporación quema ~1,1M 💰/año solo en infraestructura — sostenerla exige seguir sacando
 éxitos. Los umbrales están escalonados para que Corporación aterrice hacia **E5–E6** (verificado con
-los bots de docs/08 §8: la fábrica AAA la compra en E6).
+los bots de docs/08 §8: el optimizador la compra en E5 y la fábrica AAA en E5 tardía). La reputación
+del gate es la **cima histórica**, no la de hoy: haber tenido público alguna vez basta, de modo que
+la fábrica cínica no queda excluida del arco por su propia identidad.
 
 ### 3.3 Investigación y desbloqueos (doc `02` §3)
 
@@ -158,11 +162,21 @@ semanas aparte (§2 "Motores"). Muchos desbloqueos están **gateados por era** (
   **desglose de reseña siempre es legible** (Pilar 2): solo se paga saberlo *antes*, no la explicación
   *después*.
 
+**La pantalla de I+D solo enseña lo que ya llegó (Fase 10.3).** El árbol dibujaba las siete eras de
+golpe y había que leer veinte filas bloqueadas para dar con la única pagable. Ahora la lista se corta
+en tu era y se cierra con un teaser ("la próxima era traerá nuevas tecnologías") que desaparece en E7.
+No cambia **qué** puedes investigar ni **cuándo**: solo qué se dibuja.
+
+**Ampliar contenido no puede encarecer la investigación (Fase 10.3).** Regla permanente: el ritmo de
+desbloqueo por era se **mide** con los bots antes y después de cada ampliación. Al pasar de 18 a 29
+features, ninguna estrenó nodo (las gateadas cuelgan de nodos existentes) y el árbol completo **bajó**
+de 1.088 a 993 💡 para compensar que los proyectos se alargan.
+
 ### 3.4 Ritmo objetivo `[baseline v1]` (doc `02` §6)
 
 - Partida completa E1→E7: **8–10 horas**; **35–45 juegos** en total.
-- Juego pequeño de garaje: **6 semanas**. Mediano 18 · grande 42 · muy grande 72 · **AAA 120**
-  (~2,3 años). La duración la fija **solo el tamaño**: **1 tick = 1 semana** y meter más gente
+- Juego pequeño de garaje: **6 semanas**. Mediano 18 · grande 42 · muy grande 72 · **AAA 96**
+  (~1,8 años; bajó de 120 en 10.2-B para que el AAA sea una cima y no una trampa). La duración la fija **solo el tamaño**: **1 tick = 1 semana** y meter más gente
   **no acorta el plazo** — la capacidad del equipo (personas, motores) decide cómo de **bien** se
   ejecuta dentro de él, con rendimientos decrecientes (docs `02` §6.1). Para producir más, proyectos
   en paralelo.
@@ -258,19 +272,24 @@ Nombres **ficticios reconocibles**. Cada una tiene un ciclo de vida (nace → cr
 descatalogada) que fija su base instalada y su tamaño de mercado (`04`). Algunas exigen **licencia/dev-kit**
 (10k–100k 💰) e investigación.
 
-Desde 9.4 cada era tiene **2–3 consolas en competencia que salen escalonadas** dentro de la era
+Desde 9.4 cada era tiene **2–4 consolas en competencia que salen escalonadas** dentro de la era
 (`releaseWeek` distinto): decidir en cuál y cuándo lanzar es una lectura de mercado (dev-kit vs base
-instalada). Lista según `data/platforms.ts` (la fuente de verdad):
+instalada). Desde 10.3, **toda era tiene al menos 3 a la venta a la vez** (E1 se quedaba en dos: la
+primera era del juego no ofrecía ninguna decisión). Lista según `data/platforms.ts` (la fuente de
+verdad):
 
 | Plataforma | Era | Tipo | Fabricante (ficticio) | Nota |
 |------------|:---:|------|-----------------------|------|
 | PC Casero | E1 | Ordenador | (abierto) | Sin licencia; crece toda la partida |
 | Commo 64 | E1 | Micro-ordenador | Commo Ltd. | Base instalada enorme en E1; muere pronto |
+| **Atarix VCS** | E1 | Consola de cartuchos | Atarix Inc. | Masiva y familiar, dev-kit barato… **la crisis del 83 la mata en su propia era** |
 | Master V | E2 | Consola sobremesa | Vexa Corp. | Cartuchos; guerra de consolas E2 |
 | Gameling | E2 | Portátil | Ninten-Go | Favorece Casual/Puzzle; monocromo |
+| **Amigo 500** | E2 | Micro de 16 bits | Commo Ltd. | **Sin dev-kit**; hardcore y géneros de sistemas; base pequeña pero larga |
 | Playsystem | E3 | Consola 32-bit (CD) | Sonora | El gran salto 3D |
 | N-Cube | E3 | Consola 64-bit | Ninten-Go | Cartucho; familiar |
 | **Vortex 32** | E3 | Consola 32-bit | Vexa Corp. | Tercera en discordia; sale a mitad de E3 |
+| **Gameling Color** | E3 | Portátil | Ninten-Go | El relevo del Gameling: **fuera de la carrera 3D**, dev-kit a mitad de precio |
 | Playsystem 2 | E4 | Consola | Sonora | Base instalada récord |
 | **Vertex** | E4 | Consola | Microhard | Rival hardcore; entra a mitad de E4 |
 | **Gameling Advance** | E4 | Portátil | Ninten-Go | Relevo del Gameling; familiar |
@@ -325,19 +344,38 @@ del diseño*) y el desglose de reseña **nombra** las piezas fuera de sitio. Alg
 | Banda sonora original | E2 | Medio | Muy bajo | Ritmo, Carreras, Plataformas, Aventura | — |
 | Voz digitalizada ◄var | E3 | Medio | Bajo | Aventura, RPG, Terror | Puzzle |
 | Cinemáticas | E3 | Alto | Medio | RPG, Aventura, Shooter, Terror | Puzzle, Gestión, Ritmo |
+| **Tutorial integrado** ◄var | E3 | Bajo | Bajo | Estrategia, Gestión, Simulación, Deportes, Puzzle | Terror, Sandbox |
+| **Dificultad implacable** ◄var | E3 | Medio | Medio | Plataformas, Terror, Shooter, Estrategia, RPG | Gestión, Simulación, Deportes, Ritmo |
+| **IA por guiones** ◄var | E3 | Bajo | Bajo | Shooter, Plataformas, Terror, Deportes, Carreras | Puzzle, Ritmo, Gestión |
+| **Banda sonora licenciada** ◄var | E3 | Muy alto | Medio | Ritmo, Carreras, Deportes, Plataformas, Aventura | Terror, Estrategia, Gestión |
+| **Campaña cooperativa** | E3 | Alto | Alto | Shooter, Aventura, RPG, Plataformas, Terror | Estrategia, Gestión, Puzzle, Ritmo |
 | Multijugador online | E4 | Muy alto | Muy alto | Shooter, Deportes, Carreras, Estrategia, Battle Royale | Aventura |
 | Doblaje completo ◄var | E4 | Muy alto | Medio | RPG, Aventura, Terror | Puzzle, Ritmo, Deportes, Carreras |
 | Logros y desafíos | E4 | Bajo | Muy bajo | — (neutra) | — |
+| **Economía simulada** | E4 | Alto | Medio | Gestión, Simulación, Estrategia, Sandbox, RPG | Ritmo, Plataformas, Carreras, Shooter |
+| **Clasificatorias online** | E4 | Alto | Alto | Shooter, Deportes, Carreras, Ritmo, Estrategia, Battle Royale | Aventura, Terror, RPG |
+| **Personalización de avatar** | E4 | Medio | Bajo | RPG, Deportes, Battle Royale, Simulación, Sandbox, Carreras | Puzzle, Aventura, Terror |
 | Mundo procedural ◄var | E5 | Alto | Alto | Sandbox, RPG, Estrategia | Aventura, Ritmo, Deportes |
 | Guardado en la nube | E5 | Bajo | Bajo | — (neutra) | — |
+| **IA adaptativa** ◄var | E5 | Muy alto | Muy alto | Shooter, Estrategia, Terror, Deportes, Carreras, Simulación | Puzzle, Ritmo, Aventura |
 | Modo foto | E6 | Medio (marketing) | Muy bajo | Sandbox, Aventura, Carreras, Simulación | Puzzle, Ritmo |
 | Cross-play | E6 | Alto | Alto | Shooter, Deportes, Battle Royale, Carreras | Aventura, Terror |
+| **Modo espectador** | E6 | Alto | Medio | Battle Royale, Shooter, Deportes, Carreras, Estrategia | Aventura, Terror, Puzzle |
 | Compañero con IA | E7 | Muy alto | Muy alto | RPG, Aventura, Terror, Simulación | Puzzle, Deportes, Carreras, Ritmo |
+| **Diseño para realidad mixta** | E7 | Muy alto | Muy alto | Terror, Ritmo, Simulación, Aventura, Shooter, Carreras | Estrategia, Gestión, Puzzle |
 
 **Variantes (◄var):** `mundoAbierto` = artesanal (caro/lento/calidad) vs procedural (barato/rápido/
 repetitivo); `voces` = voz digitalizada (barata) vs doblaje completo (caro, exige *Producción de
-audio* en I+D). Multiplicadores en `balance.quality.featureAffinity` (1 / 0.5 / −0.25; bugs de
-misfit ×1.75 sobre `featureBugScale` 1.3).
+audio* en I+D); `musica` = banda sonora original (E2, barata) vs licenciada (E3, cara); `ia` = IA por
+guiones (E3, barata) vs IA adaptativa (E5, cara); `accesibilidad` = tutorial integrado vs dificultad
+implacable — este último **no es el eje barato/caro sino a quién invitas**: sus listas de encaje son
+casi opuestas. Multiplicadores en `balance.quality.featureAffinity` (1 / 0.5 / −0.25; bugs de misfit
+×1.75 sobre `featureBugScale` 1.3).
+
+**Ampliación de la Fase 10.3 (en negrita, 11 nuevas: de 18 a 29).** El criterio no fue "más" sino
+**los géneros hambrientos**: Ritmo tenía UNA feature que le encajaba y Gestión dos, así que sus juegos
+llenaban el alcance a base de relleno neutro. Ahora ninguno baja de tres. **Nada nuevo en E1 ni E2**:
+el early game está calibrado por el CA 9.1(a) y el pase económico de la 10.2-B, y tocarlo los rompía.
 
 ---
 
@@ -421,10 +459,10 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 | Publisher (9.6) | se queda el 55–75 % del bruto para siempre · adelanto no recuperable (coste dev × 0,8–1,35 × rep) + arranque a su cargo · distribución +15–45 % de demanda · bolsa de marketing 3k–200k × perfil · a veces IP / exclusividad |
 | Early Access (9.6, E5+) | solo auto-publicados en Pulido · precio ×0,7 · demanda ×0,2 con decaída · feedback +QA/−bugs semanal · paciencia 52 sem y quema en rampa · la 1.0 recorta el pico por compradores EA; floja (< 60) = traición |
 | Precio por juego | 20–60 💰 según tamaño/era |
-| Coste base por tamaño | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
-| Requisito por tamaño | plantilla mín. 1 / 3 / 8 / 15 / 40 · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** (AAA) |
-| Ampliar el estudio (docs/18 V4-c) | coste 10k / 100k / 750k / 4M 💰 a etapa 2/3/4/5; requiere 25k / 200k+4 / 1,5M+8 / 8M+20 (capital+plantilla) |
-| Overhead semanal por etapa (docs/18 V4-d) | +0 / +300 / +1.500 / +7.000 / +30.000 💰 sobre el fijo base |
+| Coste base por tamaño (escalera de docs/20 W2) | 500 / 5.000 / 88.000 / 460.000 / 1.200.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar: cada escalón cuesta ~×8 el anterior en total y el ingreso escala ~×5–6 → más dinero al crecer, peor margen |
+| Requisito por tamaño | plantilla mín. 1 / 3 / 8 / 15 / **24** · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** (AAA) |
+| Ampliar el estudio (docs/18 V4-c + docs/20 W3) | coste 12k / 250k / 2,5M / 12,5M 💰 a etapa 2/3/4/5 (= 50 % del requisito); requiere 25k+0 / 500k+4 / 5M+8 / 25M+20 (capital+plantilla) **y** 3 / 8 / 18 / 32 juegos lanzados con cima de reputación 0 / 55 / 60 / 65 |
+| Overhead semanal por etapa (docs/18 V4-d) | +0 / +300 / +1.500 / +7.000 / +22.000 💰 sobre el fijo base |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
@@ -433,12 +471,12 @@ La reputación es un **vector**, no un número. Cada decisión mueve segmentos d
 | Punto de I+D | ~1 por persona·semana en investigación |
 | Construir motor propio (9.2) | por generación 1→7: 6k…2,5M 💰 + 8…120 💡 + 6…32 semanas; **mejorar = 60 %** |
 | Licenciar motor (9.2) | cuota 15k–150k 💰 por juego + royalty 7–12 % de ingresos brutos |
-| Servicio en vivo (9.7, E6+) | ARPU 0,5 💰/jugador·sem × (1 + 0,5·pase + 0,8·tienda) · servidores 200–9k/sem + 0,1/jugador · equipo EXCLUSIVO 3/5/8/16 (mediano→AAA) · churn 2 %/sem (+8 % descuidado) |
+| Servicio en vivo (9.7, E6+) | ARPU 0,5 💰/jugador·sem × (1 + 0,5·pase + 0,8·tienda) · servidores 200–9k/sem + 0,1/jugador · equipo EXCLUSIVO 3/5/8/**11** (mediano→AAA) · churn 2 %/sem (+8 % descuidado) |
 | Adquirir estudios (9.7, E. grande+) | indie 250k / medio 1,6M × fuerza · overhead 2,5k / 9k 💰/sem · bote por juego 90k–3M × calidad^1,75 (suelo reseña 45), cobrado al 6 %/sem · vender = valor actual × 0,55 |
-| Préstamos | hasta ~6 meses de costes fijos; interés ~1%/semana |
+| Préstamos (rediseñados en docs/20) | hasta ~6 meses de costes fijos; interés ~1 %/sem que **capitaliza**; la línea disponible descuenta la deuda VIVA; **cuota obligatoria ~2,5 %/sem que sale de caja** — endeudarse pesa cada semana |
 
 El **tamaño** es una decisión con peso: coste base fijo + plantilla y etapa mínimas (el AAA solo como
-Corporación de 40+). La **escala también**: cada ampliación se compra y encarece la semana — un estudio
+Corporación de 24+). La **escala también**: cada ampliación se compra y encarece la semana — un estudio
 grande sin éxitos se desangra. Bancarrota sostenida (sin poder pagar salarios) = **game over**.
 
 ---

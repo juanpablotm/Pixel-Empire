@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { balance } from '../../data/balance';
 import { getEra } from '../../data/eras';
 import { getFeature } from '../../data/features';
-import { researchNodeUnlocks } from '../../data/research';
+import { researchNodeUnlocks, researchNodes } from '../../data/research';
 import { getResearchNode } from '../../data/research';
+import { eraAtLeast } from '../../data/eras';
 import { getTheme } from '../../data/themes';
 import { createInitialState } from '../engine/initialState';
 import { tick } from '../engine/tick';
@@ -16,6 +17,7 @@ import {
   balanceRevealed,
   buyResearch,
   fitRevealed,
+  hasFutureResearch,
   insightKnown,
   priceRevealed,
   researchInsight,
@@ -24,6 +26,7 @@ import {
   themeResearchCost,
   themeResearchStatus,
   toggleResearchAssignment,
+  visibleResearchEras,
 } from './research';
 import { toggleAssignment } from './staff';
 import { availableThemes, featureAvailable, genreAvailable, themeAvailable } from './unlocks';
@@ -443,5 +446,49 @@ describe('P2: conocimiento de mercado que se gana (docs/17)', () => {
     // depender de la investigación: la explicación posterior no se paga nunca.
     expect(g.breakdown.fit).toBeGreaterThan(0);
     expect(g.breakdown.dIdeal).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// W7 (Fase 10.3, docs/20): la pantalla de I+D no enseña las eras que no han
+// llegado. Es PRESENTACIÓN: qué se puede investigar y cuándo no cambia.
+// ---------------------------------------------------------------------------
+
+describe('W7 — visibilidad del árbol por era (docs/20)', () => {
+  it('solo se muestran las eras ya alcanzadas, y llegan en orden', () => {
+    expect(visibleResearchEras(atEra('E1'))).toEqual(['E1']);
+    expect(visibleResearchEras(atEra('E2'))).toEqual(['E1', 'E2']);
+    expect(visibleResearchEras(atEra('E6'))).toEqual(['E1', 'E2', 'E3', 'E4', 'E5', 'E6']);
+  });
+
+  it('al entrar en una era nueva aparecen SUS ítems (y ni uno más)', () => {
+    const e4 = atEra('E4');
+    const shown = visibleResearchEras(e4);
+    const visibleNodes = researchNodes.filter((n) => shown.includes(n.era));
+    // Los de E4 ya están…
+    expect(visibleNodes.map((n) => n.id)).toContain('tecnologiaOnline');
+    expect(visibleNodes.map((n) => n.id)).toContain('produccionAudio');
+    // …y ninguno de una era futura se cuela.
+    for (const node of visibleNodes) {
+      expect(eraAtLeast(e4.era, node.era), `${node.name} (${node.era}) visible en E4`).toBe(true);
+    }
+    expect(visibleNodes.map((n) => n.id)).not.toContain('iaGenerativa');
+  });
+
+  it('el teaser vive mientras quede tecnología por llegar y se apaga al final', () => {
+    expect(hasFutureResearch(atEra('E1'))).toBe(true);
+    expect(hasFutureResearch(atEra('E6'))).toBe(true);
+    const e7: GameState = { ...atEra('E6'), era: 'E7' };
+    expect(hasFutureResearch(e7)).toBe(false);
+  });
+
+  it('ocultar NO cambia qué se puede investigar: el estado manda igual', () => {
+    // El nodo de E7 sigue existiendo y sigue bloqueado en E4 — la vista no
+    // toca la regla, solo deja de dibujar la fila.
+    const e4 = atEra('E4', 9999);
+    expect(researchNodeStatus(e4, 'iaGenerativa')).toBe('bloqueado');
+    const e7: GameState = { ...atEra('E6', 9999), era: 'E7' };
+    expect(researchNodeStatus(e7, 'iaGenerativa')).toBe('disponible');
+    expect(visibleResearchEras(e7)).toContain('E7');
   });
 });

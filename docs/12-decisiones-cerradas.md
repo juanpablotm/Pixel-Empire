@@ -79,11 +79,11 @@ de playtest (viven en `data/balance.ts`), pero el **diseño no cambia**.
 | Publisher (9.6) | reparto 55–75 % del bruto para siempre · adelanto = coste dev × cobertura 0,8–1,35 × rep 0,9–1,15, no recuperable, arranque a su cargo · distribución +15–45 % de demanda · bolsa de marketing 3k–200k × perfil · a veces IP y/o exclusividad de plataforma · ofertas deterministas (sin PRNG) |
 | Early Access (9.6, desde E5) | solo auto-publicados en Pulido · precio ×0,7 · demanda ×0,2 (+hype, decae ×0,97/sem) · feedback: +0,35 QA y −0,3 bugs/sem · paciencia 52 sem, quema progresiva (rampa hasta ×2) · 1.0: pico recortado por compradores EA (tope 60 %) · traición si reseña < 60 |
 | Precio por juego | 20–60 💰 según tamaño/era |
-| Coste base por tamaño (docs/17 E1 + docs/18 V4) | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), cobrado al iniciar |
+| Coste base por tamaño (docs/17 E1 + docs/18 V4 + **docs/20 W2**) | 500 / 5.000 / 88.000 / 460.000 / 1.200.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), cobrado al iniciar. Regla de diseño: cada escalón cuesta ~×8 el anterior en TOTAL y el ingreso escala ~×5–6 → más beneficio absoluto al crecer, peor margen. El Pequeño NO sube (encarecerlo agranda el acantilado de ROI que la escalera venía a aplanar y ahoga el garaje) |
 | Requisito por tamaño (docs/18 V4-b) | plantilla mín. 1 / 3 / 8 / 15 / 40 · etapa mín. Garaje / E. pequeño / Estudio / E. grande / **Corporación** |
 | Duración por tamaño (docs/02 §6.1) | 6 / 18 / 42 / 72 / **120** semanas de calendario. 1 tick = 1 semana; la plantilla no acorta el plazo, mejora la ejecución (`crewRatio`, tope 1,5×). El **crunch** es la única excepción: 2 semanas de trabajo por tick (sale en la mitad, con el doble de bugs y desgaste) |
-| Escala: 5 etapas que SE COMPRAN (docs/18 V4-a/c) | aforo 1/4/10/25/100 · proyectos 1/1/2/4/8 · requisito 25k / 200k+4 / 1,5M+8 / 8M+20 (capital+plantilla) · coste de ampliación 10k / 100k / 750k / 4M 💰. Cumplir el umbral habilita; ampliar se paga (botón en la cronología de escala) |
-| Overhead fijo semanal por etapa (docs/18 V4-d) | +0 / +300 / +1.500 / +7.000 / +30.000 💰 sobre el fijo base (100 💰): la Corporación quema ~1,5M/año antes de nóminas — sin éxitos no se sostiene |
+| Escala: 5 etapas que SE COMPRAN (docs/18 V4-a/c + **docs/20 W3**) | aforo 1/4/10/25/100 · proyectos 1/1/2/4/8 · requisito MIXTO capital+plantilla+**trayectoria**: 25k+0 / 500k+4 / 5M+8 / 25M+20, con 3 / 8 / 18 / 32 juegos lanzados y cima histórica de reputación 0 / 55 / 60 / 65 en algún segmento · coste de ampliación 12k / 250k / 2,5M / 12,5M 💰 (50 % del requisito). Cumplir el umbral habilita; ampliar se paga (botón en la cronología de escala) |
+| Overhead fijo semanal por etapa (docs/18 V4-d + **docs/20 W2-bis**) | +0 / +300 / +1.500 / +7.000 / +22.000 💰 sobre el fijo base (100 💰): la Corporación quema ~1,1M/año antes de nóminas — sin éxitos no se sostiene |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
@@ -105,8 +105,13 @@ y la reputación de **hardcore/comunidad** (hasta −5/−4 × brecha). El pico 
   premium+mtx ≈ 1.0 + **0.85**·`aggressiveness`; f2p ≈ 0.3 en ventas base + MTX ≈ **1.1**·`aggressiveness`.
 - **Dilema con dientes (9.1):** la reputación decae sola hacia 50 (0.6 %/semana del exceso; sin cura
   gratis por debajo) y solo las reseñas > **65** construyen reputación.
-- **Préstamos:** línea de crédito según reputación/activos; principal hasta ~6 meses de costes fijos;
-  interés ~1%/semana; impago sostenido acelera la bancarrota.
+- **Préstamos (rediseñados en 10.2-B, docs/20):** línea de crédito según reputación/activos, hasta
+  ~6 meses de costes fijos; interés ~1 %/semana que **CAPITALIZA** en la deuda (10.1, docs/20 W1).
+  Además, desde 10.2-B: la **línea disponible descuenta la deuda VIVA** (principal + interés) y hay
+  **cuota mínima obligatoria** (~2,5 %/semana de la deuda viva) que **sale de caja** cada tick — como
+  supera al interés, la deuda desatendida decrece en vez de dispararse, pero mientras tanto compite
+  con la nómina. Aviso de espiral cuando la cuota supera el ingreso reciente
+  (`balance.economy.loans.spiral`). Impago sostenido acelera la bancarrota.
 - **Premios anuales** (tipo Game Awards) confirmados como sistema.
 - Reputación = **vector por segmento**; "deuda de reputación" oculta que escala escándalos; regulación por era.
 - Cierre de partida: **Puntuación de Legado** multi-dimensional (Riqueza/Prestigio/Impacto/Obras/Ética).

@@ -166,3 +166,18 @@ No en el alcance base; el diseño las admite sin reescritura:
 - Terminar cada fase con sus tests (semilla fija) verdes antes de pasar a la siguiente.
 - Las decisiones están cerradas como **baseline v1**; los valores de `data/balance.ts` pueden ajustarse en
   playtest sin cambiar el diseño. Ver `12-decisiones-cerradas.md` para el registro de cierre.
+- **CA de las fases de BALANCE (desde 10.1, docs/20 W8):** una fase que retoca `data/balance.ts` **no está
+  cerrada solo con "las 3 filosofías (`01` §5) siguen viables"**. Exige además que el **4.º bot,
+  "optimizador"** (`08` §8.1, `src/test/bots.ts`), **tampoco resuelva el juego**: no llega a Corporación
+  antes de E5, no imprime dinero y no encuentra un punto dulce invencible. Se verifica en
+  `core/systems/optimizer.test.ts` y se mide con `src/test/optimizerReport.ts` (ROI por tamaño, etapa por
+  era). Sin esa vara, el balance se valida con datos falsos (los bots viejos jugaban peor que un humano).
+- **Ampliado en 10.2-B (docs/20):** cuando la fase toca la **economía de escala**, el informe de cierre es
+  `src/test/economyReport102B.ts` y hay que mirar **dos números más**, no solo el ROI:
+  1. el **beneficio ABSOLUTO por tamaño** debe crecer de forma monótona (si crecer da menos dinero, nadie
+     crece y se rompe el Pilar 5) — se comprueba con el **contrafactual controlado**, no con el agregado
+     por perfil, que mezcla la curva de costes con lo bien que ese bot ejecuta;
+  2. **las 3 filosofías alcanzan su etapa-ambición**, no solo "no quiebran".
+  Y una advertencia aprendida a base de golpes: **un bot incompetente miente igual que un balance mal
+  medido**. Si un perfil firma reseñas de 24–41 o ficha por encima de sus ingresos, primero se arregla el
+  bot y después se juzgan los números.

@@ -48,14 +48,34 @@ function makeEmployee(id: string, overrides: Partial<Employee> = {}): Employee {
   };
 }
 
-/** Estudio en una etapa dada con plantilla y capital a medida. */
+/**
+ * Estudio en una etapa dada con plantilla y capital a medida. Desde 10.2-B
+ * (docs/20 W3) ampliar exige además TRAYECTORIA (juegos lanzados + cima de
+ * reputación), así que el helper la da por cumplida de sobra: estos tests
+ * miden la mecánica de la compra, no el gate de carrera (que tiene los suyos).
+ */
 function atStage(stage: ScaleStage, staffCount: number, capital = 500_000): GameState {
   const base = createInitialState(SEED);
   const extra = Array.from({ length: staffCount - 1 }, (_, i) => makeEmployee(`emp-${i + 1}`));
-  return {
+  return withCareer({
     ...base,
     studio: { ...base.studio, scaleStage: stage, capital },
     staff: [...base.staff, ...extra],
+  });
+}
+
+/** Trayectoria holgada: por encima del mayor requisito de cualquier etapa. */
+function withCareer(state: GameState): GameState {
+  const reqs = Object.values(scale.requirementsByStage);
+  const games = Math.max(...reqs.map((r) => r.gamesReleased));
+  const rep = Math.max(...reqs.map((r) => r.topReputation));
+  return {
+    ...state,
+    releasedGames: Array.from({ length: games }, (_, i) => ({
+      ...(state.releasedGames[0] ?? {}),
+      id: `hist-${i}`,
+    })) as GameState['releasedGames'],
+    stats: { ...state.stats, peakReputation: rep },
   };
 }
 
@@ -99,6 +119,76 @@ describe('el avance se compra (docs/18 V4-c): no hay ascenso sin pagar', () => {
     expect(() => expandStudio(lonely)).toThrow(/plantilla/);
     // Con todo: se puede.
     expect(expandBlockReason(atStage(2, req3.staff, req3.capital))).toBeNull();
+  });
+
+  /**
+   * CA 10.2-B (docs/20 W3): el gate MIXTO. El capital dejó de gobernar solo —
+   * EXP1 probó que no regula las etapas 4-5— y ahora también hay que haber
+   * hecho CARRERA. Lo que se prueba aquí es que cada motivo es DISTINGUIBLE:
+   * "te falta capital" nunca se confunde con "te falta trayectoria" (el jugador
+   * tiene que saber qué le toca hacer).
+   */
+  describe('gate de trayectoria (docs/20 W3): además de caja, carrera', () => {
+    const req3 = scale.requirementsByStage[3];
+
+    it('con capital y plantilla pero SIN juegos lanzados, bloquea por trayectoria', () => {
+      const rookie: GameState = {
+        ...atStage(2, req3.staff, req3.capital * 2),
+        releasedGames: [],
+      };
+      const reason = expandBlockReason(rookie);
+      expect(reason).toBe(expandBlockedLabels.games(req3.gamesReleased, 0));
+      // Distinguible del bloqueo de capital: ni menciona la caja.
+      expect(reason).not.toContain('💰');
+      expect(() => expandStudio(rookie)).toThrow(/juegos lanzados/);
+    });
+
+    it('sin haber tenido público nunca, bloquea por reputación (la CIMA, no la de hoy)', () => {
+      const base = atStage(2, req3.staff, req3.capital * 2);
+      const unknown: GameState = {
+        ...base,
+        stats: { ...base.stats, peakReputation: req3.topReputation - 1 },
+      };
+      expect(expandBlockReason(unknown)).toBe(
+        expandBlockedLabels.reputation(req3.topReputation),
+      );
+      // Y la CIMA es lo que cuenta: un estudio hoy odiado que llegó a ser
+      // querido sí puede crecer (si no, la fábrica cínica quedaría encerrada).
+      const fallenStar: GameState = {
+        ...base,
+        studio: {
+          ...base.studio,
+          reputation: { critica: 5, prensa: 5, hardcore: 5, casual: 5, comunidad: 5, empleador: 5 },
+        },
+        stats: { ...base.stats, peakReputation: req3.topReputation },
+      };
+      expect(expandBlockReason(fallenStar)).toBeNull();
+    });
+
+    it('la cima de reputación la registra el tick y no baja al caer el vector', () => {
+      const base = createInitialState(SEED);
+      const loved: GameState = {
+        ...base,
+        studio: {
+          ...base.studio,
+          reputation: { ...base.studio.reputation, critica: 90 },
+        },
+      };
+      // El decay semanal de 9.1 muerde un poco antes de registrar la cima, así
+      // que el récord es "casi 90": lo que importa es que quede grabado.
+      const after = tick(loved);
+      const peak = after.stats.peakReputation ?? 0;
+      expect(peak).toBeGreaterThan(85);
+      // Se hunde la reputación actual… pero el récord se queda.
+      const hated: GameState = {
+        ...after,
+        studio: {
+          ...after.studio,
+          reputation: { critica: 3, prensa: 3, hardcore: 3, casual: 3, comunidad: 3, empleador: 3 },
+        },
+      };
+      expect(tick(hated).stats.peakReputation).toBe(peak);
+    });
   });
 
   it('la Corporación es la cima: no hay más etapas que comprar', () => {
@@ -168,9 +258,12 @@ describe('los tamaños gatean por etapa y plantilla (docs/17 E1 + docs/18 V4-b)'
     );
   });
 
-  it('el AAA es cosa de Corporaciones: etapa 5 y una organización de 40', () => {
+  it('el AAA es cosa de Corporaciones: etapa 5 y una organización grande', () => {
     const gate = balance.development.sizeGate.aaa;
     expect(gate.minStage).toBe(5);
+    // Aligerado en 10.2-B (docs/20 W2-bis) pero sin solaparse con el escalón de
+    // abajo: sigue exigiendo bastante más organización que el Muy grande.
+    expect(gate.minStaff).toBeGreaterThan(balance.development.sizeGate.muyGrande.minStaff);
     expect(sizeBlockReason(atStage(4, 25), 'aaa')).toMatch(/Corporación/);
     expect(sizeBlockReason(atStage(5, gate.minStaff - 1), 'aaa')).toMatch(/plantilla/);
     expect(sizeBlockReason(atStage(5, gate.minStaff), 'aaa')).toBeNull();
@@ -188,9 +281,15 @@ describe('el overhead fijo crece con la etapa (docs/18 V4-d)', () => {
   });
 
   it('una Corporación quema MUCHO: sostenerla exige seguir sacando éxitos', () => {
-    // Solo la infraestructura de la etapa 5 (sin nóminas) ya supera 1,5M/año:
-    // el "punto dulce" de riesgo cero no existe (docs/18 V4-d).
-    expect(balance.economy.upkeepExtraByStage[5] * 52).toBeGreaterThan(1_500_000);
+    // Solo la infraestructura de la etapa 5 (sin nóminas) supera el millón al
+    // año: el "punto dulce" de riesgo cero no existe (docs/18 V4-d). El trim de
+    // 10.2-B (30k → 22k/sem, docs/20 W2-bis) lo alivió porque EXP3 demostró que
+    // la etapa 5 se paga sola, pero sigue siendo un alquiler que muerde.
+    expect(balance.economy.upkeepExtraByStage[5] * 52).toBeGreaterThan(1_000_000);
+    // Y sigue siendo, con mucho, el escalón más caro de todos.
+    expect(balance.economy.upkeepExtraByStage[5]).toBeGreaterThan(
+      balance.economy.upkeepExtraByStage[4] * 2,
+    );
   });
 });
 

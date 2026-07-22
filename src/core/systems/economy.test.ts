@@ -7,10 +7,13 @@ import {
   availableCredit,
   creditLimit,
   estimateRunwayWeeks,
+  isDebtSpiraling,
   launchMarketingCampaign,
+  outstandingDebt,
   repayLoan,
   takeLoan,
   weeklyFixedCosts,
+  weeklyLoanInterest,
 } from './economy';
 import { startProject } from './projects';
 
@@ -132,14 +135,127 @@ describe('préstamos (docs/06 §4 y docs/12 §6)', () => {
     expect(state.log.filter((e) => e.type === 'economia').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('el interés (~1 %/semana) se cobra cada tick sobre el principal vivo', () => {
+  it('10.1: el interés (~1 %/semana) CAPITALIZA en la deuda, no sale de caja (docs/20 W1)', () => {
     let state = takeLoan(createInitialState(SEED), 5_000);
     const before = state.studio.capital;
+    const l = balance.economy.loans;
+    const interest = Math.round(5_000 * l.weeklyInterest);
+    // La cuota obligatoria de 10.2-B se calcula sobre la deuda YA capitalizada.
+    const payment = Math.max(l.minPaymentFloor, Math.round((5_000 + interest) * l.minPaymentRate));
     state = tick(state);
-    const interest = Math.round(5_000 * balance.economy.loans.weeklyInterest);
-    expect(state.studio.capital).toBe(before - balance.economy.weeklyUpkeep - interest);
-    // El principal no baja solo: la devolución es del jugador.
-    expect(state.loanPrincipal).toBe(5_000);
+    // De caja sale el coste fijo y la CUOTA; el interés en sí no se cobra…
+    expect(state.studio.capital).toBe(before - balance.economy.weeklyUpkeep - payment);
+    // …engorda la deuda, y la cuota se lleva primero ese interés y el resto de
+    // principal (deuda viva = 5.000 + interés − cuota).
+    expect(state.loanInterest).toBe(0); // la cuota (>interés) lo salda entero
+    expect(outstandingDebt(state)).toBe(5_000 + interest - payment);
+    expect(state.loanPrincipal).toBe(5_000 + interest - payment);
+    // Y se ven como líneas propias del P&L: el interés como apunte de memoria
+    // (fuera de `expenses`) y la cuota DENTRO de los gastos (sí sale de caja).
+    const entry = state.cashflow[state.cashflow.length - 1];
+    expect(entry.interest).toBe(interest);
+    expect(entry.debtPayment).toBe(payment);
+    expect(entry.expenses).toBe(balance.economy.weeklyUpkeep + payment);
+  });
+
+  it('CA 10.2-B: la cuota obligatoria drena caja y hace DECRECER la deuda desatendida', () => {
+    const l = balance.economy.loans;
+    // Deuda directa (la línea del garaje no da para 20k): solo interesa el tick.
+    const base = createInitialState(SEED);
+    let state: GameState = {
+      ...base,
+      loanPrincipal: 20_000,
+      studio: { ...base.studio, capital: 500_000 },
+    };
+    let debt = 20_000;
+    let paidTotal = 0;
+    for (let i = 0; i < 6; i++) {
+      const capitalBefore = state.studio.capital;
+      state = tick(state);
+      debt += Math.round(debt * l.weeklyInterest); // el interés capitaliza…
+      const payment = Math.min(debt, Math.max(l.minPaymentFloor, Math.round(debt * l.minPaymentRate)));
+      debt -= payment; // …y la cuota obligatoria se la come y baja del principal
+      paidTotal += payment;
+      expect(outstandingDebt(state)).toBe(debt);
+      // La cuota SALE de caja (junto al coste fijo semanal): esa es la presión
+      // real que en 10.1 no existía (el interés era un número decorativo).
+      expect(state.studio.capital).toBe(capitalBefore - balance.economy.weeklyUpkeep - payment);
+    }
+    // Con cuota (2,5 %) > interés (1 %), la deuda BAJA sola en vez de dispararse.
+    expect(outstandingDebt(state)).toBeLessThan(20_000);
+    expect(paidTotal).toBeGreaterThan(0);
+  });
+
+  it('CA 10.2-B: la línea disponible descuenta la DEUDA VIVA, no solo el principal', () => {
+    const base = createInitialState(SEED);
+    const withInterest: GameState = { ...base, loanPrincipal: 1_000, loanInterest: 900 };
+    // Antes de 10.2-B el interés acumulado no estrechaba la línea: por eso la
+    // deuda podía capitalizar sin consecuencia (docs/20 §Préstamos).
+    expect(availableCredit(withInterest)).toBe(creditLimit(base) - 1_900);
+    // Y nunca es negativa: una deuda por encima de la línea deja el crédito a 0.
+    const drowning: GameState = { ...base, loanPrincipal: 0, loanInterest: 999_999 };
+    expect(availableCredit(drowning)).toBe(0);
+    expect(() => takeLoan(drowning, 1)).toThrow(/línea de crédito/);
+  });
+
+  it('CA 10.1: amortizar salda primero el interés y luego el principal; nunca queda negativa', () => {
+    const base = createInitialState(SEED);
+    let state: GameState = {
+      ...base,
+      loanPrincipal: 4_000,
+      loanInterest: 300,
+      studio: { ...base.studio, capital: 10_000 },
+    };
+    // Un pago de 500 salda el interés (300) y baja el principal en 200.
+    state = repayLoan(state, 500);
+    expect(state.loanInterest).toBe(0);
+    expect(state.loanPrincipal).toBe(3_800);
+    expect(state.studio.capital).toBe(9_500);
+
+    // No se amortiza por encima de la deuda viva ni queda negativa: se topa.
+    state = repayLoan(state, 999_999);
+    expect(outstandingDebt(state)).toBe(0);
+    expect(state.loanPrincipal).toBe(0);
+    expect(state.loanInterest).toBe(0);
+    // Solo se cobró la deuda pendiente (3.800), no el importe pedido.
+    expect(state.studio.capital).toBe(9_500 - 3_800);
+  });
+
+  it('CA 10.1: el aviso de espiral salta cuando el interés supera el ingreso reciente, y no antes', () => {
+    const spiral = balance.economy.loans.spiral;
+    const base = createInitialState(SEED);
+
+    // Deuda grande sin ingresos recientes → espiral (con caja de sobra para no
+    // confundir con la bancarrota): el interés (800) supera el suelo y el 0 de
+    // ingreso, y el tick deja rastro en el historial.
+    let big: GameState = {
+      ...base,
+      loanPrincipal: 80_000,
+      studio: { ...base.studio, capital: 500_000 },
+    };
+    expect(isDebtSpiraling(big)).toBe(true);
+    big = tick(big);
+    expect(big.debtSpiral).toBe(true);
+    expect(
+      big.log.some((e) => e.type === 'economia' && /deuda se dispara/i.test(e.text)),
+    ).toBe(true);
+
+    // Deuda trivial: por debajo del suelo absoluto NO avisa aunque no haya ingresos.
+    const small: GameState = { ...base, loanPrincipal: 10_000 };
+    expect(weeklyLoanInterest(small)).toBeLessThan(spiral.minWeeklyInterest);
+    expect(isDebtSpiraling(small)).toBe(false);
+
+    // La misma deuda grande, pero con ingresos que la cubren → tampoco es espiral.
+    const solvent: GameState = {
+      ...base,
+      loanPrincipal: 80_000,
+      cashflow: Array.from({ length: spiral.lookbackWeeks }, (_, i) => ({
+        week: i + 1,
+        income: 50_000,
+        expenses: 10_000,
+      })),
+    };
+    expect(isDebtSpiraling(solvent)).toBe(false);
   });
 
   it('no presta más allá de la línea ni acepta pagos imposibles', () => {

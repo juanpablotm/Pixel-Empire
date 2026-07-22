@@ -616,12 +616,17 @@ describe('la moral reacciona al lanzamiento (docs/05 §4)', () => {
 describe('escala: Garaje → Estudio pequeño (docs/02 §4, compra desde 8.8)', () => {
   it('el hito de capital ya no muda solo: la ampliación se compra (docs/18 V4-c)', () => {
     const base = createInitialState(SEED);
+    const req = balance.staff.scale.requirementsByStage[2];
     const rich: GameState = {
       ...base,
-      studio: {
-        ...base.studio,
-        capital: balance.staff.scale.requirementsByStage[2].capital + 1_000,
-      },
+      studio: { ...base.studio, capital: req.capital + 1_000 },
+      // Desde 10.2-B ampliar también exige TRAYECTORIA (docs/20 W3): aquí se
+      // da por cumplida, que lo que se mide es que el ascenso SE COMPRA.
+      releasedGames: Array.from({ length: req.gamesReleased }, (_, i) => ({
+        ...(base.releasedGames[0] ?? {}),
+        id: `hist-${i}`,
+      })) as GameState['releasedGames'],
+      stats: { ...base.stats, peakReputation: req.topReputation },
     };
     // El tick no asciende: cumplir el umbral solo habilita el botón.
     expect(tick(rich).studio.scaleStage).toBe(1);

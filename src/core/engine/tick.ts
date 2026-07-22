@@ -11,6 +11,7 @@ import { advanceMarket } from '../systems/market';
 import { advanceMoral } from '../systems/morale';
 import { advancePolicies } from '../systems/policies';
 import { advanceProjects } from '../systems/projects';
+import { trackPeakReputation } from '../systems/reputation';
 import { advanceResearch } from '../systems/research';
 import { advanceRivals, RIVALS_STREAM } from '../systems/rivals';
 import { advanceSales } from '../systems/sales';
@@ -76,6 +77,10 @@ export function tick(state: GameState): GameState {
   s = advanceMoral(s, moralRng);
   s = advanceCommunity(s, communityRng);
   s = advanceEconomy(s);
+  // Récord de reputación para el gate de trayectoria (10.2-B, docs/20 W3):
+  // va DESPUÉS de moral/comunidad, que son quienes mueven el vector esta
+  // semana, para que la cima sea la de verdad y no la de la semana pasada.
+  s = trackPeakReputation(s);
   s = advanceResearch(s);
   // La obra del motor avanza sola (9.2): ya se pagó al encargarla.
   s = advanceEngineBuild(s);

@@ -298,20 +298,27 @@ describe('CA 9.1: las obras maestras se ganan (madurez + estrella + tech)', () =
 // ---------------------------------------------------------------------------
 
 describe('9.1: ambición vs capacidad (el AAA con estudio flojo no llena el alcance)', () => {
-  it('un AAA con 40 juniors flojos se hunde; con 40 competentes no', () => {
+  it('un AAA con la plantilla mínima de juniors flojos se hunde; con gente competente, no', () => {
     const state = matureState();
-    const weak = Array.from({ length: 40 }, (_, i) =>
+    // La plantilla MÍNIMA del AAA (docs/17 E1), que desde 10.2-B son 24 y no
+    // 40: el tamaño del equipo es el mismo en los dos casos, así que lo único
+    // que cambia es el TALENTO — que es justo lo que mide el alcance (9.1).
+    const crew = balance.development.sizeGate.aaa.minStaff;
+    const weak = Array.from({ length: crew }, (_, i) =>
       makeEmployee({
         id: `w-${i}`,
-        skills: { diseno: 30, tecnica: 30, arte: 30, audio: 30, marketing: 20 },
+        skills: { diseno: 25, tecnica: 25, arte: 25, audio: 25, marketing: 20 },
       }),
     );
-    const strong = Array.from({ length: 40 }, (_, i) => makeEmployee({ id: `s-${i}` }));
+    const strong = Array.from({ length: crew }, (_, i) => makeEmployee({ id: `s-${i}` }));
 
     const weakCeiling = computeCeilingContext(state, weak, 'rpg', 'aaa');
     const strongCeiling = computeCeilingContext(state, strong, 'rpg', 'aaa');
-    expect(weakCeiling.alcance01).toBeLessThan(0.6);
-    expect(strongCeiling.alcance01).toBeGreaterThan(0.8);
+    expect(weakCeiling.alcance01).toBeLessThan(0.7);
+    // CA 10.2-B (docs/20 W2-bis): el AAA dejó de ser una trampa. Su plantilla
+    // mínima, si es COMPETENTE, LLENA su alcance — antes ni 40 personas lo
+    // llenaban (0,77 medido) y la reseña se hundía a 39 por diseño roto.
+    expect(strongCeiling.alcance01).toBe(1);
 
     const aaa = () =>
       perfectProject({ size: 'aaa', chosenFeatureIds: [], assignedStaff: weak.map((e) => e.id) });

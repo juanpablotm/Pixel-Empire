@@ -125,6 +125,34 @@ export interface GameState {
   market: MarketState;
   /** Principal vivo de la línea de crédito; 0 = sin deuda (docs/06 §4). */
   loanPrincipal: number;
+  /**
+   * Interés acumulado y aún NO amortizado sobre la deuda (Fase 10.1, docs/20
+   * W1): cada tick crece con `round((loanPrincipal + loanInterest) × tasa)` —
+   * la deuda viva (principal + interés) compone semana a semana. Amortizar
+   * paga primero este bucket y luego el principal (nunca queda negativo). Los
+   * saves previos arrancan en 0 (migración v19). El interés dejó de cobrarse
+   * como cuota semanal en caja: ahora ENGORDA la deuda (bug W1).
+   */
+  loanInterest: number;
+  /**
+   * Espiral de deuda activa (Fase 10.1, docs/20 W1c): la pone el tick cuando el
+   * interés semanal supera el umbral relativo al ingreso reciente
+   * (`balance.economy.loans.spiral`). El store detecta su flanco de subida para
+   * disparar el aviso importante (patrón de `negativeWeeks`). Opcional: los
+   * saves previos arrancan en false (migración v19).
+   */
+  debtSpiral: boolean;
+  /**
+   * SOLO PARA DIAGNÓSTICO (Fase 10.2-A, docs/20 Experimento 1): restaura el
+   * BUG de préstamos pre-10.1. Con `true`, advanceEconomy vuelve a cobrar el
+   * interés como cuota semanal en caja sobre el principal CONGELADO
+   * (`round(loanPrincipal × tasa)`) sin capitalizar — la deuda no crece y el
+   * crédito es casi gratis. NUNCA lo pone la producción (createInitialState /
+   * migraciones no lo tocan): lo activa en memoria el arnés de medición
+   * `src/test/economyDiag102A.ts` para contrastar (a) bug vs (b) arreglo. No se
+   * serializa: ausente/undefined = comportamiento correcto (interés capitaliza).
+   */
+  loanLegacyBug?: boolean;
   /** Escándalos en curso: penalizan ventas mientras duran (docs/06 §5). */
   scandals: ActiveScandal[];
   /** La capa social (docs/07): sentimiento, feed, creadores, bombing y crisis. */

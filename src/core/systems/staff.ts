@@ -15,7 +15,11 @@ import type { GameState, ScaleStage } from '../model/gameState';
 import type { Employee, SalaryTier, Specialty, TeamFactorResult } from '../model/staff';
 import { dropFromLiveServices, liveServiceStaffIds } from './liveService';
 import { nudgeMoralDrift } from './morale';
-import { employerPoolModifiers, withReputationDeltas } from './reputation';
+import {
+  employerPoolModifiers,
+  topSegmentReputation,
+  withReputationDeltas,
+} from './reputation';
 import { signQuitterWithRival } from './rivals';
 import { dropFromSquads } from './squads';
 
@@ -851,7 +855,17 @@ export function scaleUpgradeCost(stage: Exclude<ScaleStage, 1>): number {
  * partida: ni requisito ni coste.
  */
 export interface ScaleStageInfo {
-  requires: { capital: number; staff: number } | null;
+  /**
+   * Todo lo que hay que tener para comprar la etapa. Desde 10.2-B (docs/20 W3)
+   * el gate es MIXTO: capital + plantilla + trayectoria (juegos lanzados y
+   * mejor reputación de segmento).
+   */
+  requires: {
+    capital: number;
+    staff: number;
+    gamesReleased: number;
+    topReputation: number;
+  } | null;
   /** El desembolso de la ampliación; null en la etapa inicial. */
   upgradeCost: number | null;
   staffCap: number;
@@ -875,6 +889,13 @@ export function scaleStageInfo(stage: ScaleStage): ScaleStageInfo {
  * "Ampliar estudio" y lo deshabilita; expandStudio lo valida. Cumplir el
  * requisito solo HABILITA la compra: el desembolso (upgradeCost) se paga al
  * ampliar. Requisito de capital > coste, así pagar nunca deja la caja en rojo.
+ *
+ * Desde 10.2-B (docs/20 W3) el gate es MIXTO y el orden de comprobación importa
+ * porque es lo que el jugador lee: primero lo que se TIENE (capital, plantilla)
+ * y después lo que se ha HECHO (juegos lanzados, reputación). Cada motivo es
+ * distinguible en la UI: "te falta capital" nunca se confunde con "te falta
+ * trayectoria" — EXP1 demostró que el capital no regula las etapas 4–5, así que
+ * el bloqueo de verdad suele ser el segundo y el jugador tiene que saberlo.
  */
 export function expandBlockReason(state: GameState): string | null {
   if (state.gameOver) return expandBlockedLabels.gameOver;
@@ -886,6 +907,18 @@ export function expandBlockReason(state: GameState): string | null {
   }
   if (state.staff.length < req.staff) {
     return expandBlockedLabels.staff(req.staff);
+  }
+  if (state.releasedGames.length < req.gamesReleased) {
+    return expandBlockedLabels.games(req.gamesReleased, state.releasedGames.length);
+  }
+  // La reputación del gate es la CIMA histórica (stats.peakReputation), no la
+  // de hoy: es un dato de trayectoria. Con la actual, la fábrica cínica —cuya
+  // codicia hunde el vector justo cuando por fin junta el capital— quedaba
+  // encerrada para siempre en la etapa 3 (bots de 10.2-B), y su arquetipo
+  // apunta a Corporación. Haber tenido público alguna vez es lo que se exige.
+  const peakRep = state.stats.peakReputation ?? topSegmentReputation(state.studio.reputation);
+  if (req.topReputation > 0 && peakRep < req.topReputation) {
+    return expandBlockedLabels.reputation(req.topReputation);
   }
   return null;
 }

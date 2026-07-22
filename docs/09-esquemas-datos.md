@@ -187,16 +187,35 @@ interface Platform {
 ```
 
 Semilla de plataformas por era (nombres ficticios reconocibles): PC Casero (E1), "Commo 64" (E1),
-"Master V" (E2), "Gameling" portátil (E2), "Playsystem" (E3), "N-Cube" (E3), "Vortex 32" (E3),
-"Playsystem 2" (E4), "Vertex" (E4), "Gameling Advance" (E4), móvil/smartphone (E5), "Playsystem 4" (E5),
-"N-Switch" (E5), "CloudPlay" (E6), "Playsystem 5" (E6), "Vertex X" (E6), "Visor RV Mixta" (E7),
-"Holo Deck" (E7).
+**"Atarix VCS" (E1)**, "Master V" (E2), "Gameling" portátil (E2), **"Amigo 500" (E2)**,
+"Playsystem" (E3), "N-Cube" (E3), "Vortex 32" (E3), **"Gameling Color" (E3)**, "Playsystem 2" (E4),
+"Vertex" (E4), "Gameling Advance" (E4), móvil/smartphone (E5), "Playsystem 4" (E5), "N-Switch" (E5),
+"CloudPlay" (E6), "Playsystem 5" (E6), "Vertex X" (E6), "Visor RV Mixta" (E7), "Holo Deck" (E7).
+**21 en total** (las tres en negrita entran en la Fase 10.3).
 
-**Más consolas escalonadas (9.4, docs/19 §9.4):** cada generación tiene 2–3 plataformas en competencia
+**Más consolas escalonadas (9.4, docs/19 §9.4):** cada generación tiene 2–4 plataformas en competencia
 que salen **en semanas distintas dentro de su era** (`releaseWeek` escalonado), no todas de golpe —
 decisión de en cuál y cuándo lanzar. El **número de plataformas simultáneas** por lanzamiento lo limita
 el motor (capacidades `biplataforma`/`multiplataforma` de 9.2, §4.1); la demanda suma sus bases
 instaladas (doc 04 §6–7).
+
+**Las eras flacas (10.3, docs/20 W5) `[DECIDIDO · baseline v1]`.** La 9.4 dejó E4-E7 con 6-8
+plataformas vivas a la vez, pero **E1 se quedaba en dos**: la era que todo jugador ve no tenía
+decisión. Entran tres, y ninguna es un clon numérico — cada una mueve a la vez ciclo de vida, sesgo de
+público, afinidad de género y dev-kit:
+
+- **Atarix VCS** (E1, s0–240, dev-kit 3.000): la cartuchera del boom. Base masiva ya, público familiar
+  (casual 1,30 / infantil 1,35 / hardcore 0,50), afinidad pobre con los géneros de prestigio y
+  **muerte por la crisis del 83** antes de acabar su era.
+- **Amigo 500** (E2, s340–1000, dev-kit **0**): el micro de 16 bits. Plataforma abierta, público
+  hardcore (1,25), afinidad 1,0 en estrategia/gestión/simulación/aventura y la base instalada más
+  pequeña de su generación. Aguanta hasta bien entrada E3.
+- **Gameling Color** (E3, s900–1400, dev-kit 10.000): el portátil que se queda **fuera de la carrera
+  3D**, a mitad de precio que las sobremesas de su generación y con público familiar.
+
+**El "techo de calidad percibida" de las máquinas masivas es emergente, no un campo nuevo:** su
+`audienceBias` empuja hacia Casual/Infantil y esos públicos ya pagan peaje en la reseña del segmento
+Hardcore (doc `06` §1). El esquema `Platform` **no cambia**.
 
 ### 4.2 Fiebres de mercado (Fase 9.4, docs/19 §9.4) `[DECIDIDO · baseline v1]`
 
@@ -292,6 +311,43 @@ Ejemplos de catálogo: "Mundo abierto artesanal", "Mundo procedural" (E5+), "Mul
 "Multijugador online" (E4+), "Final ramificado", "Físicas avanzadas", "Sistema de crafteo",
 "Editor de niveles" (E2+), "Modo carrera" (E2+), "Banda sonora original" (E2+), "Doblaje completo"
 (E4+), "Modo foto" (E6+), "Cross-play" (E6+), "Compañero con IA" (E7).
+
+### 5.1 Ampliación del catálogo (Fase 10.3, docs/20 W6) `[DECIDIDO · baseline v1]`
+
+El catálogo pasa de **18 a 29** features. El criterio de qué añadir no fue "más", sino **los géneros
+hambrientos**: contando las features que ENCAJAN por género, Ritmo tenía **una**, Gestión y Battle
+Royale **dos** y Puzzle **tres**, frente a las **ocho** de RPG y Aventura — sus juegos llenaban el
+objetivo de alcance a base de relleno neutro, justo lo que la 9.3 vino a castigar. Tras la ampliación
+**ningún género baja de tres** y los cuatro hambrientos suben a 4-5.
+
+| Feature | Era | Encaja en | No pega en | Variante |
+|---|:---:|---|---|---|
+| Tutorial integrado | E3 | Estrategia, Gestión, Simulación, Deportes, Puzzle | Terror, Sandbox | `accesibilidad` |
+| Dificultad implacable | E3 | Plataformas, Terror, Shooter, Estrategia, RPG | Gestión, Simulación, Deportes, Ritmo | `accesibilidad` |
+| IA por guiones | E3 | Shooter, Plataformas, Terror, Deportes, Carreras | Puzzle, Ritmo, Gestión | `ia` |
+| Banda sonora licenciada | E3 | Ritmo, Carreras, Deportes, Plataformas, Aventura | Terror, Estrategia, Gestión | `musica` |
+| Campaña cooperativa | E3 | Shooter, Aventura, RPG, Plataformas, Terror | Estrategia, Gestión, Puzzle, Ritmo | — |
+| Economía simulada | E4 | Gestión, Simulación, Estrategia, Sandbox, RPG | Ritmo, Plataformas, Carreras, Shooter | — |
+| Clasificatorias online | E4 | Shooter, Deportes, Carreras, Ritmo, Estrategia, Battle Royale | Aventura, Terror, RPG | — |
+| Personalización de avatar | E4 | RPG, Deportes, Battle Royale, Simulación, Sandbox, Carreras | Puzzle, Aventura, Terror | — |
+| IA adaptativa | E5 | Shooter, Estrategia, Terror, Deportes, Carreras, Simulación | Puzzle, Ritmo, Aventura | `ia` |
+| Modo espectador | E6 | Battle Royale, Shooter, Deportes, Carreras, Estrategia | Aventura, Terror, Puzzle | — |
+| Diseño para realidad mixta | E7 | Terror, Ritmo, Simulación, Aventura, Shooter, Carreras | Estrategia, Gestión, Puzzle | — |
+
+**Variantes nuevas:** `accesibilidad` = tutorial (accesible, encaja en géneros de reglas) vs dificultad
+implacable (dura, encaja en los de destreza) — no es el eje barato/caro sino **a quién invitas**;
+`ia` = IA por guiones (E3, barata) vs IA adaptativa (E5, cara); `musica` = banda sonora original (E2,
+barata) vs licenciada (E3, cara), que convierte una feature vieja en la mitad de un dilema.
+
+**Dos reglas que la ampliación respeta `[DECIDIDO]`:**
+
+1. **Nada nuevo en E1 ni en E2.** El early game está calibrado al milímetro por el CA 9.1(a) y el pase
+   económico de la 10.2-B; meter features ahí subía el pulido de los juegos tempranos (menos piezas
+   para el mismo alcance → menos deuda de bugs) y rompía tres CA. Todo entra en E3 o después.
+2. **Ninguna feature nueva estrena nodo de investigación.** Las dos gateadas cuelgan de nodos que ya
+   existían (`tecnologiaOnline` → *Clasificatorias online*; `serviciosOnline` → *Modo espectador*), y
+   *Teoría del diseño* revela el encaje de las 29 por su mismo precio. El árbol completo **baja** de
+   1.088 a 993 💡 (ver doc `02` §3.4).
 
 ## 6. Rasgos de personalidad `[DECIDIDO]`
 

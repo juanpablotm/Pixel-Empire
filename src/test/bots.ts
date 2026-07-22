@@ -10,7 +10,13 @@ import type { MonetizationConfig } from '../core/model/moral';
 import type { ProjectSize } from '../core/model/project';
 import type { Employee } from '../core/model/staff';
 import { resolveDilemma, respondToCrisis, type DilemmaChoice } from '../core/systems/community';
-import { availableCredit, repayLoan, takeLoan, weeklyFixedCosts } from '../core/systems/economy';
+import {
+  availableCredit,
+  outstandingDebt,
+  repayLoan,
+  takeLoan,
+  weeklyFixedCosts,
+} from '../core/systems/economy';
 import {
   availableLicensedEngines,
   buildableCapabilities,
@@ -21,6 +27,7 @@ import {
   startEngineBuild,
 } from '../core/systems/engines';
 import { lootBoxesBanned } from '../core/systems/morale';
+import { teamPower } from '../core/systems/maturity';
 import {
   earlyAccessBlockReason,
   launchEarlyAccess,
@@ -136,7 +143,55 @@ export interface Philosophy {
   acquisitions: 'no' | 'invertir' | 'exprimir';
   crisisResponse: CrisisResponseId;
   dilemma: Record<DilemmaKind, DilemmaChoice>;
+  /**
+   * Colchón (semanas del NUEVO coste fijo de la etapa) que exige tras ampliar
+   * (docs/18 V4-c): los arquetipos son prudentes (52 ≈ un año); el optimizador
+   * (10.1, docs/20 W8) aprieta y amplía en cuanto puede pagarlo con holgura
+   * mínima — como un jugador competente. Default 52.
+   */
+  expandCushionWeeks?: number;
+  /**
+   * Fracción de los costes fijos de calendario que exige de colchón para
+   * AUTO-PUBLICAR un tamaño (pickProject): los arquetipos exigen el calendario
+   * entero (1, prudencia máxima); el optimizador arriesga más (0,5) y salta de
+   * tamaño antes, apoyándose en el préstamo puente si hace falta. Default 1.
+   */
+  projectCushionMult?: number;
+  /**
+   * Encaje de alcance mínimo para ELEGIR un tamaño (10.1, docs/20 W8): un
+   * jugador competente no lanza un tamaño que su equipo no puede ejecutar bien
+   * — sobredimensionar hunde `alcance01` → Q → ventas (docs/19 §9.1). El
+   * optimizador exige `teamPower(plantilla) / powerTarget[tamaño] ≥` este valor
+   * antes de subir de tamaño. Undefined = sin gate de alcance.
+   *
+   * Desde 10.2-B los ARQUETIPOS también lo llevan, con una barra más laxa
+   * (0,75 frente al 1,0 del optimizador): son ambiciosos, no suicidas. Sin él
+   * la fábrica y el equilibrado encadenaban Grandes y Muy grandes con equipos
+   * cortos y firmaban reseñas de 24–41 — y un bot que publica basura no mide
+   * el diseño, mide su propia incompetencia (misma lección que el optimizador
+   * sin gate en 10.1, docs/20 W8). Su identidad la sigue marcando
+   * `sizeAmbition`; esto solo evita que se estrellen contra su propio techo.
+   */
+  scopeMinRatio?: number;
+  /**
+   * Endeudamiento AGRESIVO (Fase 10.2-A Exp1, docs/20): pide préstamo al MÁXIMO
+   * disponible en cuanto eso le permita SUBIR DE ETAPA antes (cumple el gate de
+   * plantilla y solo le falta capital para el requisito + la obra), y amortiza
+   * en cuanto le sobra caja. Los arquetipos y el optimizador estándar son
+   * prudentes (solo préstamo puente); esta variante prueba la hipótesis W8
+   * ("Estudio grande en E2 temprana" = artefacto del préstamo casi gratis).
+   * Undefined/false = comportamiento prudente. Default undefined.
+   */
+  aggressiveLoans?: boolean;
 }
+
+/**
+ * Encaje de alcance mínimo de los ARQUETIPOS (Fase 10.2-B): algo más laxo que
+ * el 1,0 del optimizador —se permiten estirarse un 10 % por encima de lo que su
+ * equipo llena— pero no suicida. Con 0,75 el equilibrado seguía firmando Muy
+ * grandes de reseña 24. Ver `Philosophy.scopeMinRatio`.
+ */
+const ARCHETYPE_SCOPE_MIN = 0.9;
 
 /** Indie de culto: pequeño, honesto, mimando al equipo y al público. */
 export const INDIE: Philosophy = {
@@ -164,6 +219,7 @@ export const INDIE: Philosophy = {
   acquisitions: 'no',
   crisisResponse: 'disculpa',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
+  scopeMinRatio: ARCHETYPE_SCOPE_MIN,
 };
 
 /**
@@ -181,13 +237,18 @@ export const FACTORY: Philosophy = {
   useLootBoxes: true,
   useDlc: true,
   care: true,
-  // Holgura sobre los mínimos (40 del AAA): un proyecto de 120 semanas exige
-  // rotar gente para no fundirla (docs/05 §4) — ir con la plantilla justa
-  // convierte el tramo final en bugs y burnout (lección de bots de 9.1).
-  // La nómina del GaaS no va aquí: maybeHire suma la dotación de los
-  // servicios ABIERTOS (contratar 16 extra "por si acaso" quebró a la
+  // Holgura sobre los mínimos (24 del AAA desde 10.2-B): un proyecto de 96
+  // semanas exige rotar gente para no fundirla (docs/05 §4) — ir con la
+  // plantilla justa convierte el tramo final en bugs y burnout (lección de
+  // bots de 9.1). La nómina del GaaS no va aquí: maybeHire suma la dotación de
+  // los servicios ABIERTOS (contratar de más "por si acaso" quebró a la
   // fábrica en E6 — lección de bots de 9.7).
-  teamTargetByEra: [1, 4, 8, 12, 20, 46, 48],
+  //
+  // E6/E7 bajaron de 46/48 a 28/30 en 10.2-B (docs/20 W2-bis): con el AAA
+  // aligerado, un ejército de 46 sería sobredimensionar por inercia — y ese
+  // coste fijo corriendo en seco entre lanzamientos lumpy era justo el origen
+  // del margen operativo negativo de E6.
+  teamTargetByEra: [1, 4, 8, 12, 20, 28, 30],
   sizeAmbition: 'aaa',
   stageAmbition: 5,
   // El cheque más gordo, la IP da igual: los juegos son producto, no obra.
@@ -198,6 +259,7 @@ export const FACTORY: Philosophy = {
   acquisitions: 'exprimir',
   crisisResponse: 'silencio',
   dilemma: { leakAlpha: 'capitalizar', sobreHype: 'prometer' },
+  scopeMinRatio: ARCHETYPE_SCOPE_MIN,
 };
 
 /** Estudio equilibrado: crece con cabeza, DLC honesto, cuida al equipo. */
@@ -222,6 +284,71 @@ export const STUDIO: Philosophy = {
   acquisitions: 'invertir',
   crisisResponse: 'corporativo',
   dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
+  scopeMinRatio: ARCHETYPE_SCOPE_MIN,
+};
+
+/**
+ * OPTIMIZADOR (Fase 10.1, docs/20 W8): sin filosofía moral — su único objetivo
+ * es maximizar capital y crecer lo más rápido posible, jugando cerca de óptimo
+ * con la información que el juego da. La "vara de medir honesta" que faltaba:
+ * si un jugador competente rompe el balance (Corporación antes de E5, imprime
+ * dinero, punto dulce invencible), este bot lo destapa.
+ *
+ * Comparte TODA la maquinaria competente de los otros bots (mejor Fit ×
+ * popularidad, features por afinidad de género, motor al día, rotación de
+ * energía, préstamo puente), pero SIN la prudencia de los arquetipos:
+ * - amplía de etapa en cuanto puede pagarla con holgura mínima (expandCushion
+ *   8 sem vs 52) — el jugador humano llega a Estudio grande en E2, los bots no;
+ * - salta al mayor tamaño auto-publicable arriesgando más colchón (0,5×);
+ * - monetización agresiva (MTX + DLC) pero SIN loot boxes: competente = no
+ *   invita al escándalo/regulación que hunde ventas (y con ello, capital);
+ * - gestiona crisis y dilemas para MINIMIZAR el daño a ventas, no por ética;
+ * - exprime GaaS y filiales, y coge el cheque del publisher hasta destetarse.
+ *
+ * NO entra en los CA de las 3 filosofías (fullGame.test.ts): su papel es medir,
+ * no validar. Determinista con semilla como los demás.
+ */
+export const OPTIMIZER: Philosophy = {
+  name: 'optimizador',
+  priceMult: 1.1,
+  aggressiveness: 0.8,
+  useLootBoxes: false,
+  useDlc: true,
+  care: true,
+  // Ambición máxima, gateada solo por lo que la caja y la etapa permiten: sube
+  // en cuanto le sale rentable (pickProject ya coge el mayor tamaño viable).
+  // E6/E7 ajustados en 10.2-B al AAA aligerado (docs/20 W2-bis), como la
+  // fábrica: el optimizador no paga nómina que su pipeline no necesita.
+  teamTargetByEra: [1, 4, 9, 15, 26, 32, 34],
+  sizeAmbition: 'aaa',
+  stageAmbition: 5,
+  // Coge el cheque más gordo mientras lo necesita; en cuanto la caja sostiene
+  // el tamaño, se desteta (la regla `independent` de pickProject lo corta).
+  publisherStance: 'siempre',
+  useEarlyAccess: false,
+  liveOps: 'exprimido',
+  acquisitions: 'exprimir',
+  crisisResponse: 'corporativo',
+  // Minimiza el auto-daño: modera el sobre-hype (evita el castigo de cola) y es
+  // transparente con los leaks (evita el backlash) — pura eficiencia, no ética.
+  dilemma: { leakAlpha: 'transparencia', sobreHype: 'moderar' },
+  expandCushionWeeks: 8,
+  projectCushionMult: 0.5,
+  scopeMinRatio: 1,
+};
+
+/**
+ * OPTIMIZADOR CON ENDEUDAMIENTO AGRESIVO (Fase 10.2-A Exp1, docs/20): el
+ * optimizador estándar, pero pidiendo préstamo al máximo para adelantar cada
+ * salto de etapa (y amortizando cuando sobra caja). Es la vara del Experimento
+ * 1: se corre en dos mundos (bug de préstamos restaurado vs interés arreglado)
+ * para ver si el crédito casi gratis reproduce el "Estudio grande en E2" del
+ * playtest. NO entra en ningún CA: es puro instrumento de medida.
+ */
+export const AGGRO_OPTIMIZER: Philosophy = {
+  ...OPTIMIZER,
+  name: 'optimizador agresivo',
+  aggressiveLoans: true,
 };
 
 /** Tamaños de menor a mayor: para bajar al mayor permitido por el gate (E1). */
@@ -258,6 +385,7 @@ const SIZE_CEILING: Record<Philosophy['sizeAmbition'], ProjectSize> = {
 function pickProject(
   state: GameState,
   phil: Philosophy,
+  genreId: string,
 ): { size: ProjectSize; publisherId: string | null } {
   // La postura solo gatea la IP ('sinIp' no vende el alma; 'siempre' firma lo
   // que haga falta — Goliath incluido). El criterio económico es el mismo para
@@ -274,9 +402,12 @@ function pickProject(
 
   const fixed = weeklyFixedCosts(state);
   // Auto-publicarse exige aguantar el proyecto Y sus costes fijos de
-  // calendario COMPLETOS: quedarse sin caja a mitad es la trampa mortal.
+  // calendario: quedarse sin caja a mitad es la trampa mortal. Los arquetipos
+  // exigen el calendario ENTERO (mult 1); el optimizador arriesga más (0,5) y
+  // salta de tamaño antes, con el préstamo puente de red (docs/20 W8).
+  const cushionMult = phil.projectCushionMult ?? 1;
   const selfCushion = (estimate: { cost: number; weeks: number }) =>
-    estimate.cost + estimate.weeks * fixed;
+    estimate.cost + estimate.weeks * fixed * cushionMult;
   // La liberación GANADA no se devuelve (CA 9.6b): tras independizarse, nadie
   // se re-hipoteca por un salto de tamaño — se baja de tamaño y punto. Firmar
   // queda solo como tabla de salvación del pequeño (mejor pobre que muerto).
@@ -287,6 +418,18 @@ function pickProject(
   for (let i = ceiling; i > 0; i--) {
     const size = SIZE_ORDER[i];
     if (sizeBlockReason(state, size) !== null) continue;
+    // Competente (optimizador, docs/20 W8): no subir a un tamaño que el equipo
+    // no puede ejecutar bien. Pasar el gate de plantilla MÍNIMA no basta —
+    // `alcance01` mide poder vs objetivo del tamaño (9.1) y sobredimensionar
+    // con un equipo flojo hunde Q y la reseña (y con ella las ventas). Se sube
+    // de tamaño creciendo el equipo, no forzando la máquina.
+    if (
+      phil.scopeMinRatio !== undefined &&
+      teamPower(state.staff, genreId) / balance.quality.scope.powerTarget[size] <
+        phil.scopeMinRatio
+    ) {
+      continue;
+    }
     const estimate = estimateProject(size, 'pcCasero');
     if (state.studio.capital > selfCushion(estimate)) {
       return { size, publisherId: null };
@@ -498,7 +641,7 @@ function startNextGame(state: GameState, phil: Philosophy, gameNumber: number): 
   // Tamaño y financiación a la vez (9.6): el publisher es lo que vuelve
   // viable el salto de tamaño que la caja aún no aguanta. Los bots lanzan
   // monoplataforma, así que la exclusividad de plataforma no muerde.
-  const { size, publisherId } = pickProject(state, phil);
+  const { size, publisherId } = pickProject(state, phil, combo.genreId);
   const recommended = balance.economy.priceBySize[size];
   let next = startProject(state, {
     name: `${phil.name} ${gameNumber + 1}`,
@@ -565,26 +708,107 @@ function maybeExpand(state: GameState, phil: Philosophy): GameState {
   if (stage >= phil.stageAmbition || stage >= 5) return state;
   if (expandBlockReason(state) !== null) return state;
   const target = (stage + 1) as 2 | 3 | 4 | 5;
-  // Tras pagar debe quedar ~1 año del coste fijo NUEVO (el overhead de la
+  // Tras pagar debe quedar colchón del coste fijo NUEVO (el overhead de la
   // etapa comprada, docs/18 V4-d): mudarse a una oficina que no puedes
-  // mantener es la trampa clásica — el bot no cae en ella.
+  // mantener es la trampa clásica. Los arquetipos guardan ~1 año (52 sem); el
+  // optimizador aprieta (8 sem) y amplía en cuanto puede pagarlo (docs/20 W8).
   const newWeeklyFixed =
     weeklyFixedCosts(state) +
     balance.economy.upkeepExtraByStage[target] -
     balance.economy.upkeepExtraByStage[stage];
   const cost = balance.staff.scale.upgradeCostByStage[target];
-  if (state.studio.capital - cost < 52 * newWeeklyFixed) return state;
+  if (state.studio.capital - cost < (phil.expandCushionWeeks ?? 52) * newWeeklyFixed) {
+    return state;
+  }
   return expandStudio(state);
 }
 
 /**
- * Gestión de la línea de crédito (docs/06 §4), como un jugador solvente: si
- * hay un proyecto en vuelo y el runway se acorta, pide un préstamo puente en
- * vez de dejar que la bancarrota se coma el juego a medias; cuando la caja
- * sobra, amortiza para dejar de pagar el ~1 %/semana.
+ * Deuda que un jugador prudente acepta cargar (Fase 10.2-B, docs/20
+ * §Préstamos): desde que la cuota obligatoria drena caja cada semana, endeudarse
+ * sin techo es cavarse la tumba. El tope se fija por SERVICIO de deuda — la
+ * cuota no puede comerse más de un tercio del coste fijo semanal —, que con la
+ * tasa actual equivale a ~13 semanas de costes fijos de deuda viva. Sin este
+ * techo el bot pedía 1,3k cada semana para sobrevivir, la cuota crecía con la
+ * deuda y la espiral lo mataba: exactamente el comportamiento que el rediseño
+ * quiere castigar, pero que un jugador competente no comete.
  */
-function manageLoans(state: GameState): GameState {
+const DEBT_SERVICE_MAX_SHARE = 1 / 3;
+
+function maxAffordableDebt(fixed: number): number {
+  return (DEBT_SERVICE_MAX_SHARE * fixed) / balance.economy.loans.minPaymentRate;
+}
+
+/**
+ * Gestión de la línea de crédito (docs/06 §4), como un jugador solvente: si
+ * hay un proyecto en vuelo y el runway se acorta, pide un préstamo puente
+ * —acotado a lo que puede servir— en vez de dejar que la bancarrota se coma el
+ * juego a medias; y amortiza con lo que le SOBRE por encima de su colchón de
+ * trabajo, porque arrastrar deuda ya cuesta caja todas las semanas.
+ */
+function manageLoans(state: GameState, phil: Philosophy): GameState {
   const fixed = weeklyFixedCosts(state);
+  if (phil.aggressiveLoans) return manageLoansAggressive(state, phil, fixed);
+  // Desde 10.1 (docs/20 W1) el interés capitaliza y desde 10.2-B la cuota
+  // drena caja: se amortiza la DEUDA VIVA (principal + interés) con el
+  // excedente sobre el colchón de trabajo + la hucha del salto de tamaño, en
+  // vez de esperar a poder saldarla de golpe (que en apuros no llega nunca).
+  const debt = outstandingDebt(state);
+  if (debt > 0) {
+    const buffer = 26 * fixed + ambitionSavings(state, phil);
+    const spare = state.studio.capital - buffer;
+    if (spare > 0) return repayLoan(state, Math.min(debt, spare));
+  }
+  if (state.projects.length > 0 && state.studio.capital < 8 * fixed) {
+    const room = Math.min(availableCredit(state), maxAffordableDebt(fixed) - debt);
+    if (room > 0) return takeLoan(state, Math.round(Math.min(room, 26 * fixed)));
+  }
+  return state;
+}
+
+/**
+ * Endeudamiento AGRESIVO (Fase 10.2-A Exp1, docs/20): pide al máximo para
+ * ADELANTAR el salto de etapa y amortiza en cuanto sobra caja. Prueba la
+ * hipótesis W8 (el préstamo casi gratis reproduce "Estudio grande en E2").
+ */
+function manageLoansAggressive(
+  state: GameState,
+  phil: Philosophy,
+  fixed: number,
+): GameState {
+  // Amortiza pronto (colchón de 26 sem, no 52) y de forma PARCIAL desde
+  // 10.2-B: con la cuota obligatoria drenando caja, esperar a saldarla de
+  // golpe es quedarse pagando intereses de más.
+  const debt = outstandingDebt(state);
+  if (debt > 0) {
+    const spare = state.studio.capital - 26 * fixed;
+    if (spare > 0) return repayLoan(state, Math.min(debt, spare));
+  }
+  const stage = state.studio.scaleStage;
+  if (stage < phil.stageAmbition && stage < 5 && availableCredit(state) > 0) {
+    const target = (stage + 1) as 2 | 3 | 4 | 5;
+    const req = balance.staff.scale.requirementsByStage[target];
+    // Solo si el gate de PLANTILLA ya está: si aún falta gente, el crédito no
+    // adelanta nada (no se puede ampliar). Cuando solo falta capital, se pide
+    // para alcanzar el requisito + la obra + el colchón que exige maybeExpand.
+    if (state.staff.length >= req.staff) {
+      const upgradeCost = balance.staff.scale.upgradeCostByStage[target];
+      const newWeeklyFixed =
+        fixed +
+        balance.economy.upkeepExtraByStage[target] -
+        balance.economy.upkeepExtraByStage[stage];
+      const targetCapital = Math.max(
+        req.capital,
+        upgradeCost + (phil.expandCushionWeeks ?? 52) * newWeeklyFixed,
+      );
+      const gap = targetCapital - state.studio.capital;
+      if (gap > 0) {
+        return takeLoan(state, Math.min(availableCredit(state), gap));
+      }
+    }
+  }
+  // Sin salto de etapa a la vista: préstamo puente clásico si un proyecto en
+  // vuelo se queda sin runway (no morir a medias).
   if (
     state.projects.length > 0 &&
     state.studio.capital < 8 * fixed &&
@@ -592,13 +816,20 @@ function manageLoans(state: GameState): GameState {
   ) {
     return takeLoan(state, Math.min(availableCredit(state), 26 * fixed));
   }
-  if (
-    state.loanPrincipal > 0 &&
-    state.studio.capital > state.loanPrincipal + 52 * fixed
-  ) {
-    return repayLoan(state, state.loanPrincipal);
-  }
   return state;
+}
+
+/**
+ * Ingreso semanal SOSTENIBLE del estudio: la media del libro de caja entero
+ * (hasta 52 semanas, `economy.cashflowMaxWeeks`), no la ventana corta de la
+ * espiral. Las ventas son a tirones —pico al lanzar, cola, y meses secos
+ * mientras se desarrolla—, así que una media de 12 semanas dice "no ingresas
+ * nada" justo en mitad de un proyecto y congelaría la plantilla. El año entero
+ * es la escala a la que un jugador juzga si puede permitirse a alguien.
+ */
+function sustainableWeeklyIncome(state: GameState): number {
+  if (state.cashflow.length === 0) return 0;
+  return state.cashflow.reduce((sum, e) => sum + e.income, 0) / state.cashflow.length;
 }
 
 /** Contrata del pool si el arquetipo quiere crecer y la caja lo sostiene.
@@ -619,20 +850,35 @@ function maybeHire(state: GameState, phil: Philosophy): GameState {
     // El aforo de la etapa manda (docs/17 B1): sin hueco, no se intenta.
     if (hireBlockReason(next) !== null) return next;
     if (next.candidates.length === 0) return next;
-    // El más hábil en su especialidad, prefiriendo especialidades que faltan.
+    // El más hábil en su especialidad, prefiriendo especialidades que faltan…
     const staffBySpec = new Map<string, number>();
     for (const e of next.staff) {
       staffBySpec.set(e.specialty, (staffBySpec.get(e.specialty) ?? 0) + 1);
     }
     const rank = (c: Employee) =>
       (staffBySpec.get(c.specialty) ?? 0) * 1000 - c.skills[c.specialty];
-    const candidate = [...next.candidates].sort((a, b) => rank(a) - rank(b))[0];
-    // Regla de prudencia compartida: contratar solo con ~medio año de nómina.
-    const runwayAfter =
-      next.studio.capital -
-      hiringCost(candidate) -
-      26 * (weeklyFixedCosts(next) + candidate.salary);
-    if (runwayAfter < 0) return next;
+    // …pero SOLO entre los que el estudio puede SOSTENER (Fase 10.2-B): la
+    // nómina resultante tiene que caber en lo que se ingresa de verdad. Sin
+    // esta regla el bot fichaba una ESTRELLA de 2.000 💰/semana con ingresos de
+    // garaje (~1.100 💰/semana): quedaba insolvente para siempre, encerrado en
+    // juegos pequeños que no pagaban su propia nómina, y sobrevivía solo
+    // porque hasta 10.2-B el crédito era gratis e infinito (con la cuota
+    // obligatoria, la fábrica y el equilibrado quebraban en E2). Un jugador
+    // competente empieza fichando juniors y sube de categoría cuando el
+    // negocio lo aguanta.
+    const fixed = weeklyFixedCosts(next);
+    const income = sustainableWeeklyIncome(next);
+    const affordable = next.candidates.filter(
+      (c) =>
+        next.studio.capital - hiringCost(c) - 26 * (fixed + c.salary) >= 0 &&
+        // Sostenible por el NEGOCIO (la nómina cabe en lo que se ingresa) o
+        // por la CAJA (un año entero de esa nómina en el banco): el estudio
+        // rico puede invertir en talento por delante de sus ingresos; el
+        // garaje, no.
+        (fixed + c.salary <= income || next.studio.capital >= 52 * (fixed + c.salary)),
+    );
+    if (affordable.length === 0) return next;
+    const candidate = [...affordable].sort((a, b) => rank(a) - rank(b))[0];
     next = hireCandidate(next, candidate.id);
   }
   return next;
@@ -1048,7 +1294,7 @@ export function botDecide(state: GameState, phil: Philosophy, gamesStarted: numb
   // motores (9.2), investigación, plantilla, cuidado y rotación de energía.
   // Los platos girando (9.7) se dotan ANTES que el proyecto: son obligación.
   state = maybeExpand(state, phil);
-  state = manageLoans(state);
+  state = manageLoans(state, phil);
   // Investigar ANTES de encargar obra de motor (9.7): los nodos pendientes
   // (serviciosOnline incluido) se compran con prioridad — sin el orden, la
   // obra gen-7 se comía los 💡 cada vez que rozaban los 120 y el nodo del

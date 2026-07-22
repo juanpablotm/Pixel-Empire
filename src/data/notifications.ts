@@ -20,6 +20,7 @@ export type NoticeKind =
   | 'marketExit' // un juego sale del mercado → P&L (generó vs costó)
   | 'staffLeft' // renuncia de un empleado (cualquiera; docs/17 U4 ajustado)
   | 'bankruptcyWarning' // primera semana en números rojos (docs/06 §1)
+  | 'debtSpiral' // el interés de deuda supera el ingreso reciente (docs/20 W1c)
   | 'scaleUp' // la ampliación de estudio pasa a estar disponible (docs/18 V4-c)
   | 'independence' // primer juego con peso auto-publicado tras depender de publishers (9.6)
   | 'crisis' // escándalo/crisis (beat: CrisisModal, docs/07 §5)
@@ -73,6 +74,17 @@ export const IMPORTANT_NOTICES: Record<NoticeKind, NoticeSpec> = {
     surface: 'modal',
     icon: '🏦',
     title: 'Aviso de bancarrota',
+    acceptLabel: 'Lo asumo',
+    accent: 'danger',
+  },
+  // La espiral de deuda (10.1, docs/20 W1c): el interés semanal ya supera lo
+  // que ingresas — sin amortizar, la deuda compone más rápido de lo que puedes
+  // pagar. Se avisa PRONTO para que el jugador la vea venir (fair, no injusto).
+  debtSpiral: {
+    level: 'importante',
+    surface: 'modal',
+    icon: '🌀',
+    title: 'La deuda se dispara',
     acceptLabel: 'Lo asumo',
     accent: 'danger',
   },

@@ -470,6 +470,30 @@ describe('saveLoad — guardado/carga con versión (docs/08 §7)', () => {
     expect(repaired.projects[0].hype).toBe(0);
   });
 
+  it('migra un guardado v19 (Fase 10.1) al esquema actual: cima de reputación (docs/20 W3)', () => {
+    const base = tick(createInitialState(SEED));
+    // Una partida v19 no guardaba `stats.peakReputation`: el gate de
+    // trayectoria de 10.2-B lo estrena con la MEJOR reputación de segmento
+    // actual — lo más favorable que se puede afirmar con honestidad de una
+    // partida sin historial, y nunca peor que empezar de cero.
+    const v19State = {
+      ...base,
+      studio: {
+        ...base.studio,
+        reputation: { ...base.studio.reputation, critica: 71, comunidad: 44 },
+      },
+      stats: { ...base.stats, peakReputation: undefined },
+    } as unknown as Record<string, unknown>;
+    delete (v19State['stats'] as Record<string, unknown>)['peakReputation'];
+
+    const state = deserializeSave(JSON.stringify({ saveVersion: 19, state: v19State }));
+    expect(state.stats.peakReputation).toBe(71);
+    // No es destructiva: la deuda vieja no se re-cobra ni se retro-capitaliza.
+    expect(state.loanPrincipal).toBe(base.loanPrincipal);
+    expect(state.loanInterest).toBe(base.loanInterest);
+    expect(() => tick(state)).not.toThrow();
+  });
+
   it('el JSON incluye saveVersion', () => {
     const parsed = JSON.parse(serializeSave(createInitialState(SEED))) as {
       saveVersion: number;

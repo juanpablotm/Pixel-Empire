@@ -154,6 +154,27 @@ El motor es **el gran gate tecnológico** y una escasez permanente. Dos vías, e
 de la fase — cada era toca pasar por caja. Todo data-driven: capacidades y catálogo en
 `data/engines.ts`; niveles, costes y demanda en `balance.engines` y `balance.quality.ceiling.engine`.
 
+### 3.4 Ampliar el catálogo sin diluir los 💡 (Fase 10.3, docs/20 W6b) `[DECIDIDO · baseline v1]`
+
+Regla permanente para cualquier ampliación futura de contenido: **más objetivos con los mismos 💡
+hacen que todo se sienta lejano**, así que el ritmo de desbloqueo por era es un invariante que se
+**mide**, no se supone. El arnés es `src/test/researchPaceReport.ts`: corre los 4 perfiles de `08` §8
+con semilla fija y da, por nodo, la semana de compra y su **Δ respecto a la semana en que su era lo
+habilita**.
+
+Cómo se cumplió al pasar de 18 a 29 features (`09` §5.1):
+
+- **Ninguna feature nueva estrena nodo.** Las gateadas cuelgan de nodos existentes, así que el mismo
+  desembolso compra más. Un nodo que desbloquea dos cosas vale el doble por el mismo precio.
+- **El árbol completo BAJA de 1.088 a 993 💡.** Cuatro nodos de E5-E7 se abarataron para compensar,
+  no la generación de puntos: `marketingViral` 80→65, `generacionProcedural` 70→50,
+  `serviciosOnline` 100→85, `infraestructuraCloud` 110→90, `iaGenerativa` 150→125.
+- **Por qué el coste y no la generación.** Subir los 💡 por lanzamiento riega TODA la partida,
+  incluidas E1-E2, donde el pase económico y el envolvente de dificultad de la 9.1 están calibrados al
+  milímetro. Un nodo de E5 no puede tocar el early game: su era no ha llegado.
+- **El daño que hay que vigilar no es el precio, es el CALENDARIO.** Más features = proyectos más
+  largos = menos lanzamientos = menos 💡, y eso golpea justo al perfil que vive de encadenar juegos.
+
 ## 4. Progresión de escala (las 5 etapas de estudio) `[DECIDIDO · rediseñado en docs/18 V4]`
 
 Transversal a las eras históricas, el estudio crece en escala. Cada etapa cambia *qué decisiones tomas*.
@@ -174,13 +195,24 @@ aterrice hacia **E5–E6** (verificado con los bots de `08` §8). Requisitos y c
 enseña leyéndolos de la misma fuente que valida la compra (`expandStudio`), y la tabla legible está
 en `16` §3.2.
 
+**Ampliar exige capital Y TRAYECTORIA `[DECIDIDO · Fase 10.2-B, docs/20 W3]`.** El requisito de
+cada etapa no es solo caja + plantilla: también pide **juegos lanzados** y una **cima de reputación**
+en algún segmento (`gamesReleased` y `topReputation` en `requirementsByStage`). La razón es medida,
+no estética: el Experimento 1 de la 10.2-A demostró que **el capital no regula las etapas 4–5** —con
+préstamo agresivo o sin él, la etapa 4 cae en la misma semana—, porque cuando los ingresos crecen
+exponencialmente una cifra de caja es un peaje, no un ritmo. La carrera sí regula: crecer exige
+**haber hecho obra**, no haber acertado dos lanzamientos. La reputación que se mira es la **cima
+histórica** (`stats.peakReputation`), no la de hoy, y del **mejor segmento**, no del agregado: basta
+con haber sido bueno para ALGUIEN alguna vez — así la fábrica cínica, cuya codicia hunde el vector
+justo cuando junta el capital, no queda encerrada para siempre en la etapa 3.
+
 **Cada etapa quema más (docs/18 V4-d).** El overhead fijo semanal (alquiler/infraestructura,
-`economy.upkeepExtraByStage`) sube considerablemente por etapa: una Corporación quema ~1,5M 💰/año
+`economy.upkeepExtraByStage`) sube considerablemente por etapa: una Corporación quema ~1,1M 💰/año
 solo en infraestructura, antes de nóminas. Un estudio grande fabricando AAAs no es riesgo cero:
 para sostenerlo hay que seguir sacando éxitos — no existe el "punto dulce" invencible.
 
 La etapa también **gatea el tamaño de proyecto** (docs/17 E1 + docs/18 V4-b): el Muy grande pide un
-Estudio grande; el AAA solo está al alcance de una **Corporación** con 40 en plantilla. Así la escala
+Estudio grande; el AAA solo está al alcance de una **Corporación** con 24 en plantilla. Así la escala
 del estudio importa de verdad a la hora de decidir qué juego construir.
 
 **La macro-gestión de la escala grande es real desde 9.7 (docs/19 §9.7).** El Estudio grande abre
@@ -213,13 +245,13 @@ muertos en E5. Y cada era sube el "listón de calidad esperado" por el público 
 ## 6. Ritmo y duración de partida `[DECIDIDO]`
 
 - Objetivo de diseño (cerrado): una partida completa (E1→E7) de **8–10 horas**.
-- Un juego pequeño en el garaje: ~4–8 semanas de desarrollo. Un AAA en E6: ~2–3 años.
+- Un juego pequeño en el garaje: ~4–8 semanas de desarrollo. Un AAA en E6: ~1,8 años (96 semanas).
 
 ### 6.1 El calendario no se compra con plantilla `[DECIDIDO · baseline v1]`
 
 **1 tick = 1 semana, siempre.** La duración de un juego la fija **solo su tamaño** (pequeño 6 ·
-mediano 18 · grande 42 · muy grande 72 · AAA 120 semanas de calendario,
-`balance.development.phaseWeeksBySize`).
+mediano 18 · grande 42 · muy grande 72 · AAA **96** semanas de calendario,
+`balance.development.phaseWeeksBySize`; el AAA bajó de 120 en la Fase 10.2-B, docs/20 W2-bis).
 Meter más gente **no acorta el plazo**: lo que hace la capacidad del equipo (personas + motores
 propios, menos el burnout) es decidir **cómo de bien se ejecuta dentro de ese plazo**.
 

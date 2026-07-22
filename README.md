@@ -63,6 +63,7 @@ documentos de diseño numerados (`00`–`12`) están en la carpeta **`docs/`**. 
 | 17 | `docs/17-pulido-bloque-1.md` | Pulido dirigido por playtest · Bloque 1 (Fase 8) |
 | 18 | `docs/18-pulido-bloque-2.md` | Pulido dirigido por playtest · Bloque 2 (Fase 8) |
 | 19 | `docs/19-expansion-fase9.md` | Expansión (Fase 9): "El juego que no se resuelve" |
+| 20 | `docs/20-pulido-bloque-3.md` | Pulido dirigido por playtest · Bloque 3 (Fase 10) |
 
 ---
 

@@ -147,7 +147,8 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     id: 'marketingViral',
     name: 'Marketing viral',
     description: 'Campañas hechas para compartirse. +30 % extra de hype.',
-    cost: 80,
+    // 80 → 65 en 10.3 (docs/20 W6b): ver la nota de coste al pie del árbol.
+    cost: 65,
     era: 'E5',
     requiresNodes: ['marketingDirigido'],
     effects: { hypeGain: 0.3 },
@@ -184,15 +185,15 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     id: 'generacionProcedural',
     name: 'Generación procedural',
     description: 'Mundos que se construyen solos: desbloquea el género Sandbox y los mundos procedurales.',
-    cost: 70,
+    cost: 50,
     era: 'E5',
   },
   {
     id: 'serviciosOnline',
     name: 'Juegos como servicio',
     description:
-      'Infraestructura para cientos de jugadores a la vez: desbloquea el Battle Royale y OPERAR tus juegos como servicio en vivo (Fase 9.7).',
-    cost: 100,
+      'Infraestructura para cientos de jugadores a la vez: desbloquea el Battle Royale, el modo espectador y OPERAR tus juegos como servicio en vivo (Fase 9.7).',
+    cost: 85,
     era: 'E6',
     requiresNodes: ['tecnologiaOnline'],
   },
@@ -200,7 +201,7 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     id: 'infraestructuraCloud',
     name: 'Infraestructura cloud',
     description: 'Servidores elásticos en la nube: desbloquea el cross-play.',
-    cost: 110,
+    cost: 90,
     era: 'E6',
     requiresNodes: ['serviciosOnline'],
   },
@@ -208,10 +209,28 @@ export const researchNodes: readonly ResearchNodeDef[] = [
     id: 'iaGenerativa',
     name: 'IA generativa',
     description: 'Modelos que improvisan diálogo y mundo: desbloquea el compañero con IA.',
-    cost: 150,
+    cost: 125,
     era: 'E7',
   },
 ];
+
+/**
+ * Nota de coste (Fase 10.3, docs/20 W6b) — por qué bajaron 4 nodos de E5-E7.
+ *
+ * La regla de W6 es que ampliar el catálogo de features NO puede empeorar el
+ * RITMO de desbloqueo. Medido con los 4 bots (`src/test/researchPaceReport.ts`),
+ * el catálogo nuevo no cuesta ni un 💡 —ninguna feature estrena nodo— pero SÍ
+ * alarga los proyectos, y el perfil que vive de encadenar lanzamientos (el
+ * indie) pasaba a lanzar menos: sus nodos de E5-E7 llegaban con 24-56 semanas
+ * de retraso frente a la medición previa.
+ *
+ * La palanca obvia (más 💡 por lanzamiento) se descartó porque riega también
+ * E1-E2 y ahí rompía el CA 9.1(a). La compensación se hace donde se produjo el
+ * daño: `marketingViral` 80→65, `serviciosOnline` 100→85, `infraestructuraCloud`
+ * 110→90 e `iaGenerativa` 150→125. Ninguno puede tocar el early game (su era no
+ * ha llegado) y todos siguen muy por encima del nodo más barato, así que la
+ * reserva de ahorro de los bots tampoco se mueve.
+ */
 
 export function getResearchNode(id: string): ResearchNodeDef {
   const node = researchNodes.find((n) => n.id === id);

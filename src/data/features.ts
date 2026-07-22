@@ -11,6 +11,15 @@ import type { Feature, FeatureAffinity } from '../core/model/content';
  * a medias). Elegir features es una decisión de criterio, no de apilar.
  * Algunas vienen en VARIANTES excluyentes (`variantGroup`): puntos distintos
  * del trade-off barato/rápido vs caro/lento/calidad.
+ *
+ * Fase 10.3 (docs/20 W6): el catálogo se amplía con dos reglas. (a) Cada
+ * feature nueva habilita una DECISIÓN — se añaden donde faltaban opciones que
+ * encajaran (Ritmo tenía UNA, Gestión dos, Battle Royale dos: sus juegos
+ * llenaban el alcance a base de relleno neutro), y las que son variantes
+ * declaran su `variantGroup`. (b) NO se diluye la economía de 💡: ninguna
+ * feature nueva estrena nodo de investigación — las gateadas cuelgan de nodos
+ * que YA existen (`tecnologiaOnline`, `serviciosOnline`), así que los mismos
+ * puntos compran más cosas, y `teoriaDiseno` revela el encaje de todas.
  */
 export const features: readonly Feature[] = [
   {
@@ -92,6 +101,7 @@ export const features: readonly Feature[] = [
     clashesGenres: ['aventura', 'terror', 'puzzle'],
   },
   {
+    // Variante barata del dilema de MÚSICA (10.3): la casera, de siempre.
     id: 'bandaSonora',
     name: 'Banda sonora original',
     description: 'Música compuesta para tu juego. Nadie se queja de un buen tema.',
@@ -100,6 +110,7 @@ export const features: readonly Feature[] = [
     bugRisk: 0.02,
     appearsInEra: 'E2',
     fitsGenres: ['ritmo', 'carreras', 'plataformas', 'aventura'],
+    variantGroup: 'musica',
   },
   {
     id: 'vozDigitalizada',
@@ -123,6 +134,74 @@ export const features: readonly Feature[] = [
     appearsInEra: 'E3',
     fitsGenres: ['rpg', 'aventura', 'shooter', 'terror'],
     clashesGenres: ['puzzle', 'gestion', 'ritmo'],
+  },
+  {
+    // Variante A del dilema de ACCESIBILIDAD (10.3): abrir el juego a todos.
+    // Llega en E3 y no antes: es cuando el juego deja de ser un arcade de tres
+    // reglas y hay que DECIDIR a quién invitas a la fiesta.
+    id: 'tutorialIntegrado',
+    name: 'Tutorial integrado',
+    description: 'Enseñas a jugar jugando. Las reglas duras dejan de espantar a nadie.',
+    qualityValue: 1,
+    timeCostWeeks: 1,
+    bugRisk: 0.05,
+    appearsInEra: 'E3',
+    fitsGenres: ['estrategia', 'gestion', 'simulacion', 'deportivo', 'puzzle'],
+    clashesGenres: ['terror', 'sandbox'],
+    variantGroup: 'accesibilidad',
+  },
+  {
+    // Variante B: la otra respuesta a la misma pregunta. No es "más difícil":
+    // es un público distinto (y el Hardcore lo nota en la reseña).
+    id: 'dificultadImplacable',
+    name: 'Dificultad implacable',
+    description: 'Sin concesiones: morir es la lección. Los que aguantan te veneran.',
+    qualityValue: 1.5,
+    timeCostWeeks: 2,
+    bugRisk: 0.1,
+    appearsInEra: 'E3',
+    fitsGenres: ['plataformas', 'terror', 'shooter', 'estrategia', 'rpg'],
+    clashesGenres: ['gestion', 'simulacion', 'deportivo', 'ritmo'],
+    variantGroup: 'accesibilidad',
+  },
+  {
+    // Variante A del dilema de IA (10.3): barata y previsible. Los enemigos
+    // hacen lo que les dijiste, y con eso basta para casi todo.
+    id: 'iaGuionizada',
+    name: 'IA por guiones',
+    description: 'Enemigos con rutinas escritas a mano. Predecibles, pero nunca fallan.',
+    qualityValue: 1,
+    timeCostWeeks: 1,
+    bugRisk: 0.06,
+    appearsInEra: 'E3',
+    fitsGenres: ['shooter', 'plataformas', 'terror', 'deportivo', 'carreras'],
+    clashesGenres: ['puzzle', 'ritmo', 'gestion'],
+    variantGroup: 'ia',
+  },
+  {
+    // Variante cara del dilema de MÚSICA (10.3): sonar como una película.
+    id: 'bandaSonoraLicenciada',
+    name: 'Banda sonora licenciada',
+    description: 'Temas que ya suenan en la radio. Caro y lento de cerrar, pero vende la escena.',
+    qualityValue: 3,
+    timeCostWeeks: 3,
+    bugRisk: 0.12,
+    appearsInEra: 'E3',
+    fitsGenres: ['ritmo', 'carreras', 'deportivo', 'plataformas', 'aventura'],
+    clashesGenres: ['terror', 'estrategia', 'gestion'],
+    variantGroup: 'musica',
+  },
+  {
+    // La otra cara del multijugador (10.3): jugar CON alguien, no contra.
+    id: 'modoCooperativo',
+    name: 'Campaña cooperativa',
+    description: 'Toda la aventura, a dos. Duplicas el diseño y triplicas los bugs raros.',
+    qualityValue: 2.5,
+    timeCostWeeks: 3,
+    bugRisk: 0.16,
+    appearsInEra: 'E3',
+    fitsGenres: ['shooter', 'aventura', 'rpg', 'plataformas', 'terror'],
+    clashesGenres: ['estrategia', 'gestion', 'puzzle', 'ritmo'],
   },
   {
     id: 'multijugadorOnline',
@@ -160,6 +239,58 @@ export const features: readonly Feature[] = [
     timeCostWeeks: 1,
     bugRisk: 0.03,
     appearsInEra: 'E4',
+  },
+  {
+    // Por fin algo que ENCAJA en Gestión y Simulación (10.3): antes llenaban
+    // su alcance a base de relleno neutro porque no había nada para ellos.
+    id: 'economiaSimulada',
+    name: 'Economía simulada',
+    description: 'Oferta, demanda y precios que se mueven solos. Los sistemas se enredan bonito.',
+    qualityValue: 2,
+    timeCostWeeks: 2,
+    bugRisk: 0.12,
+    appearsInEra: 'E4',
+    fitsGenres: ['gestion', 'simulacion', 'estrategia', 'sandbox', 'rpg'],
+    clashesGenres: ['ritmo', 'plataformas', 'carreras', 'shooter'],
+  },
+  {
+    // Cuelga del nodo `tecnologiaOnline` que YA existe (10.3 W6b): el mismo
+    // desembolso de 💡 desbloquea ahora dos features, no una.
+    id: 'clasificatoriasOnline',
+    name: 'Clasificatorias online',
+    description: 'Ligas, rachas y una tabla mundial. La pata competitiva sin montar partidas.',
+    qualityValue: 2,
+    timeCostWeeks: 2,
+    bugRisk: 0.15,
+    appearsInEra: 'E4',
+    requiresResearch: 'tecnologiaOnline',
+    requiresEngineCapability: 'online',
+    fitsGenres: ['shooter', 'deportivo', 'carreras', 'ritmo', 'estrategia', 'battleRoyale'],
+    clashesGenres: ['aventura', 'terror', 'rpg'],
+  },
+  {
+    id: 'personalizacionAvatar',
+    name: 'Personalización de avatar',
+    description: 'Que cada jugador se vea distinto. Barato, querido… y muy monetizable.',
+    qualityValue: 1.5,
+    timeCostWeeks: 2,
+    bugRisk: 0.08,
+    appearsInEra: 'E4',
+    fitsGenres: ['rpg', 'deportivo', 'battleRoyale', 'simulacion', 'sandbox', 'carreras'],
+    clashesGenres: ['puzzle', 'aventura', 'terror'],
+  },
+  {
+    // Variante cara del dilema de IA (10.3): el enemigo aprende de ti.
+    id: 'iaAdaptativa',
+    name: 'IA adaptativa',
+    description: 'Los rivales leen cómo juegas y cambian. Brillante cuando funciona.',
+    qualityValue: 3,
+    timeCostWeeks: 3,
+    bugRisk: 0.18,
+    appearsInEra: 'E5',
+    fitsGenres: ['shooter', 'estrategia', 'terror', 'deportivo', 'carreras', 'simulacion'],
+    clashesGenres: ['puzzle', 'ritmo', 'aventura'],
+    variantGroup: 'ia',
   },
   {
     id: 'mapaProcedural',
@@ -206,6 +337,32 @@ export const features: readonly Feature[] = [
     requiresEngineCapability: 'online',
     fitsGenres: ['shooter', 'deportivo', 'battleRoyale', 'carreras'],
     clashesGenres: ['aventura', 'terror'],
+  },
+  {
+    // Cuelga del nodo `serviciosOnline` que YA existe (10.3 W6b). Diseñar el
+    // juego para que lo VEAN es la lectura de la era de los streamers (07).
+    id: 'modoEspectador',
+    name: 'Modo espectador',
+    description: 'Cámaras, repeticiones y un lobby para mirar. El juego pensado para verse.',
+    qualityValue: 2,
+    timeCostWeeks: 2,
+    bugRisk: 0.12,
+    appearsInEra: 'E6',
+    requiresResearch: 'serviciosOnline',
+    requiresEngineCapability: 'online',
+    fitsGenres: ['battleRoyale', 'shooter', 'deportivo', 'carreras', 'estrategia'],
+    clashesGenres: ['aventura', 'terror', 'puzzle'],
+  },
+  {
+    id: 'disenoRealidadMixta',
+    name: 'Diseño para realidad mixta',
+    description: 'Pensado para tenerlo puesto en la cara. Espectacular… y fácil de marear.',
+    qualityValue: 3,
+    timeCostWeeks: 3,
+    bugRisk: 0.2,
+    appearsInEra: 'E7',
+    fitsGenres: ['terror', 'ritmo', 'simulacion', 'aventura', 'shooter', 'carreras'],
+    clashesGenres: ['estrategia', 'gestion', 'puzzle'],
   },
   {
     id: 'companeroIA',

@@ -101,6 +101,21 @@ y **revisa** los números de `17` E1 (que pasa de 4 a 5 tamaños). 💡 *Recomie
 >   de E5 (la fábrica la compra en E6 y lanza AAAs); el punto dulce muere — la fábrica cae de 35M a
 >   ~5M sosteniendo la torre con reseñas mediocres, y sin formar al equipo esa misma partida QUIEBRA.
 >   La gestión por políticas sube a la etapa 4 (`policies.minStage`).
+>
+> **⚠️ Números superados por la Fase 10.2-B (pase económico, docs/20 W2/W2-bis/W3).** Lo de arriba se
+> conserva como acta de la 8.8, pero estos valores YA NO son la baseline:
+> - **b) tamaños:** el AAA baja a **24** de plantilla, **96** semanas y alcance 12 (era 40/120/26): con
+>   la dotación vieja ni una Corporación llenaba su alcance (0,77 → reseña 39) y su ejército permanente
+>   hundía E6 a un margen operativo de −53k/sem. Coste base nuevo: 500/**5k**/**88k**/**460k**/**1,2M**.
+> - **c) el avance se compra:** requisito **mixto** (capital + plantilla + trayectoria) 25k+0 /
+>   500k+4 / 5M+8 / 25M+20 con 3/8/18/32 juegos y cima de reputación 0/55/60/65; ampliar cuesta
+>   12k / 250k / 2,5M / 12,5M 💰 (50 % del requisito). El requisito de la etapa 2 NO se toca: subirlo
+>   encerraba al estudio en el garaje (los bots quebraban en E2).
+> - **d) overhead:** la etapa 5 baja a **22.000** 💰/sem. EXP3 de la 10.2-A demostró que la etapa 5 se
+>   paga sola (+26M de margen operativo): el overhead nunca fue la "trampa de Corporación", y el trim
+>   es apoyo — el arreglo real fue aligerar el AAA.
+> - **Bots:** con estos números las 3 filosofías siguen viables y la Corporación aterriza en E5–E6
+>   igual que aquí; la tabla completa vive en `20`.
 
 ---
 

@@ -141,9 +141,9 @@ Valores de arranque (todo en `data/balance.ts`, ajustable solo en playtest):
 | Capital inicial (garaje) | **4.000 💰** (recalibrado en 9.6: era 10.000; con un pequeño costando ~4.100 con todo, el primer juego auto-publicado es una apuesta real y la oferta del publisher, una decisión de verdad) |
 | Publisher (9.6): reparto / adelanto / distribución | se queda el 55–75 % del bruto para siempre · adelanto = coste dev del tamaño × 0,8–1,35 × reputación 0,9–1,15 (no recuperable; arranque a su cargo) · distribución +15–45 % de demanda · bolsa de marketing por tamaño (3k–200k × perfil) |
 | Precio recomendado por juego | 20–60 💰 según tamaño/era |
-| **Coste base por tamaño** (docs/17 E1 + docs/18 V4) | 500 / 2.000 / 8.000 / 60.000 / 250.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
-| **Overhead fijo semanal por etapa** (docs/18 V4-d) | 0 / 300 / 1.500 / 7.000 / 30.000 💰 extra sobre el coste fijo base (100 💰) según etapa 1–5 |
-| **Coste de ampliar el estudio** (docs/18 V4-c) | 10k / 100k / 750k / 4M 💰 (a etapa 2/3/4/5); requiere además 25k / 200k+4 / 1,5M+8 / 8M+20 (capital + plantilla) |
+| **Coste base por tamaño** (docs/17 E1 + docs/18 V4; escalera de docs/20 W2) | 500 / 5.000 / 88.000 / 460.000 / 1.200.000 💰 (Pequeño/Mediano/Grande/Muy grande/AAA), fijo al iniciar |
+| **Overhead fijo semanal por etapa** (docs/18 V4-d; trim en docs/20 W2-bis) | 0 / 300 / 1.500 / 7.000 / 22.000 💰 extra sobre el coste fijo base (100 💰) según etapa 1–5 |
+| **Coste de ampliar el estudio** (docs/18 V4-c; escalera de docs/20 W3) | 12k / 250k / 2,5M / 12,5M 💰 (a etapa 2/3/4/5) = 50 % del requisito; requiere además **capital + plantilla + trayectoria**: 25k+0 / 500k+4 / 5M+8 / 25M+20 y 3 / 8 / 18 / 32 juegos lanzados con cima de reputación 0 / 55 / 60 / 65 en algún segmento |
 | Salario junior / senior / estrella | 300 / 800 / 2.000 💰 por semana |
 | Coste de desarrollo | ~500 💰 por persona·semana |
 | Coste de contratación | 2–4 semanas del salario del candidato |
@@ -159,7 +159,7 @@ Estudio pequeño / Estudio / Estudio grande / **Corporación**). El AAA queda bl
 Corporación con 40 en plantilla. Así ir a lo grande es una apuesta económica real, no la opción por defecto.
 
 **La escala quema (docs/18 V4-d):** el overhead creciente por etapa hace que un estudio grande no sea
-nunca riesgo cero — una Corporación quema ~1,5M 💰/año solo en infraestructura (más ~1,6M de nóminas
+nunca riesgo cero — una Corporación quema ~1,1M 💰/año solo en infraestructura (más las nóminas
 con 40 empleados). Sostener la torre exige seguir sacando éxitos: el "punto dulce" invencible no existe.
 
 `factorMonetización` (subido en 9.1 — la codicia rinde MÁS, docs/19 §9.1): premium = 1.0;
@@ -168,9 +168,22 @@ MTX ≈ **1.1**·`aggressiveness` sobre su referencia.
 
 ### Salud financiera
 - Flujo de caja semanal visible; alertas cuando el runway es corto.
-- **Préstamos**: línea de crédito según reputación y activos. Principal hasta ~6 meses de costes fijos;
-  interés ~1%/semana; devolución flexible. La deuda presiona hacia la codicia (tensión narrativa
-  deliberada). El impago sostenido acelera la bancarrota.
+- **Préstamos** `[REDISEÑADOS · Fase 10.2-B, docs/20]`: línea de crédito según reputación y activos,
+  hasta ~6 meses de costes fijos; interés ~1 %/semana; devolución flexible. Tres piezas hacen que la
+  deuda **muerda**, y las tres hacen falta:
+  1. **El interés CAPITALIZA** (10.1, docs/20 W1): sin amortizar, la deuda viva (principal + interés)
+     compone semana a semana. Amortizar salda primero el interés y luego el principal.
+  2. **La línea disponible descuenta la DEUDA VIVA**, no solo el principal (10.2-B): endeudarte
+     estrecha tu propio margen de maniobra.
+  3. **Amortización FORZOSA**: cada semana el banco se cobra una cuota mínima (~2,5 % de la deuda
+     viva, `loans.minPaymentRate`) que **sale de caja**, tengas o no. Como la cuota supera al interés,
+     una deuda desatendida decrece despacio en vez de dispararse.
+
+  Sin (2) y (3) el arreglo de la 10.1 era **cosmético**: la partida de la Fábrica cerraba con 124,9 mil
+  millones de interés acumulado que nunca la tocaban. Ahora la cuota compite cada semana con la nómina
+  — que es exactamente el empujón hacia la codicia que el préstamo debe ejercer. El impago sostenido
+  acelera la bancarrota, y un **aviso** salta cuando la cuota semanal supera el ingreso reciente (la
+  espiral de muerte se ve venir, no sorprende).
 
 ## 5. Escándalos y consecuencias `[DECIDIDO]`
 

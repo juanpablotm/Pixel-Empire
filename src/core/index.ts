@@ -181,6 +181,7 @@ export {
   featureFitRevealed,
   featureInsightKey,
   fitRevealed,
+  hasFutureResearch,
   initialResearchState,
   insightKey,
   insightKnown,
@@ -194,6 +195,7 @@ export {
   themeResearchCost,
   themeResearchStatus,
   toggleResearchAssignment,
+  visibleResearchEras,
 } from './systems/research';
 export {
   assignSquadToProject,
@@ -299,12 +301,17 @@ export {
   availableCredit,
   creditLimit,
   estimateRunwayWeeks,
+  isDebtSpiraling,
   launchMarketingCampaign,
+  outstandingDebt,
+  recentAverageIncome,
   recordExpense,
   recordIncome,
   repayLoan,
   takeLoan,
   weeklyFixedCosts,
+  weeklyLoanInterest,
+  weeklyMinimumPayment,
 } from './systems/economy';
 export {
   activeLiveServices,
@@ -359,6 +366,8 @@ export {
   initialReputation,
   mergeDeltas,
   reputationDeltasFromReviews,
+  topSegmentReputation,
+  trackPeakReputation,
   withReputationDeltas,
 } from './systems/reputation';
 export type { ReputationDeltas } from './systems/reputation';

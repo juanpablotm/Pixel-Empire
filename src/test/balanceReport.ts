@@ -9,7 +9,7 @@ import { computeLegacy } from '../core/systems/legacy';
 import { aggregateReputation } from '../core/systems/reputation';
 import type { GameState } from '../core/model/gameState';
 import { eraForWeek } from '../data/eras';
-import { FACTORY, INDIE, STUDIO, runFullGame } from './bots';
+import { FACTORY, INDIE, OPTIMIZER, STUDIO, runFullGame } from './bots';
 
 function snap(s: GameState): string {
   const year = 1979 + Math.ceil(s.week / 52);
@@ -90,7 +90,7 @@ function lateGameCurve(s: GameState): string {
   );
 }
 
-for (const phil of [INDIE, FACTORY, STUDIO]) {
+for (const phil of [INDIE, FACTORY, STUDIO, OPTIMIZER]) {
   console.log(`\n=== ${phil.name} ===`);
   const snaps: string[] = [];
   const end = runFullGame(phil, (s) => snaps.push(snap(s)));

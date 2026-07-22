@@ -146,6 +146,59 @@ Los tipos concretos de `Project`, `Employee`, `Platform`, etc. se detallan en `0
   comprobar que los tres arquetipos (`01` §5) siguen siendo viables tras cambios de balance.
 - **Component tests** de las pantallas clave.
 
+### 8.1 Bots de balance: 4 perfiles `[DECIDIDO · optimizador desde 10.1, docs/20 W8]`
+
+Los bots (`src/test/bots.ts`) juegan la partida completa (garaje 1980 → 2 años dentro de E7) tomando
+cada semana las decisiones de su perfil, **deterministas con semilla** (`BOT_SEED`). Hay **cuatro**:
+
+1. **Indie de culto** — pequeño, honesto, mima al equipo y al público (`INDIE`).
+2. **Fábrica AAA** — crece agresivo y exprime la monetización sin suicidarse (`FACTORY`).
+3. **Estudio equilibrado** — crece con cabeza, DLC honesto, cuida al equipo (`STUDIO`).
+4. **Optimizador** — **sin filosofía moral**: maximiza capital y crece lo más rápido posible jugando
+   **cerca de óptimo** con la información que el juego da (`OPTIMIZER`, añadido en 10.1). Comparte la
+   maquinaria competente de los otros (mejor Fit × popularidad, features por afinidad de género, motor
+   al día, rotación de energía, préstamo puente), pero **sin la prudencia** de los arquetipos: amplía de
+   etapa en cuanto puede pagarla con holgura mínima, sube al mayor tamaño **que su equipo puede ejecutar
+   bien** (gate de `alcance01`, no solo la plantilla mínima), monetización codiciosa **sin auto-sabotaje**
+   (MTX + DLC, sin loot boxes que invitan a escándalo/regulación) y gestiona crisis/dilemas para minimizar
+   el daño a ventas. Es la **vara de medir honesta**: los 3 arquetipos jugaban peor que un humano competente
+   (decían "nadie es Corporación antes de E5" mientras el jugador llegaba a Estudio grande en E2), así que
+   cada pase de balance "cerrado con bots verdes" podía estar **infra-ajustado**.
+
+   El informe de métricas es `src/test/optimizerReport.ts` (`npx vite-node src/test/optimizerReport.ts`):
+   etapa/semana de cada escala, capital por era, **ROI por tamaño** (entrada directa de 10.2) y nota media.
+   Desde la 10.2-B hay un segundo arnés, `src/test/economyReport102B.ts`, que añade lo que el pase
+   económico necesita medir: **trayectoria** al comprar cada etapa (juegos y cima de reputación),
+   **beneficio absoluto** por tamaño además del ROI, el **contrafactual controlado** (mismo estudio,
+   semana, equipo y Fit → ¿qué habría rendido cada tamaño?) y el **margen operativo por era**.
+
+**Los bots juegan como jugadores solventes, no como autómatas `[10.2-B, docs/20]`.** Dos reglas
+compartidas por los cuatro perfiles, ambas nacidas de que un bot incompetente **miente igual que un
+balance mal medido**:
+
+- **Solo fichan lo que pueden sostener** (`maybeHire`): la nómina resultante tiene que caber en el
+  ingreso medio del año **o** estar respaldada por un año entero de esa nómina en caja. Antes fichaban
+  estrellas de 2.000 💰/semana con ingresos de garaje (~1.100) y quedaban insolventes para siempre:
+  sobrevivían solo porque hasta la 10.2-B el crédito era gratis e infinito.
+- **No lanzan un tamaño que su equipo no puede ejecutar** (`scopeMinRatio`): 1,0 en el optimizador y
+  **0,9 en los tres arquetipos** — ambiciosos, no suicidas. Sin esta regla encadenaban Grandes y Muy
+  grandes con equipos cortos y firmaban reseñas de 24–41.
+
+Y gestionan la deuda como un jugador solvente (`manageLoans`): amortizan con el excedente sobre su
+colchón en vez de esperar a saldarla de golpe, y acotan su deuda a lo que pueden **servir** (la cuota
+obligatoria de la 10.2-B no puede comerse más de un tercio del coste fijo semanal).
+
+**Criterio de aceptación de una fase de BALANCE (desde 10.1):** una fase de balance **no está cerrada solo
+con "las 3 filosofías siguen viables"**. Exige **dos** condiciones:
+
+1. Las **3 filosofías** (`01` §5) siguen viables y se sienten distintas (como hasta ahora).
+2. El **optimizador tampoco resuelve el juego**: no llega a Corporación **antes de E5**, no imprime
+   dinero (su late-game también quema: semanas en rojo, capital que se estanca) y no encuentra un
+   "punto dulce" invencible.
+
+Verificado en `core/systems/fullGame.test.ts` (las 3 filosofías) + `core/systems/optimizer.test.ts` (el
+optimizador: determinismo, viabilidad y las dos condiciones de balance de W8).
+
 ## 9. Rendimiento `[DECIDIDO]`
 
 - El coste está en la simulación de muchos juegos lanzados y empleados; mantener los ticks O(n) y

@@ -101,6 +101,15 @@ export const expandBlockedLabels = {
   maxStage: 'Ya eres una Corporación: no hay etapa mayor',
   capital: (amount: string) => `Necesitas ${amount} en caja`,
   staff: (n: number) => `Necesitas ${n} personas en plantilla`,
+  /**
+   * Gate de TRAYECTORIA (docs/20 W3): estos dos motivos son la novedad de la
+   * 10.2-B y por eso nombran lo que falta en términos de CARRERA, no de caja —
+   * el jugador tiene que entender que crecer se gana lanzando, no ahorrando.
+   */
+  games: (needed: number, current: number) =>
+    `Necesitas ${needed} juegos lanzados (llevas ${current}): crecer se gana haciendo carrera`,
+  reputation: (n: number) =>
+    `Necesitas ${n} de reputación en algún segmento: nadie amplía sin un público que le espere`,
 } as const;
 
 /**

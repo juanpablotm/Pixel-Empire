@@ -217,6 +217,15 @@ describe('avisos importantes de dos niveles (docs/17 U4)', () => {
         ...base,
         projects: [],
         studio: { ...base.studio, capital: req.capital - 100 },
+        // Desde 10.2-B ampliar exige TRAYECTORIA además de caja (docs/20 W3):
+        // el aviso solo debe saltar cuando el gate ENTERO se cumple, así que
+        // aquí la carrera se da por hecha y el capital es lo último que falta.
+        releasedGames: Array.from({ length: req.gamesReleased }, (_, i) => ({
+          ...base.releasedGames[0],
+          id: `hist-${i}`,
+          salesActive: i === 0 && base.releasedGames[0].salesActive,
+        })),
+        stats: { ...base.stats, peakReputation: req.topReputation },
       },
       pendingNotices: [],
     });

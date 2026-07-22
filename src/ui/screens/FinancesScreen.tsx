@@ -12,11 +12,14 @@ import {
   availableCredit,
   creditLimit,
   estimateRunwayWeeks,
+  outstandingDebt,
   weeklyFixedCosts,
+  weeklyLoanInterest,
+  weeklyMinimumPayment,
 } from '../../core';
 import { balance } from '../../data/balance';
 import { useGameStore } from '../../state/store';
-import { formatMoney } from '../format';
+import { formatMoney, formatRate } from '../format';
 import { EmptyState } from '../components/EmptyState';
 import { RollingNumber } from '../components/Motion';
 import { ReputationRadar } from '../components/ReputationRadar';
@@ -37,12 +40,20 @@ export function FinancesScreen() {
   const limit = creditLimit(game);
   const available = availableCredit(game);
   const fixed = weeklyFixedCosts(game);
-  const interest = Math.round(game.loanPrincipal * balance.economy.loans.weeklyInterest);
+  // Deuda viva = principal + interés acumulado; el interés de la semana que
+  // viene compone sobre el total (docs/20 W1). El núcleo hace las cuentas.
+  const debt = outstandingDebt(game);
+  const interest = weeklyLoanInterest(game);
+  // La cuota obligatoria de 10.2-B (docs/20 §Préstamos) SÍ sale de caja: es lo
+  // que convierte endeudarse en una decisión con consecuencia, así que se
+  // muestra al lado del interés y no escondida en los gastos.
+  const minPayment = weeklyMinimumPayment(game);
 
   const chartData = game.cashflow.map((entry) => ({
     week: entry.week,
     ingresos: entry.income,
     gastos: entry.expenses,
+    interes: entry.interest ?? 0,
     neto: entry.income - entry.expenses,
   }));
 
@@ -74,7 +85,7 @@ export function FinancesScreen() {
           </p>
           <p className="mt-1 text-xs text-ink-faint">
             Costes recurrentes: {formatMoney(fixed)}/sem
-            {interest > 0 && ` + ${formatMoney(interest)} de intereses`}
+            {debt > 0 && ` · deuda viva ${formatMoney(debt)}`}
           </p>
         </div>
         <div className="rounded-lg border border-line bg-panel p-4">
@@ -146,22 +157,51 @@ export function FinancesScreen() {
                   fill="#f8717122"
                   strokeWidth={2}
                 />
+                {debt > 0 && (
+                  <Area
+                    type="monotone"
+                    dataKey="interes"
+                    stroke="#fbbf24"
+                    fill="#fbbf2422"
+                    strokeWidth={2}
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>
         )}
       </section>
 
-      {/* Línea de crédito (docs/06 §4) */}
+      {/* Línea de crédito (docs/06 §4; interés que compone desde 10.1, docs/20 W1) */}
       <section className="flex flex-col gap-3 card">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-mute">
           Línea de crédito
         </h3>
         <p className="text-sm text-ink-mute">
-          Deuda viva: <span className="font-semibold text-ink">{formatMoney(game.loanPrincipal)}</span>{' '}
-          · límite {formatMoney(limit)} · disponible {formatMoney(available)} · interés ~
-          {Math.round(balance.economy.loans.weeklyInterest * 100)} %/semana
+          Deuda viva:{' '}
+          <span className={`font-semibold ${game.debtSpiral ? 'text-danger' : 'text-ink'}`}>
+            {formatMoney(debt)}
+          </span>
+          {game.loanInterest > 0 && (
+            <span className="text-ink-faint">
+              {' '}
+              ({formatMoney(game.loanPrincipal)} principal + {formatMoney(game.loanInterest)} interés)
+            </span>
+          )}{' '}
+          · límite {formatMoney(limit)} · disponible {formatMoney(available)}
         </p>
+        {debt > 0 && (
+          <p className={`text-sm ${game.debtSpiral ? 'text-danger' : 'text-warn'}`}>
+            {game.debtSpiral ? '🌀 ' : ''}
+            Interés de esta semana:{' '}
+            <span className="font-semibold tabular-nums">+{formatMoney(interest)}</span>{' '}
+            (~{formatRate(balance.economy.loans.weeklyInterest)}/sem, capitaliza en la
+            deuda) · cuota obligatoria:{' '}
+            <span className="font-semibold tabular-nums">−{formatMoney(minPayment)}</span>{' '}
+            (~{formatRate(balance.economy.loans.minPaymentRate)}/sem, sale de caja)
+            {game.debtSpiral && ' — la cuota ya supera lo que ingresas.'}
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="number"
@@ -183,9 +223,9 @@ export function FinancesScreen() {
           <button
             type="button"
             disabled={
-              game.loanPrincipal <= 0 ||
+              debt <= 0 ||
               loanAmount <= 0 ||
-              Math.min(loanAmount, game.loanPrincipal) > game.studio.capital
+              Math.min(loanAmount, debt) > game.studio.capital
             }
             onClick={() => repayLoan(loanAmount)}
             className="btn btn-quiet disabled:cursor-not-allowed disabled:bg-raised disabled:text-ink-faint"
@@ -193,7 +233,8 @@ export function FinancesScreen() {
             Amortizar
           </button>
           <p className="text-xs text-ink-faint">
-            La deuda presiona hacia la codicia. El impago sostenido acelera la bancarrota.
+            La deuda presiona hacia la codicia: el banco cobra su cuota cada semana, tengas caja o
+            no, y la línea disponible se estrecha con lo que debes.
           </p>
         </div>
       </section>

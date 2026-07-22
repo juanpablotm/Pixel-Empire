@@ -47,6 +47,8 @@ function noticeSubtitle(notice: ImportantNotice): string | null {
       return notice.stageName;
     case 'independence':
       return `«${notice.gameName}»`;
+    case 'debtSpiral':
+      return `Deuda viva: ${formatMoney(notice.debt)}`;
     case 'bankruptcyWarning':
       return null;
   }
@@ -131,6 +133,17 @@ function NoticeBody({ notice }: { notice: ImportantNotice }) {
           La caja está en <span className="font-semibold text-danger">números rojos</span>. Si sigue
           así {notice.graceWeeks} semanas seguidas, el estudio quiebra. Recorta costes, cobra ventas
           o pide un préstamo para enderezar el rumbo.
+        </p>
+      );
+    case 'debtSpiral':
+      return (
+        <p className="mt-4 text-sm text-ink">
+          El interés semanal de tu deuda —
+          <span className="font-semibold text-danger"> {formatMoney(notice.weeklyInterest)}</span>—
+          ya supera lo que ingresas. Sin amortizar, la deuda{' '}
+          <span className="font-semibold text-danger">compone más rápido de lo que puedes pagar</span>{' '}
+          y arrastra la caja hacia la bancarrota. Amortiza cuanto puedas o recorta gastos para
+          frenar la espiral antes de que sea irreversible.
         </p>
       );
     case 'scaleUp':

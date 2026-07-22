@@ -33,9 +33,11 @@ export const balance = {
     /**
      * Caja de sobra también para COMPRAR etapas (docs/18 V4-c): con el avance
      * de pago, experimentar con una Corporación exige cubrir su requisito de
-     * 8M + el desembolso. En sandbox no hay presión: se empieza pudiendo todo.
+     * capital + el desembolso (25M + 12,5M desde 10.2-B). En sandbox no hay
+     * presión: se empieza pudiendo todo. (El gate de TRAYECTORIA de 10.2-B sí
+     * se cumple jugando: el sandbox regala caja, no carrera.)
      */
-    initialCapital: 20_000_000,
+    initialCapital: 60_000_000,
     researchPoints: 200,
   },
 
@@ -57,15 +59,20 @@ export const balance = {
      * Alquiler/infraestructura extra semanal por etapa de escala (docs/02 §4,
      * docs/18 V4-d): cada etapa QUEMA considerablemente más. Un estudio grande
      * no es riesgo cero: sostenerlo exige seguir sacando éxitos. Esto mata el
-     * "punto dulce" invencible (una Corporación quema ~1,5M 💰/año solo en
+     * "punto dulce" invencible (una Corporación quema ~1M 💰/año solo en
      * infraestructura, antes de nóminas).
+     *
+     * Etapa 5 recortada en 10.2-B (30k → 22k, docs/20 W2-bis): EXP3 demostró
+     * que la etapa 5 SÍ se paga sola (margen operativo +26M), así que el
+     * overhead nunca fue la "trampa de Corporación" — el trim es APOYO al
+     * arreglo real (aligerar el AAA), no la palanca principal.
      */
     upkeepExtraByStage: {
       1: 0,
       2: 300,
       3: 1_500,
       4: 7_000,
-      5: 30_000,
+      5: 22_000,
     } satisfies Record<ScaleStage, number>,
     /** Coste de desarrollo: ~500 💰 por persona·semana [DECIDIDO, docs/12 §6]. */
     devCostPerPersonWeek: 500,
@@ -81,15 +88,46 @@ export const balance = {
      * Coste base fijo por tamaño (docs/17 E1, escalado en 8.8): se cobra AL
      * INICIAR el proyecto, además de la licencia de plataforma y del coste por
      * persona·semana. Hace que ir a lo grande sea una decisión con peso
-     * económico, no solo de tiempo. Escala fuerte: un AAA compromete
-     * presupuesto de corporación de entrada (40k era ruido para una caja de 8M).
+     * económico, no solo de tiempo.
+     *
+     * ESCALERA DE 10.2-B (docs/20 W2), la palanca central del pase económico.
+     * El contrafactual de la 10.2-A (EXP2) midió, a igualdad TOTAL de
+     * condiciones, un ROI que se disparaba con el tamaño (Mediano ~57–62× →
+     * Grande/Muy grande ~123–166×): el acantilado estaba en Grande, y el coste
+     * base era el 5–7 % del total justo ahí. Estos números lo aplanan:
+     * ~32k / 256k / 1M / 4M de coste TOTAL objetivo (×8 por escalón) del
+     * Mediano al AAA, mientras el ingreso escala ~×5–6 → **más beneficio
+     * absoluto al subir de tamaño, peor margen**. Esa es la regla de diseño.
+     *
+     * DOS DESVIACIONES de la propuesta original de W2, ambas medidas con bots:
+     *
+     * · El PEQUEÑO se queda en 500 y NO sube a 1.000. Con 1.000 el optimizador
+     *   QUEBRABA en E2 s410: el garaje vive de márgenes de ~1k/semana y nunca
+     *   llegaba a juntar la caja de su primer mediano (se quedaba encerrado en
+     *   juegos pequeños con nómina de estudio). Además encarecer el pequeño va
+     *   CONTRA el objetivo de W2: su ROI (3,3×) ya es el peor de la tabla, así
+     *   que subirlo agranda el acantilado que veníamos a aplanar.
+     * · El AAA aterriza en 1,2M, entre los 800k propuestos y el 1,6M vetado.
+     *   El veto a 1,6M (docs/20 §10.2-B) sigue en pie —dejaría al AAA
+     *   estrictamente dominado por el Muy grande y nadie lo haría jamás—, pero
+     *   con 800k el contrafactual medía un ROI de AAA (31–55×) POR ENCIMA del
+     *   Muy grande (24–41×): el escalón cimero volvía a ser el más rentable, y
+     *   eso es exactamente la condición 1 de W2 incumplida. A 1,2M el ROI
+     *   queda justo por debajo del Muy grande en E5 y E6 mientras el beneficio
+     *   ABSOLUTO sigue doblándolo largamente — que es la forma correcta de que
+     *   la cima sea una cima: más dinero, peor margen.
+     *
+     * GUARDARRAÍL INNEGOCIABLE (se verifica en balance.test.ts y con los bots,
+     * src/test/economyReport102B.ts): tras aplicar la escalera, el BENEFICIO
+     * ABSOLUTO debe seguir CRECIENDO con el tamaño. Si crecer diese menos
+     * dinero, nadie crecería y se rompería el Pilar 5.
      */
     sizeBaseCost: {
       pequeno: 500,
-      mediano: 2_000,
-      grande: 8_000,
-      muyGrande: 60_000,
-      aaa: 250_000,
+      mediano: 5_000,
+      grande: 88_000,
+      muyGrande: 460_000,
+      aaa: 1_200_000,
     } satisfies Record<ProjectSize, number>,
     /** Semanas consecutivas en negativo antes de la bancarrota (docs/06 §1: "sostenido"). */
     bankruptcyGraceWeeks: 8,
@@ -110,10 +148,44 @@ export const balance = {
       elasticityByAudience: { hardcore: 0.6, amplio: 1, casual: 1.4, infantil: 1.6 },
     },
 
-    /** Préstamos [DECIDIDO, docs/12 §6]: línea de crédito flexible. */
+    /**
+     * Préstamos [DECIDIDO, docs/12 §6; interés en 10.1 (docs/20 W1);
+     * REDISEÑADOS en 10.2-B (docs/20 §"Préstamos — rediseño, no parche")].
+     *
+     * El arreglo de la 10.1 resultó COSMÉTICO: la Fábrica cerraba la partida
+     * con 124,9 mil millones de interés acumulado que jamás la tocaban, porque
+     * (a) `availableCredit` solo descontaba el principal y (b) nada obligaba a
+     * amortizar, así que la deuda capitalizaba al infinito como un número
+     * decorativo. Dos cambios cierran el círculo:
+     *   1. la línea disponible descuenta la DEUDA VIVA (principal + interés):
+     *      endeudarte estrecha tu propio crédito;
+     *   2. hay AMORTIZACIÓN FORZOSA semanal que SÍ drena caja (`minPayment`).
+     * Objetivo de diseño (docs/06 §4): endeudarse empuja hacia la codicia
+     * porque hay que devolverlo, no es dinero gratis.
+     */
     loans: {
-      /** Interés semanal sobre el principal vivo (~1 %/semana). */
+      /**
+       * Interés semanal sobre la DEUDA VIVA (~1 %/semana). Desde 10.1 (docs/20
+       * W1) el interés CAPITALIZA en la deuda en vez de cobrarse como cuota:
+       * cada tick `interesAcumulado += round(deudaViva × este valor)` y la
+       * deuda viva = principal + interés compone semana a semana. Desde 10.2-B
+       * la cuota mínima obligatoria muerde por encima de esta tasa, así que
+       * una deuda desatendida DECRECE despacio en vez de dispararse.
+       */
       weeklyInterest: 0.01,
+      /**
+       * Amortización FORZOSA semanal (10.2-B): cada tick el banco se cobra
+       * `max(minPaymentFloor, round(deudaViva × minPaymentRate))` de la CAJA,
+       * topado a la deuda viva y aplicado primero al interés y luego al
+       * principal. Con 2,5 % de cuota contra 1 % de interés, la deuda viva
+       * baja ~1,5 %/semana: un préstamo desatendido se salda en ~3 años
+       * pagando, y mientras tanto la cuota compite con la nómina. Si no hay
+       * caja, la cuota se cobra igual y empuja a los números rojos — esa es la
+       * consecuencia real que faltaba.
+       */
+      minPaymentRate: 0.025,
+      /** Suelo de la cuota: una deuda residual se salda sin arrastrarse años. */
+      minPaymentFloor: 100,
       /** Principal máximo: ~6 meses de costes fijos actuales. */
       capWeeksOfFixedCosts: 26,
       /** La reputación agregada escala la línea de crédito: 0 → min, 100 → max. */
@@ -121,6 +193,28 @@ export const balance = {
       creditFactorMax: 1.5,
       /** Línea mínima aunque los costes fijos sean ínfimos (garaje). */
       floorAmount: 5_000,
+      /**
+       * Espiral de deuda (docs/20 W1c): aviso importante cuando el servicio de
+       * la deuda supera esta fracción del ingreso medio reciente — el jugador
+       * debe VER venir la espiral de muerte, no descubrirla cuando ya es
+       * irreversible. El aviso salta en el flanco de subida y no vuelve a
+       * saltar hasta que la deuda se enfría por debajo del umbral. Desde 10.2-B
+       * lo que se compara es la CUOTA obligatoria (el drenaje real de caja), no
+       * el interés teórico; el suelo absoluto sigue midiéndose sobre el interés
+       * para no gritar por un puente trivial.
+       */
+      spiral: {
+        /** La cuota semanal supera este × ingreso medio reciente → espiral. */
+        incomeRatio: 0.5,
+        /** Ventana (semanas) del ingreso medio reciente que se compara. */
+        lookbackWeeks: 12,
+        /**
+         * Suelo absoluto: por debajo de este interés semanal NO se avisa aunque
+         * el ingreso sea 0 — una deuda trivial (préstamo puente pequeño) no es
+         * una espiral. Con ~1 %/sem, esto equivale a una deuda viva ≥ 50k 💰.
+         */
+        minWeeklyInterest: 500,
+      },
     },
 
     /**
@@ -295,7 +389,9 @@ export const balance = {
       mediano: 3,
       grande: 5,
       muyGrande: 8,
-      aaa: 16,
+      // Bajó de 16 a 11 en 10.2-B, en coherencia con el AAA aligerado
+      // (docs/20 W2-bis): la dotación del plato sigue la escala del juego.
+      aaa: 11,
     } satisfies Record<ProjectSize, number>,
     /** ARPU: 💰 por jugador y semana, antes de pase/agresividad. */
     arpuPerPlayerWeek: 0.5,
@@ -537,14 +633,19 @@ export const balance = {
      * fija SOLO el tamaño: el calendario avanza 1 semana por tick y la plantilla
      * NO acelera (más gente ejecuta mejor, no más rápido; ver maxCrewRatio).
      * Calibrado a docs/02 §6: juego pequeño de garaje 6 semanas (~4–8) y AAA
-     * de 120 semanas (~2,3 años, dentro del "2–3 años").
+     * de 96 semanas (~1,85 años).
+     *
+     * El AAA bajó de 40 a 32 semanas por fase en 10.2-B (docs/20 W2-bis): con
+     * 120 semanas y 40 personas era una TRAMPA (alcance 0,77 → reseña 39) y su
+     * ejército permanente hundía E6 a un margen operativo de −53k/sem. Sigue
+     * siendo con diferencia el proyecto más largo (96 vs 72 del Muy grande).
      */
     phaseWeeksBySize: {
       pequeno: 2,
       mediano: 6,
       grande: 14,
       muyGrande: 24,
-      aaa: 40,
+      aaa: 32,
     } satisfies Record<ProjectSize, number>,
     /**
      * Dotación relativa (crewRatio = output / plantilla esperada del tamaño, con
@@ -558,18 +659,23 @@ export const balance = {
     /**
      * Requisitos por tamaño de proyecto (docs/17 E1, docs/18 V4-b): plantilla
      * mínima y etapa de escala mínima. El "Muy grande" pide Estudio grande; el
-     * AAA queda bloqueado hasta Corporación (etapa 5) y exige una organización
-     * de 40 personas — su crewRatio espera esa plantilla: intentarlo con menos
-     * lo deja a medio cocer. La UI atenúa los tamaños bloqueados con su
-     * requisito; el núcleo lo valida en startProject (sizeBlockReason). El
-     * coste base va en economy.sizeBaseCost.
+     * AAA queda bloqueado hasta Corporación (etapa 5) — su crewRatio espera su
+     * plantilla: intentarlo con menos lo deja a medio cocer. La UI atenúa los
+     * tamaños bloqueados con su requisito; el núcleo lo valida en startProject
+     * (sizeBlockReason). El coste base va en economy.sizeBaseCost.
+     *
+     * El AAA bajó de 40 a 24 personas en 10.2-B (docs/20 W2-bis): un ejército
+     * permanente de 40 corría en seco entre lanzamientos AAA (que son lumpy: 3
+     * en toda E6) y ese coste fijo era el origen real del margen negativo de
+     * E6 — no el overhead de etapa. Sigue exigiendo una organización grande
+     * (24 > 15 del Muy grande) y solo cabe en el aforo de la Corporación.
      */
     sizeGate: {
       pequeno: { minStaff: 1, minStage: 1 },
       mediano: { minStaff: 3, minStage: 2 },
       grande: { minStaff: 8, minStage: 3 },
       muyGrande: { minStaff: 15, minStage: 4 },
-      aaa: { minStaff: 40, minStage: 5 },
+      aaa: { minStaff: 24, minStage: 5 },
     } satisfies Record<ProjectSize, { minStaff: number; minStage: ScaleStage }>,
     /** Deuda de bugs acumulada por semana de Concepto/Producción (docs/03 factor D). */
     baseBugsPerWeek: 0.02,
@@ -601,7 +707,10 @@ export const balance = {
       mediano: 8,
       grande: 13,
       muyGrande: 16,
-      aaa: 20,
+      // El AAA bajó de 20 a 18 en 10.2-B (docs/20 W2-bis), en coherencia con su
+      // plantilla y calendario más cortos: sigue siendo el catálogo más
+      // ambicioso, pero llenarlo deja de exigir un catálogo imposible.
+      aaa: 18,
     } satisfies Record<ProjectSize, number>,
     /**
      * Afinidad feature×género (Fase 9.3, docs/19 §9.3): multiplicador del
@@ -631,14 +740,20 @@ export const balance = {
      * Fase 9.1 es solo UNO de los techos parciales (el techo real es el
      * mínimo con madurez/talento/motor, ver `ceiling`); desde 9.2 el término
      * tecnológico es el MOTOR del proyecto (ceiling.engine).
+     *
+     * Desde 10.2-B (docs/20 W2-bis) el AAA va UN PUNTO por encima del Muy
+     * grande allá donde hay techo libre (E4–E6): aligerarlo no puede dejarlo
+     * solapado con el escalón inferior — tiene que ser una cima también en
+     * calidad alcanzable, no solo en dinero. En E7 ambos llegan a 100 (no hay
+     * más techo que dar) y el AAA se separa por demanda, coste y premios.
      */
     capByEraSize: {
       E1: { pequeno: 85, mediano: 85, grande: 85, muyGrande: 85, aaa: 85 },
       E2: { pequeno: 88, mediano: 88, grande: 88, muyGrande: 88, aaa: 88 },
       E3: { pequeno: 88, mediano: 91, grande: 91, muyGrande: 91, aaa: 91 },
-      E4: { pequeno: 90, mediano: 93, grande: 94, muyGrande: 94, aaa: 94 },
-      E5: { pequeno: 92, mediano: 95, grande: 96, muyGrande: 96, aaa: 96 },
-      E6: { pequeno: 93, mediano: 96, grande: 98, muyGrande: 98, aaa: 98 },
+      E4: { pequeno: 90, mediano: 93, grande: 94, muyGrande: 94, aaa: 95 },
+      E5: { pequeno: 92, mediano: 95, grande: 96, muyGrande: 96, aaa: 97 },
+      E6: { pequeno: 93, mediano: 96, grande: 98, muyGrande: 98, aaa: 99 },
       E7: { pequeno: 94, mediano: 97, grande: 100, muyGrande: 100, aaa: 100 },
     } satisfies Record<EraId, Record<ProjectSize, number>>,
 
@@ -721,12 +836,23 @@ export const balance = {
      * calidad se hunde: alcanceFactor = max(suelo, alcance01^exponente).
      */
     scope: {
+      /**
+       * El AAA bajó de 26 a 15 en 10.2-B (docs/20 W2-bis): con 26 ni una
+       * Corporación de 40 personas llenaba su alcance (0,77 medido en EXP2) y
+       * la reseña se hundía a 39 — era un castigo, no una cima. Con 12, una
+       * Corporación recién estrenada de 24 personas (su plantilla mínima
+       * nueva) LLENA el alcance en cuanto tiene equipo decente, y sigue
+       * pidiendo bastante más músculo que el Muy grande (9,5). El escalón
+       * frente al Muy grande lo sostienen la plantilla (24 vs 15), el
+       * calendario (96 vs 72 sem), el coste base (800k vs 460k) y la exigencia
+       * de motor (sizeFactor 1,3 vs 1,15), no un alcance inalcanzable.
+       */
       powerTarget: {
         pequeno: 0.5,
         mediano: 1.8,
         grande: 5,
         muyGrande: 9.5,
-        aaa: 26,
+        aaa: 12,
       } satisfies Record<ProjectSize, number>,
       floor: 0.4,
       exponent: 1.25,
@@ -981,19 +1107,53 @@ export const balance = {
        * El requisito de plantilla de cada una cabe SIEMPRE en el aforo de la
        * anterior (4≤4, 8≤10, 20≤25): sin ese cuidado habría una etapa
        * incomprable. El de capital supera siempre el coste de la ampliación.
+       *
+       * GATE MIXTO desde 10.2-B (docs/20 W3): capital + plantilla + TRAYECTORIA.
+       * El Experimento 1 de la 10.2-A demostró que **el capital no regula las
+       * etapas 4–5** (con préstamo agresivo o sin él, la etapa 4 cae en E3 s680
+       * y la 5 en E5 s1512): cuando los ingresos crecen exponencialmente, una
+       * cifra de caja es un peaje, no un ritmo. Así que el regulador principal
+       * pasa a ser la CARRERA — juegos lanzados y reputación conseguida — y el
+       * capital solo sube de forma INTERMEDIA (~×2,5–3, no ×8) para que no
+       * amplíes con la caja de un único juegazo. Nada de muro de capital
+       * agresivo temprano: EXP1 retiró la evidencia de que el ritmo temprano
+       * estuviese roto y solo habría añadido tedio — y los bots lo confirmaron
+       * de la peor manera. Con la etapa 3 a 800k (×4) el optimizador quedaba
+       * ENCERRADO en el aforo de 4 personas —sin caja para financiar siquiera
+       * un mediano— y quebraba en E2 s362: el techo de ingresos de una etapa
+       * tiene que poder pagar la siguiente o no es un ritmo, es una jaula.
+       *
+       * - `gamesReleased`: lanzamientos acumulados. Evita el "dos aciertos →
+       *   megacorporación": crecer exige haber HECHO carrera. Es el regulador
+       *   fino, el que marca el ritmo.
+       * - `topReputation`: la CIMA histórica de la mejor reputación de segmento
+       *   (`stats.peakReputation`), no la de hoy. Se pide el mejor segmento y no
+       *   el agregado (docs/06 §1: la reputación es un vector) porque para
+       *   crecer basta con haber sido bueno para ALGUIEN; y se pide la cima y no
+       *   el estado actual porque con el estado actual la fábrica cínica —cuya
+       *   codicia hunde el vector justo cuando junta el capital— quedaba
+       *   encerrada en la etapa 3 para siempre (bots de 10.2-B), rompiendo "las
+       *   3 filosofías siguen viables". Es un gate de haber tenido público
+       *   alguna vez, no de tenerlo contento ahora.
        */
       requirementsByStage: {
-        2: { capital: 25_000, staff: 0 },
-        3: { capital: 200_000, staff: 4 },
-        4: { capital: 1_500_000, staff: 8 },
-        5: { capital: 8_000_000, staff: 20 },
-      } satisfies Record<Exclude<ScaleStage, 1>, { capital: number; staff: number }>,
-      /** El desembolso de la ampliación (la mudanza/obra; docs/18 V4-c). */
+        2: { capital: 25_000, staff: 0, gamesReleased: 3, topReputation: 0 },
+        3: { capital: 500_000, staff: 4, gamesReleased: 8, topReputation: 55 },
+        4: { capital: 5_000_000, staff: 8, gamesReleased: 18, topReputation: 60 },
+        5: { capital: 25_000_000, staff: 20, gamesReleased: 32, topReputation: 65 },
+      } satisfies Record<
+        Exclude<ScaleStage, 1>,
+        { capital: number; staff: number; gamesReleased: number; topReputation: number }
+      >,
+      /**
+       * El desembolso de la ampliación (la mudanza/obra; docs/18 V4-c). Ratio
+       * limpio desde 10.2-B: ampliar cuesta el 50 % del requisito de capital.
+       */
       upgradeCostByStage: {
-        2: 10_000,
-        3: 100_000,
-        4: 750_000,
-        5: 4_000_000,
+        2: 12_000,
+        3: 250_000,
+        4: 2_500_000,
+        5: 12_500_000,
       } satisfies Record<Exclude<ScaleStage, 1>, number>,
       staffCapByStage: { 1: 1, 2: 4, 3: 10, 4: 25, 5: 100 } satisfies Record<ScaleStage, number>,
       /** Proyectos en paralelo permitidos por etapa (docs/02 §4). */
@@ -1091,7 +1251,16 @@ export const balance = {
   research: {
     /** ~1 💡 por persona·semana en I+D [DECIDIDO, docs/12 §6]. */
     pointsPerPersonWeek: 1,
-    /** 💡 al lanzar un juego, por tamaño ("se acumulan al desarrollar juegos"). */
+    /**
+     * 💡 al lanzar un juego, por tamaño ("se acumulan al desarrollar juegos").
+     *
+     * NO se tocó en 10.3 a propósito (docs/20 W6b): subirlo era la palanca
+     * obvia contra el retraso de 💡 del indie, pero riega TODA la partida y el
+     * early game es justo lo que fija el CA 9.1(a) ("nadie imprime 80+ en E2").
+     * Con pequeño 2→3 y mediano 4→5, el equilibrado se compraba antes su
+     * primer motor y sacaba un 13,8 % de notas 80+ antes de E3, rompiendo el
+     * CA. La compensación fue por el otro lado (coste de los nodos E5-E7).
+     */
     releasePointsBySize: {
       pequeno: 2,
       mediano: 4,
@@ -1914,6 +2083,11 @@ export const balance = {
       mediano: 5,
       grande: 20,
       muyGrande: 40,
+      // El AAA se queda en 70 tras 10.2-B: se probó a subirlo a 80 para
+      // asegurar su ventaja de ingreso sobre el Muy grande, pero al arreglar su
+      // ALCANCE (docs/20 W2-bis) el AAA ya rinde ~2× el Muy grande en beneficio
+      // absoluto sin tocar la demanda — inflarla solo engordaba el late-game
+      // del optimizador. El escalón se defiende con lo que ya tiene.
       aaa: 70,
     } satisfies Record<ProjectSize, number>,
     /**

@@ -179,6 +179,13 @@ Anunciada → Lanzamiento → Crecimiento (base instalada ↑) → Madurez (pico
   real (dev-kit vs base instalada). El catálogo de `09` §4 crece con competidoras por generación
   (p. ej. Vortex 32 en E3; Vertex y Gameling Advance en E4; N-Switch en E5; Playsystem 5 y Vertex X en
   E6; Holo Deck en E7).
+- **Las eras flacas y los ciclos atípicos (10.3, docs/20 W5):** la 9.4 dejó E4-E7 con 6-8 plataformas
+  vivas a la vez pero **E1 con dos**, así que entran **Atarix VCS** (E1), **Amigo 500** (E2) y
+  **Gameling Color** (E3). Ahora **toda era tiene ≥3 plataformas a la venta** a mitad de era. Dos de
+  ellas estrenan formas de ciclo que el catálogo no tenía: el Atarix VCS **crece rápido y se
+  desploma** (la crisis del 83 lo mata en la s240, dentro de su propia era: el declive no es un aviso,
+  es una fecha), y el Amigo 500 tiene un ciclo **bajo pero largo** que cruza dos eras. La escalera de
+  base instalada por generación se mantiene: ninguna nueva se sale del pico de su cohorte.
 - **Multiplataforma (Fase 9.2, docs/19 §9.2):** lanzar en varias plataformas a la vez es una
   **capacidad del MOTOR** que se investiga (kit biplataforma = 2, pipeline multiplataforma = hasta 4).
   Cada plataforma paga su licencia al iniciar; la **demanda semanal SUMA las bases instaladas** de

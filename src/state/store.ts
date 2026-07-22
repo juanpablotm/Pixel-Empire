@@ -16,6 +16,7 @@ import {
   launchLiveService,
   launchMarketingCampaign,
   motivateEmployee,
+  outstandingDebt,
   repayLoan,
   researchInsight,
   researchTheme,
@@ -44,6 +45,7 @@ import {
   toggleFeature,
   toggleResearchAssignment,
   trainEmployee,
+  weeklyLoanInterest,
   withdrawTeam,
   type CrisisResponseId,
   type DevPhaseNumber,
@@ -125,6 +127,15 @@ export interface BankruptcyNotice {
   /** Semanas de gracia antes de la bancarrota (docs/06 §1). */
   graceWeeks: number;
 }
+/** La espiral de deuda (10.1, docs/20 W1c): el interés ya supera el ingreso. */
+export interface DebtSpiralNotice {
+  id: number;
+  kind: 'debtSpiral';
+  /** Interés de esta semana sobre la deuda viva (💰). */
+  weeklyInterest: number;
+  /** Deuda viva total (principal + interés acumulado). */
+  debt: number;
+}
 /**
  * Desde 8.8 la etapa se COMPRA (docs/18 V4-c): este aviso ya no celebra una
  * subida automática, sino que CUMPLES LOS REQUISITOS para ampliar — te manda
@@ -143,6 +154,7 @@ export type ImportantNotice =
   | MarketExitNotice
   | StaffLeftNotice
   | BankruptcyNotice
+  | DebtSpiralNotice
   | ScaleUpNotice
   | IndependenceNotice;
 
@@ -653,6 +665,18 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         id: nextNoticeId++,
         kind: 'bankruptcyWarning',
         graceWeeks: balance.economy.bankruptcyGraceWeeks,
+      });
+    }
+
+    // La deuda entra en espiral (10.1, docs/20 W1c): el núcleo marca `debtSpiral`
+    // cuando el interés semanal supera el ingreso reciente; el store detecta su
+    // flanco de subida (patrón de negativeWeeks) para que el jugador la vea venir.
+    if (!before.debtSpiral && after.debtSpiral && after.gameOver === null) {
+      notices.push({
+        id: nextNoticeId++,
+        kind: 'debtSpiral',
+        weeklyInterest: weeklyLoanInterest(after),
+        debt: outstandingDebt(after),
       });
     }
 

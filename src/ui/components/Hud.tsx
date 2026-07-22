@@ -23,7 +23,8 @@ export function Hud() {
   const scaleStage = useGameStore((s) => s.game.studio.scaleStage);
   const capital = useGameStore((s) => s.game.studio.capital);
   const reputation = useGameStore((s) => s.game.studio.reputation);
-  const loan = useGameStore((s) => s.game.loanPrincipal);
+  const loan = useGameStore((s) => s.game.loanPrincipal + (s.game.loanInterest ?? 0));
+  const debtSpiral = useGameStore((s) => s.game.debtSpiral);
   const scandalActive = useGameStore((s) => s.game.scandals.some((sc) => sc.weeksLeft > 0));
   const bombingActive = useGameStore((s) => s.game.community.bombs.length > 0);
   const goTo = useGameStore((s) => s.goTo);
@@ -69,13 +70,13 @@ export function Hud() {
         <button
           type="button"
           onClick={() => goTo('finanzas')}
-          data-tip={`Caja del estudio${loan > 0 ? ` (préstamo vivo: ${formatMoney(loan)})` : ''}. Paga sueldos, desarrollo y marketing; en rojo sostenido = bancarrota. Clic para ver Finanzas.`}
+          data-tip={`Caja del estudio${loan > 0 ? ` (deuda viva: ${formatMoney(loan)}${debtSpiral ? ' — ¡en espiral! el interés supera tus ingresos' : ', con interés que compone'})` : ''}. Paga sueldos, desarrollo y marketing; en rojo sostenido = bancarrota. Clic para ver Finanzas.`}
           className={`tip font-mono text-base font-semibold tabular-nums transition-colors hover:underline ${
             inTheRed ? 'animate-pulse text-danger' : 'text-capital'
           }`}
         >
           <RollingNumber value={capital} format={formatMoney} />
-          {loan > 0 && <span aria-hidden> 🏦</span>}
+          {loan > 0 && <span aria-hidden> {debtSpiral ? '🌀' : '🏦'}</span>}
         </button>
         <MoralScale />
         <span
